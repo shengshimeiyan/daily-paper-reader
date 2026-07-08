@@ -673,6 +673,8 @@ class LLMClient:
                                 print("错误详情(TEXT):", e.response.text[:500])
                             except Exception:
                                 pass
+                    else:
+                        print(f"错误详情(无HTTP响应): {type(e).__name__}: {e}")
                     continue
                 print(f"通过 requests 调用 API 时出错: {e}")
                 if hasattr(e, "response") and e.response is not None:
