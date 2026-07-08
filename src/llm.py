@@ -540,7 +540,7 @@ class LLMClient:
         for attempt_idx, req_base in enumerate(request_bases, start=1):
             request_url = self._build_chat_completions_url(req_base)
             try:
-                response = requests.post(request_url, headers=headers, json=payload, timeout=120)
+                response = requests.post(request_url, headers=headers, json=payload, timeout=300)
                 response.raise_for_status()
                 try:
                     response_data = response.json()
