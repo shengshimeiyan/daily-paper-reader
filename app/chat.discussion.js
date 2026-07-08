@@ -83,7 +83,11 @@ window.PrivateDiscussionChat = (function () {
     ) {
       return 'deepseek';
     }
-    return 'unsupported';
+    if (/bigmodel\.cn/i.test(normalizedBaseUrl) || normalizedModel.startsWith('glm-')) {
+      return 'glm';
+    }
+    // 其他 OpenAI 兼容 API 一律视为可用
+    return 'openai_compatible';
   };
 	  const buildStreamingChatPayload = (baseUrl, model, messages) => {
 	    const utils = window.DPRLLMConfigUtils || {};

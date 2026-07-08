@@ -20,6 +20,12 @@
       baseUrl: 'https://api.deepseek.com',
       models: Object.freeze(['deepseek-v4-flash', 'deepseek-v4-pro']),
     }),
+    glm: Object.freeze({
+      key: 'glm',
+      label: '智谱 GLM',
+      baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+      models: Object.freeze(['glm-5.1', 'glm-4-flash', 'glm-4-plus']),
+    }),
   });
 
   const normalizeText = (value) => String(value || '').trim();
@@ -116,6 +122,24 @@
     if (explicit === 'deepseek') {
       return 'deepseek';
     }
+    if (explicit === 'glm') {
+      return 'glm';
+    }
+    if (explicit === 'openai_compatible' || explicit === 'custom') {
+      return 'openai_compatible';
+    }
+    // 兼容旧配置：根据 chatLLMs 中的 baseUrl 推断
+    const chatList = Array.isArray(safeSecret.chatLLMs) ? safeSecret.chatLLMs : [];
+    if (chatList.length && chatList[0] && chatList[0].baseUrl) {
+      const firstBaseUrl = normalizeBaseUrlForStorage(chatList[0].baseUrl).toLowerCase();
+      if (/(^|\/\/)(api\.)?deepseek\.com(?:$|\/)/i.test(firstBaseUrl)) {
+        return 'deepseek';
+      }
+      if (/bigmodel\.cn/i.test(firstBaseUrl)) {
+        return 'glm';
+      }
+      return 'openai_compatible';
+    }
     return 'deepseek';
   };
 
@@ -140,7 +164,14 @@
     if (normalizedModel.startsWith('deepseek-')) {
       return 'deepseek';
     }
-    return 'unsupported';
+    if (/bigmodel\.cn/i.test(normalizedBaseUrl)) {
+      return 'glm';
+    }
+    if (normalizedModel.startsWith('glm-')) {
+      return 'glm';
+    }
+    // 其他 OpenAI 兼容 API 一律视为可用
+    return 'openai_compatible';
   };
 
   const resolveJsonResponseMode = ({ baseUrl, model, preferSchema = true }) => {
