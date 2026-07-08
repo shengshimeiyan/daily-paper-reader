@@ -143,6 +143,7 @@ def main() -> None:
     parser.add_argument("--rerank-top-n", type=int, default=80)
     parser.add_argument("--rerank-device", type=str, default=os.getenv("LOCAL_RERANK_DEVICE", "cpu"))
     parser.add_argument("--rerank-batch-size", type=int, default=int(os.getenv("LOCAL_RERANK_BATCH_SIZE") or "4"))
+    parser.add_argument("--rerank-profile", type=str, default=os.getenv("RERANK_PROFILE", ""), help="Rerank 预设：public-zwwen-rerank / siliconflow-qwen3-0.6b")
     parser.add_argument("--run-llm-refine", action="store_true", help="继续运行 DeepSeek 相关性打分。")
     parser.add_argument("--llm-min-star", type=int, default=4)
     parser.add_argument("--llm-batch-size", type=int, default=10)
@@ -235,6 +236,8 @@ def main() -> None:
             "--rerank-batch-size",
             str(max(int(args.rerank_batch_size or 1), 1)),
         ]
+        if args.rerank_profile:
+            rerank_cmd += ["--rerank-profile", args.rerank_profile]
         rerank_env = os.environ.copy()
         rerank_env.setdefault("MKL_THREADING_LAYER", "GNU")
         run_step("Conference rerank", rerank_cmd, env=rerank_env)

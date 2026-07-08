@@ -303,6 +303,9 @@ jobs:
           fi
           if [ "${RUN_RERANK:-false}" = "true" ]; then
             ARGS+=(--run-rerank --rerank-device cpu --rerank-batch-size 4)
+            if [ -n "$RERANKER_PROFILE_INPUT" ]; then
+              ARGS+=(--rerank-profile "$RERANKER_PROFILE_INPUT")
+            fi
           fi
           if [ "${RUN_LLM_REFINE:-false}" = "true" ]; then
             if [ -z "${DEEPSEEK_API_KEY:-}" ]; then
