@@ -1,0 +1,1211 @@
+Title: CrossHallu: Do Hallucination Signals Generalize Across Languages and Domains in Large Language Model's Internals?
+
+URL Source: https://arxiv.org/pdf/2607.04029v1
+
+Published Time: Tue, 07 Jul 2026 02:46:50 GMT
+
+Number of Pages: 22
+
+Markdown Content:
+CrossHallu: Do Hallucination Signals Generalize Across Languages and Domains in Large Language Model’s Internals? 
+
+Aisha Alansari 1 and Malak Alkhorasani 2 and Hamzah Luqman 1
+
+King Fahd University of Petroleum and Minerals Imam Abdulrahman bin Faisal University 
+
+Abstract 
+
+Recent hallucination detection techniques in large language models (LLMs) focus on di-rectly extracting features from a model’s inter-nal representations and training a classifier on these features to detect hallucinations, demon-strating promising results. Notwithstanding this advancement, most internal-state hallu-cination detection techniques have been ex-plored predominantly in English, raising the question of whether such internal signals gen-eralize across different languages and domains. To address this gap, we present CrossHallu ,the first study to evaluate the cross-lingual and cross-domain generalization of hallucination detection using internal representations from six LLMs on the generative question-answering task. We conduct a systematic Arabic ↔ En-glish evaluation using TruthfulQA, an Arabic translated version of TruthfulQA, and HalluS-core. This evaluation encompasses monolin-gual training and testing, cross-lingual trans-fer, cross-domain transfer, and combined cross-lingual and cross-domain transfer. The results reveal that internal-state hallucination signals in LLMs transfer across languages and do-mains for most models, with cross-lingual per-formance highly dependent on both class sepa-rability and language alignment in the feature space, whereas cross-domain transfer within Arabic varies depending on the training and testing datasets used for the hallucination detec-tor. The code is publicly available at https:// github.com/aishaalansari57/CrossHal .
+
+1 Introduction 
+
+Large language models (LLMs) have demonstrated remarkable success across a wide range of natu-ral language generation tasks, achieving state-of-the-art performance in benchmarks spanning ques-tion answering (QA), summarization, and machine translation (Li et al., 2024b). Despite these ad-vances, LLMs continue to be susceptible to hallu-cination, which occurs when they confidently gen-Language #1 Language #2   
+
+> Answers + Labels
+> At what age can you vote?
+> Answers
+> Feature Vector
+> No Hallucination
+> Hallucination
+> MLP Hallucination Detector
+> Multiple Arabic QA pairs
+> Llama-8B Llama-8B
+> Feature Vector
+> Train MLP Test
+
+Figure 1: Illustration of cross-lingual transfer of hallu-cination detection signals derived from LLM internal representations. A hallucination detector trained on in-ternal representations in a source language is evaluated on a target language to assess the transferability of hal-lucination signals across languages. 
+
+erate outputs that are factually incorrect or unsup-ported (Maynez et al., 2020; Ji et al., 2023; Huang et al., 2025b). This issue is particularly critical in high-stakes domains such as finance, medicine, and law, where hallucinated information can lead to harmful decisions, misinformation, or loss of trust (Alansari and Luqman, 2025b). An emerging direction in hallucination detec-tion for LLMs focuses on directly extracting fea-tures from an LLM’s internal representations, us-ing activations, attention patterns, or hidden states as probes of truthfulness (Liu et al., 2025; Ogasa and Arase, 2025). These detection methods are motivated by the hypothesis that hallucinations may correspond to detectable distributional shifts or uncertainty patterns within the model’s inter-nal states (Chuang et al., 2024). Recent studies have demonstrated that training lightweight detec-tors that predict hallucinations directly from inter-nal activation often outperform surface -level confi-dence heuristics based on probabilities or entropy (Chuang et al., 2024; Shelmanov et al., 2025; Das-gupta et al., 2025; Samaga et al., 2026). 
+
+> arXiv:2607.04029v1 [cs.CL] 4 Jul 2026
+
+Despite this progress, most internal-state hallu-cination detection methods have been investigated primarily in English, leaving open the question of whether such internal signals generalize across lan-guages and domains. This is a critical gap, as LLMs are increasingly deployed in multilingual settings, and hallucination rates vary substantially across lan-guages, often being higher for lower-resource lan-guages (Islam et al., 2025; Alansari and Luqman, 2025a). A key hypothesis motivating cross-lingual internal state analysis is that multilingual models, trained jointly across many languages, may develop language-agnostic representations at deeper layers of the network. This phenomenon is supported by findings in cross-lingual transfer learning, which show that multilingual models tend to learn shared semantic representations across languages, partic-ularly in deeper layers, enabling knowledge trans-fer even between linguistically distant languages. (Riemenschneider and Frank, 2025; Tashu et al., 2025). If hallucination-related signals exist within these shared representational subspaces, it may be feasible to train a detector in one language and sub-sequently use it for another language. It can also be used to enhance detection in low-resource lan-guages by aligning their internal states with those of higher-resource languages. In this work, we present CrossHallu , which, to the best of our knowledge, is the first study to sys-tematically evaluate the cross-lingual and cross-domain generalization of hallucination detection using internal representations from six LLMs on generative QA. We conduct a systematic Arabic 
+
+↔ English evaluation using three datasets: Truth-fulQA (Lin et al., 2022), an Arabic translated ver-sion of TruthfulQA, and HalluScore (Alansari and Luqman, 2026). The cross evaluation covers mono-lingual training and testing, cross-lingual transfer (English ↔ Arabic), cross-domain transfer across Arabic datasets, and combined cross-lingual and cross-domain transfer. Figure 1 illustrates cross-lingual transfer, where an MLP is trained on hidden states from an LLM in one language and evaluated on another. The main contributions of this study are summarized as follows: • To the best of our knowledge, we present the first study evaluating the cross-lingual and cross-domain transferability of hallucination signals derived from six LLMs’ internal rep-resentations. • We propose an evaluation framework that ex-amines how hallucination signals extracted from LLM internal representations generalize across different languages and datasets across cross-lingual, cross-domain, and combined cross-lingual cross-domain transfer settings. • We provide a detailed analysis of hallucination-related representation shifts across transformer layers and languages. • We provide an empirical analysis of which LLMs exhibit transferable hallucination sig-nals across languages and domains, offering insights into the language-agnostic nature of internal hallucination representations. 
+
+2 Related Work 
+
+Recent studies suggest that internal representations provide reliable and generalizable signals for hal-lucination detection (Du et al., 2024; Dasgupta et al., 2025; Binkowski et al., 2025; Samaga et al., 2026; Bazarova et al., 2025). In parallel, prior work has shown that multilingual LLMs learn partially shared internal representations that support cross-lingual transfer (Wang et al., 2024; Huang et al., 2025a). However, despite these capabilities, ex-isting hallucination detection approaches largely focus on single-language settings, leaving the trans-ferability of internal hallucination signals across languages underexplored. This gap raises an important question: do hallu-cination signals derived from internal representa-tions remain reliable when transferred across lan-guages and domains? To answer this question, we introduce CrossHallu , a framework that systemati-cally evaluates the consistency and transferability of such signals across monolingual, cross-lingual (English ↔ Arabic), cross-domain (across Ara-bic datasets), and combined cross-lingual cross-domain settings. A detailed review of hallucination detection, internal representation analysis for hallu-cination detection, and cross-lingual representation alignment is provided in Appendix A. 
+
+3 CrossHallu Methodology 
+
+We extend the work of Hallushift (Dasgupta et al., 2025) to evaluate the cross-lingual and cross-domain generalization of hallucination detection from six LLM internal representations for genera-tive QA. The core intuition behind HalluShift is that when a model generates a hallucinated re-sponse, the dynamics of information flow through its transformer layers exhibit measurably different patterns from those in grounded and factual gener-ation. These differences can be observed through hidden state transitions, attention patterns, and to-ken probability distributions. Internal signals can be passively extracted during a single inference pass without incurring additional computational cost. Following HalluShift , we aim to evaluate whether these shifts remain consistent across lan-guages and domains. Our goal is therefore to empir-ically evaluate the transferability of internal halluci-nation signals rather than assume their invariance. As illustrated in Figure 2, we evaluate six LLMs across three datasets: TruthfulQA (Lin et al., 2022), translated TruthfulQA to Arabic, and HalluScore (Alansari and Luqman, 2026). We perform sev-eral experiments designed to systematically isolate the effects of language shift, domain shift, and their combination. Three monolingual baseline experiments are conducted where training and test-ing occur within the same language and dataset (TruthfulQA EN, TruthfulQA AR, and HalluScore). In the other experiments, a hallucination detec-tor is trained on internal representations from a source setting and evaluated on a target setting to measure transferability. For each transfer sce-nario, we consider both directions (source → tar-get and target → source). Therefore, two cross-lingual experiments are conducted where the do-main is kept constant, but the language changes (TruthfulQA EN ↔TruthfulQA AR). Two cross-domain experiments are conducted in which the language is kept constant while the dataset changes (TruthfulQA AR ↔HalluScore). Finally, two cross-lingual, cross-domain experiments are conducted in which both language and domain change simulta-neously, representing the most challenging transfer setting (TruthfulQA EN ↔HalluScore). 
+
+3.1 Internal State Feature Extraction 
+
+We extract three groups of features from an LLM’s internal representations during a single inference pass. Let L denote the total number of transformer layers in an LLM, and let T denote the number of tokens generated in response to a given ques-tion. For each generated token t ∈ { 1, . . . , T }, we extract features from the hidden states, attention tensors, and output logits simultaneously. 
+
+Hidden State Features Let h(l) 
+
+> t
+
+∈ Rd denote the hidden state at layer l for token t, where d is the model’s hidden dimension. We select every sec-ond layer starting from layer 2, yielding the index set L = {2, 4, 6, . . . , L }, producing |L| = L/ 2 se-lected layers. For each pair of consecutive selected layers (li, l i+1 ), we first normalize each hidden state as a probability distribution using softmax. We then compute two similarity measures between consecutive layer representations, which are the Wasserstein distance and cosine similarity. The Wasserstein distance measures the distributional di-vergence between hidden states at adjacent layers, whereas the cosine similarity measures the geomet-ric alignment between consecutive layer represen-tations. Both measures are computed for all |L| − 1
+
+consecutive layer pairs and averaged across all T
+
+generated tokens. 
+
+Attention Features Let a(l) 
+
+> t
+
+∈ RH×S denote the attention tensor in layer l for token t, where H
+
+is the number of attention heads and S is the sequence length. We select every second layer starting from layer 1, producing the index set 
+
+A = {1, 3, 5, . . . , L − 1}. The same normaliza-tion, Wasserstein distance and cosine similarity computed for the hidden state features are applied to the attention tensors. These tensors are averaged across tokens in the same manner as the hidden state features, producing an additional feature vec-tor of length L − 2.
+
+Token Probability Features For each generated token t, we apply Softmax to the output logits 
+
+zt ∈ RV , where V is the vocabulary size, to ob-tain the token probability distribution. We record the maximum and minimum vocabulary probabil-ities at each step pmax = {pmax 1 , . . . , p max  
+
+> T
+
+} and 
+
+pmin = {pmin 1 , . . . , p min  
+
+> T
+
+}. These values are essen-tial as they reflect the LLM’s generation confidence at each step. Specifically, pmax  
+
+> t
+
+captures the LLM’s peak confidence in its most likely next token. A high pmax  
+
+> t
+
+indicates that the model is certain about what to generate next, while a consistently low 
+
+pmax  
+
+> t
+
+across the sequence suggests that the model is uncertain or struggling to commit to a token, which may be an indication of hallucination. Conversely, 
+
+pmin  
+
+> t
+
+captures the lowest probability assigned to any token in the vocabulary at step t. When the dis-tribution is highly concentrated on a small number of tokens, pmin  
+
+> t
+
+will be extremely small, whereas when the distribution is more uniform, it indicates greater uncertainty across the vocabulary and pmin 
+
+> t
+
+will be comparatively larger. From these two sequences: pmax =
+
+{pmax 1 , . . . , p max  
+
+> T
+
+} and pmin = {pmin 1 , . . . , p min  
+
+> T
+
+},Data Preparation 1
+
+Load TruthfulQA bilingual CSV 
+
+> 75/25 Split
+> Train (75%) … Samples
+> Test (25%) … Samples
+> HalluScore : Load train/test
+> Output 6 CSV Files
+> TQA EN Train
+> TQA AR Train
+> TQA AR Train
+> TQA AR Train
+> HS Train
+> HS Test
+
+Evaluated LLMs 2
+
+Language-specific prompt template 
+
+> Answer the question clearly and concisely.
+
+أﺟب ﻋﻠﻰ اﻟﺳؤال ﺑوﺿوح وإﯾﺟﺎز 
+
+Output : decoded answer per example 
+
+Models 
+
+Internal States 3
+
+Output : raw feature matrix (parquet) 
+
+> Hidden State Features (even-indexed pairs) Wasserstein and Cosine Similarities
+> average all tokens
+> Attention Features (odd-indexed pairs) Wasserstein and Cosine Similarities
+> average all tokens
+> Token Probability Features (per token)
+> From logits -> probabilities max/min entropy, low-prob count, gradients, percentiles (25/50/75)
+> Concatenate all features
+
+Hallucination Labelling 4
+
+Hallucination Detector 6 Evaluation 7
+
+Run 9 experiments across 6 models      
+
+> TQA-EN TQA-AR HS
+> TQA-EN TQA-AR
+> TQA-AR TQA-EN TQA-AR HS
+> HS TQA-AR TQA-EN HS HS TQA-EN
+
+Evaluation Metrics   
+
+> F1-Score AUROC AUC-PR
+
+3-MLP Layer      
+
+> Allam Silma Qwen Mistral Phi4-mini Aya
+
+GPT-4o 
+
+For each sample provide  
+
+> Question Reference Answer
+> Model Generated Answer
+> English CoT prompt for English QA and Arabic CoT prompt for Arabic QA
+> I don’t know = no hallucination
+> Meaning not same as reference = hallucination
+> Partial error = hallucination
+> Paraphrased answer = no hallucination
+> Rules
+
+Output : Binary label per sample 
+
+> Input (D)
+> Output (O)
+> BCEWithLogitsLoss Adam, LR = 1e-3, epochs = 50, dropout = 0.3
+
+Feature Normalization 5
+
+> Same Language Exp. 1, 2, 3
+> Different Language Exp. 4, 5, 6, 7, 8, 9
+> StandardScaler Fit on train and apply to test
+> Quantile Transformer Fit independently on train and test
+
+Figure 2: Overview of the proposed framework for evaluating the transferability of hallucination signals from LLM internal representations across languages and domains. 
+
+we derive eight scalar features. The minimum of maximum probabilities captures the most uncertain generation step across the entire response: 
+
+fmin -max = min 
+
+t pmax 
+
+t (1) The maximum probability spread (fMps ) mea-sures the largest per-step gap between the most and least likely tokens, reflecting the sharpest concen-tration of probability mass observed during genera-tion: 
+
+fMps = max 
+
+t
+
+ pmax 
+
+t − pmin 
+
+t
+
+ (2) The normalized entropy of pmax , bounded in 
+
+[0 , 1] , treats the sequence of per-step peak probabil-ities as a distribution and measures how uniformly confidence is spread across generation steps: 
+
+fent = − P
+
+t pmax 
+
+t log pmax 
+
+t
+
+log T (3) The count of low-probability tokens ,counts how often the model’s top token probability falls be-low a threshold τ = 0.1, indicating steps where the model fails to commit to any token with reasonable confidence: 
+
+flow =
+
+TX
+
+t=1 
+
+1 [pmax 
+
+t < τ ] , τ = 0 .1 (4) The mean probability gradient , measures the average absolute change in pmax between consec-utive generation steps, capturing how erratically the model’s certainty varies across the generated sequence 
+
+fgrad = 1
+
+T − 1
+
+T −1X
+
+t=1 
+
+pmax 
+
+t+1 − pmax 
+
+t (5) The percentiles fp25 , fp50 , and fp75 of the maxi-mum probability sequence characterize the overall confidence distribution. All probability features are computed separately for both pmax and pmin 
+
+sequences. The complete feature vector for each example is formed by concatenating all hidden state, attention, and token probability features into a fixed-length representation that is passed to the classifier. 
+
+3.2 Hallucination Labelling 
+
+Unlike the original HalluShift (Dasgupta et al., 2025), which relies on BLEURT (Sellam et al., 2020) to assess the semantic similarity between the generated and reference answers for hallucination labelling, we use GPT-4o-as-a-Judge, which eval-uates factual correctness rather than surface-level wording. This choice is motivated by two limita-tions of BLEURT in our setting. First, BLEURT is trained predominantly on English data and has been shown to perform poorly on Arabic text, mak-ing it unsuitable for evaluating Arabic-language responses. Second, BLEURT operates as a surface-level similarity metric and does not account for the nuances of factual equivalence, such as valid para-phrases, partial answers, or the common miscon-ception traps that are characteristic of TruthfulQA 
+
+(Lin et al., 2022) and HalluScore (Alansari and Luqman, 2026). The details of prompting GPT-4o are presented in Appendix D. 
+
+3.3 Hallucination Detector 
+
+We train a fully connected three-layer multilayer perceptron (MLP) to detect hallucinations. The classifier takes as input the fixed-length feature vector constructed from the hidden state, attention, and token probability features extracted during in-ference, and produces a scalar probability indicat-ing whether the generated response is hallucinated. The details of training the MLP network are dis-cussed in Appendix C. 
+
+4 Experiments 
+
+4.1 Datasets 
+
+We evaluate the cross-lingual and cross-domain generalization of LLMs internal representations to detect hallucination using three datasets: Truth-fulQA (Lin et al., 2022), the Arabic translated version of TruthfulQA, and HalluScore (Alansari and Luqman, 2026). For English, we used the TruthfulQA dataset, which is the most widely used benchmark for evaluating hallucinations in gener-ative QA. To enable cross-lingual evaluation, we translated TruthfulQA into Arabic. After manual verification, we retained 772 of the original 817 questions, in which we excluded samples that did not translate clearly or lost their intended mean-ing in Arabic. These 772 aligned QA pairs were used for both English and Arabic to evaluate cross-lingual transfer while keeping the domain constant. We split the dataset into 75% for training and 25% for testing, including 597 samples in the training set and 193 in the testing set. For cross-lingual and cross-domain evaluation, we additionally used Hal-luScore, which, to the best of our knowledge, is cur-rently the only available Arabic dataset specifically designed for hallucination detection in Arabic gen-erative QA. For HalluScore, we used the predefined training and testing splits provided with the dataset. The training set consists of 621 samples, whereas the testing set comprises 206 samples. More details about the datasets are present in Appendix B. 
+
+4.2 Evaluated Models 
+
+We evaluate six Arabic-capable LLMs that vary in size, architecture, and the degree of Arabic-language support. The models are selected based on their demonstrated ability to handle both Ara-bic and English, as well as their suitability for our computational constraints. ALLaM-7B (Bari et al., 2024) is an Arabic-English bilingual model devel-oped by the Saudi Data and Artificial Intelligence Authority (SDAIA). SILMA-9B (silma-ai, 2024) is an Arabic-optimized model built on top of Gemma-2-9B through continued pretraining and instruction tuning on curated Arabic and English data. Phi-4-mini (Microsoft, 2025) is a compact 3.8 billion parameter instruction-tuned model developed by Microsoft, designed to achieve strong multilingual performance despite its small size. Qwen2.5-14B 
+
+(Team, 2024) is a large multilingual model from Alibaba Cloud pretrained on over 18 trillion to-kens with broad language coverage, including Ara-bic. Ministral-8B (AI, 2024) is an instruction-tuned model from Mistral AI designed for efficient mul-tilingual inference. Aya-23-8B (Aryabumi et al., 2024) is a multilingual model developed by Co-here for AI. It is trained on the Aya dataset, which contains instruction data across 101 languages, in-cluding Arabic. 
+
+4.3 Evaluation Metrics 
+
+Consistent with previous studies (Alansari and Luq-man, 2025b), we evaluated the cross-lingual and cross-domain generalization of hallucination de-tection using three metrics: F1-score, the area un-der the receiver operating characteristic curve (AU-ROC), and the area under the precision–recall curve (AUC-PR). We use the F1-score due to the class im-balance between hallucinated and non-hallucinated generations. We also report AUROC to evaluate how well the model distinguishes between hallu-cinated and grounded outputs across all possible classification thresholds. Finally, we report AUC-PR, which is informative in imbalanced settings as it focuses on performance for the positive class. Since hallucinated responses are more frequent in the evaluated LLMs, AUC-PR helps assess whether the detector can maintain high precision while iden-tifying a large proportion of hallucinations. 4.4 Implementation Details Response generation. We used the HuggingFace Transformers library to load all six evaluated mod-els. We used the English prompt to generate En-glish responses "Answer the question concisely. Q: {question}, A: and the Arabic prompt to generate Arabic responses 
+
+More details are presented in Appendix C. 
+
+Hallucination labelling. We used GPT-4o with temperature zero and seed=42 for deterministic and reproducible labelling. Each call is allocated a maximum of 80 output tokens to accommodate the chain-of-thought reasoning sentence, followed by the binary label. The prompt used for halluci-nation labelling is illustrated in Figure 5. More details about hallucination labeling are discussed in Appendix D. 
+
+Feature normalization. For monolingual experi-ments, a StandardScaler is fit on the training fea-tures and applied to the test features. For cross-lingual experiments, a QuantileTransformer is fit independently on the training and test feature sets. This normalization is motivated by the observed scale mismatch between English and Arabic inter-nal state features. Arabic token probabilities are systematically lower and more spread than English due to the morphological complexity of Arabic, causing a standard scaler fit on English features to produce distorted representations when applied to Arabic. By mapping each language’s feature distribution independently to a standard normal distribution, the classifier receives comparable rep-resentations regardless of the source language. 
+
+5 Results 
+
+Table 1 and Figure 3 present the results of the 
+
+CrossHallu evaluation. We evaluated the perfor-mance of six LLMs (Allam, Silma, Phi-4-mini, Mistral, Qwen2.5, and Aya) under cross-lingual, cross-domain, and combined cross-lingual cross-domain settings for hallucination detection. The first group of experiments evaluates the halluci-nation detector’s performance using each LLM’s internal states when trained and tested on the same dataset (TruthfulQA EN, TruthfulQA AR, and Hal-luScore). We refer to this setting as the baseline. The second group evaluates the hallucination de-tector by training it in one language and testing it in another, while keeping the domain constant (TruthfulQA EN and TruthfulQA AR). The third group evaluates it by training on one Arabic dataset and testing on another Arabic dataset (TruthfulQA AR and HalluScore). We refer to these experi-ments as cross-lingual and cross-domain, respec-tively. The fourth group combines cross-lingual and cross-domain evaluation by training the detec-tor in one language and domain, and testing it in another (TruthfulQA EN and HalluScore). We find that the high PR-AUC scores across all models are largely driven by the severe class imbalance, in which the hallucination class is significantly larger. This reinforces the importance of AUC-ROC as the primary evaluation metric. Additional insights and visual representations of these results are provided in Appendix E. 
+
+Baseline. As shown in Table 1, on TruthfulQA EN, 
+
+Aya achieves the highest AUC-ROC of 82.82%, followed by Allam at 71.30%, and Mistral and 
+
+Phi4-mini , both at 70.64%. On the other hand, 
+
+Qwen2.5 performs the weakest at 69.75%. On TruthfulQA AR Mistral attains the highest AUC-ROC of 80.42%, followed by Phi4-mini at 79.34% and Silma at 79.11%. On HalluScore, Aya achieves the highest AUC-ROC of 80.37%, whereas Phi4-mini attains the lowest AUC-ROC of 57.19%. These performance differences are directly re-flected in the t-SNE visualizations in Figure 4. Aya 
+
+and Phi4-mini show the clearest spatial separation between hallucinated and non-hallucinated exam-ples on TruthfulQA EN, which is consistent with their higher AUC-ROC scores. Qwen2.5 shows strong overlap between the two classes, explaining its weaker performance, while Silma shows noisy but partially structured clusters indicating moderate separability. On TruthfulQA-Arabic, Silma main-tains some class structure, whereas Mistral still exhibits considerable overlap between classes. In-terestingly, Qwen2.5 , which shows weak separation on both English and Arabic TruthfulQA, demon-strates relatively better separation on HalluScore, suggesting its internal representations may better capture the characteristics of this dataset. In con-trast, Phi4-mini shows the opposite trend, with strong separation on TruthfulQA but weaker struc-ture on HalluScore. 
+
+Cross-lingual generalization. cross-lingual trans-fer consistently degrades performance relative to the baseline results across all models, with the de-gree of degradation varying substantially depend-ing on the model architecture and transfer direc-tion. Multilingual models such as Phi4-mini and 
+
+Aya achieve stronger cross-lingual transfer com-pared to Arabic-focused models. Figure 4 supports Table 1: Hallucination detection performance (F1-Score, AUC-ROC, and PR-AUC in %) across models and transfer settings. En = TruthfulQA EN, Ar = TruthfulQA AR, HS. = HalluScore. Groups: (1) Same-language baseline (BS), (2) Cross-lingual (CL), (3) Cross-domain (CD), (4) Cross-lingual + cross-domain (CL-CD). 1st, 2nd, 3rd best AUC-ROC per row.                                                                                                                                                                                                                  
+
+> Exp. Train →Test Allam Silma Phi4-mini Mistral Qwen2.5 Aya F1 AUC PR F1 AUC PR F1 AUC PR F1 AUC PR F1 AUC PR F1 AUC PR
+> BS En →En 84.77 71.30 83.47 76.45 70.01 75.51 78.81 70.64 84.30 78.81 70.64 84.30 57.86 69.75 66.88 88.34 82.82 88.85 Ar →Ar 84.43 65.04 83.64 83.10 79.11 86.17 87.06 79.34 92.20 82.53 80.42 89.49 33.71 68.46 51.83 87.80 76.46 90.63 HS →HS 87.89 60.40 86.41 95.96 61.84 94.80 97.77 57.19 97.04 96.18 69.28 95.56 84.57 72.44 87.17 97.00 80.37 97.96 CL En →Ar 78.81 50.27 72.49 74.58 40.28 60.88 84.25 79.07 93.44 74.05 64.24 76.72 54.02 68.52 56.41 86.25 74.79 90.23 Ar →En 83.38 58.19 76.52 76.77 49.77 60.64 79.00 66.84 80.02 76.19 66.33 81.00 6.12 61.56 55.75 79.00 59.39 76.90 CD Ar →HS 88.95 55.21 84.22 91.94 64.80 95.64 97.77 72.59 98.43 86.46 71.80 95.10 30.17 68.94 85.24 96.69 86.90 98.66
+> HS →Ar 81.23 45.49 72.42 78.62 74.25 80.63 86.80 70.50 88.67 80.50 75.42 87.20 52.59 70.06 57.20 86.80 72.76 88.38 CL-CD En →HS 86.29 56.39 83.54 90.96 62.57 94.66 84.83 63.79 97.93 77.74 66.17 95.39 72.18 69.03 85.27 94.79 76.98 98.07 HS →En 81.88 61.44 78.05 77.07 59.16 73.08 79.00 62.84 77.99 82.67 62.67 79.64 59.22 58.34 55.10 79.38 62.34 73.45
+
+Figure 3: Hallucination detection performance across transfer settings for six models. Each panel shows a different metric: F1-Score (left), AUC-ROC (center), and PR-AUC (right). 
+
+this observation, in which Phi4-mini and Aya show more interleaved English and Arabic embeddings, which indicates better language-agnostic represen-tations. In contrast, Arabic-centric models, such as 
+
+Allam and Silma , exhibit moderate overlap across languages, suggesting partial cross-lingual align-ment alongside some language-specific represen-tation bias. This behavior is likely explained by pre-training data composition, where multilingual models are trained on large and balanced multi-lingual corpora, whereas Arabic LLMs are more heavily optimized for Arabic, resulting in weaker alignment when transferring to English. 
+
+Cross-domain generalization. Table 1 reveals that training on TruthfulQA AR and testing on HalluScore (Ar →HS) consistently improves hal-lucination detection compared to the HalluScore baseline for most models. For instance, Silma im-proves from 61.84% to 64.80% AUC-ROC, Phi4-mini from 57.19% to 72.59%, and Aya from 80.37% to 86.90%. The reverse direction, training on Hal-luScore and testing on TruthfulQA AR (HS →Ar), does not produce the same improvement, with most models performing below their TruthfulQA AR baseline. This finding is supported by the t-SNE visualization in Figure 4, which shows the com-bined TruthfulQA AR and HalluScore feature inter-leave closely throughout most models, indicating that the two datasets occupy largely overlapping regions in the feature space. This structural sim-ilarity confirms that the internal hallucination dy-namics are consistent across both Arabic datasets, making cross-domain transfer feasible in both di-rections. However, since HalluScore contains more challenging and ambiguous examples, Ar → HS outperforms HS → Ar. This is because training a classifier on the cleaner and more discriminative TruthfulQA AR signal learns decision boundaries that transfer effectively to the harder HalluScore examples, since it has been exposed to a less noisy version of the same underlying feature distribution. 
+
+Cross-lingual, cross-domain generalization. As shown in Table 1, the results for this setting con-firm that combined cross-lingual and cross-domain transfer represents the hardest generalization chal-lenge, with most models failing to maintain the detection performance. Aya achieves the strongest AUC-ROC of 76.98%, followed by Qwen2.5 at 69.03% when training on TruthfulQA EN and test-ing on HalluScore. In the reverse direction, training on HalluScore and testing on TruthfulQA EN, Phi4-mini achieves the highest AUC-ROC of 62.84%, followed closely by Mistral at 62.67% and Aya at 62.34%. Hallucination                      
+
+> (TQA EN)
+> ALLaM-7B Aya-23-8B Mistral-8B Phi4-mini Qwen2.5-14B Silma-9B
+> Hallucination
+> (TQA AR)
+> Hallucination
+> (HalluScore)
+> Not hallucinated
+> Hallucinated
+> Hallucination
+> (TQA EN vs AR)
+> Not hal. TQA EN ( )
+> Not hal. TQA AR ( )
+> Hal. TQA EN ( )
+> Hal. TQA AR ( )
+> Hallucination
+> (TQA AR vs HS)
+> Not hal. TQA AR ( )
+> Not hal. HalluScore ( )
+> Hal. TQA AR ( )
+> Hal. HalluScore ( )
+> Language
+> (EN vs AR)
+> English
+> Arabic
+
+Figure 4: t-SNE visualization of CrossHallu results across six LLMs under six analysis views. Rows 1–3: dataset-specific distributions for TruthfulQA English (TQA EN), TruthfulQA Arabic (TQA AR), and HalluScore (HS), coloured by hallucination label. Row 4: a shared English-Arabic embedding to examine cross-lingual separation of hallucinated and non-hallucinated responses. Row 5: a shared Arabic cross-domain embedding (TQA AR + HS) to assess domain-level consistency of hallucination signals. Row 6: the English-Arabic shared embedding colored by language to illustrate feature space alignment across languages. 
+
+6 Conclusion 
+
+In this study, we presented the first systematic eval-uation of cross-lingual and cross-domain transfer of hallucination signals within the internal states of six LLMs for generative QA. We conduct experi-ments on cross-lingual transfer (English ↔ Arabic), cross-domain transfer across Arabic datasets, and combined cross-lingual and cross-domain trans-fer. Our findings reveal that cross-lingual trans-fer is feasible for models, such as Phi4-mini and 
+
+Mistral , which exhibit both partial class separabil-ity within each language and substantial feature space overlap between English and Arabic. Cross-domain transfer within Arabic reveals a consistent asymmetry, where training on TruthfulQA AR and testing on HalluScore outperforms the reverse di-rection across most models, which we attribute to HalluScore containing more ambiguous and chal-lenging examples that produce noisier decision boundaries when used for training. The combined cross-lingual and cross-domain setting represents the most challenging transfer condition, yet several models maintain competitive performance, with 
+
+Aya and Phi4-mini showing the strongest general-ization across both language and domain bound-aries simultaneously. 7 Limitations 
+
+Despite the insights provided in this work, sev-eral limitations should be acknowledged. First, the hallucination labels used in our internal state ex-periments rely on GPT-4o as an automated judge. Although LLM-as-a-judge has been shown to cor-relate well with human evaluation, it may still intro-duce bias or systematic errors, particularly for cul-turally nuanced or ambiguous questions (Li et al., 2024a). Future work could incorporate multiple judges or human verification to further improve labeling reliability. Second, our analysis is limited to a selected set of models with different architec-tures and parameter sizes. While this allows con-trolled comparison, model size and architectural differences may influence internal representation behavior, making it difficult to fully isolate the effect of hallucination mechanisms from scaling effects. Evaluating a wider range of model families and sizes would provide stronger generalization. Third, our cross-lingual experiments are limited to English and Arabic. While this reflects the focus of this work, extending the analysis to additional lan-guages would help validate whether the observed trends in representation alignment generalize to broader multilingual settings. Fourth, our hallu-cination detector is based on a single architecture across all experiments. While this ensures consis-tency in evaluation, it limits our understanding of how different detector architectures (e.g., graph-based, contrastive, or multi-task approaches) may affect hallucination detection performance. Ulti-mately, our evaluation is limited to generative QA. While generative QA is a standard benchmark for hallucination research, hallucinations also occur in other generation tasks, such as summarization and translation. Extending the evaluation to multiple natural language generation tasks would provide a more comprehensive understanding of hallucina-tion behavior. 
+
+Acknowledgments 
+
+This document has been adapted by Steven Bethard, Ryan Cotterell and Rui Yan from the instructions for earlier ACL and NAACL proceedings, includ-ing those for ACL 2019 by Douwe Kiela and Ivan Vuli´ c, NAACL 2019 by Stephanie Lukin and Alla Roskovskaya, ACL 2018 by Shay Cohen, Kevin Gimpel, and Wei Lu, NAACL 2018 by Margaret Mitchell and Stephanie Lukin, BibT EX suggestions for (NA)ACL 2017/2018 from Jason Eisner, ACL 2017 by Dan Gildea and Min-Yen Kan, NAACL 2017 by Margaret Mitchell, ACL 2012 by Mag-gie Li and Michael White, ACL 2010 by Jing-Shin Chang and Philipp Koehn, ACL 2008 by Jo-hanna D. Moore, Simone Teufel, James Allan, and Sadaoki Furui, ACL 2005 by Hwee Tou Ng and Kemal Oflazer, ACL 2002 by Eugene Charniak and Dekang Lin, and earlier ACL and EACL formats written by several people, including John Chen, Henry S. Thompson and Donald Walker. Addi-tional elements were taken from the formatting instructions of the International Joint Conference on Artificial Intelligence and the Conference on Computer Vision and Pattern Recognition .
+
+References                         
+
+> Mistral AI. 2024. Ministral-8b-instruct-2410.
+> https://huggingface.co/mistralai/ Ministral-8B-Instruct-2410 .Hugging Face model card. Aisha Alansari and Hamzah Luqman. 2025a. Arahal-lueval: A fine-grained hallucination evaluation frame-work for arabic llms. In Proceedings of The Third Arabic Natural Language Processing Conference ,pages 148–161. Aisha Alansari and Hamzah Luqman. 2025b. Large language models hallucination: A comprehensive survey. arXiv preprint arXiv:2510.06265 .Aisha Alansari and Hamzah Luqman. 2026. Hallus-core: Large language model hallucination question answering benchmark. Preprint , arXiv:2605.17007. Viraat Aryabumi, John Dang, Dwarak Talupuru, Saurabh Dash, David Cairuz, Hangyu Lin, Bharat Venkitesh, Madeline Smith, Jon Ander Campos, Yi Chern Tan, and 1 others. 2024. Aya 23: Open weight releases to further multilingual progress.
+> arXiv preprint arXiv:2405.15032 .M Saiful Bari, Yazeed Alnumay, Norah A Alzahrani, Nouf M Alotaibi, Hisham A Alyahya, Sultan Al-Rashed, Faisal A Mirza, Shaykhah Z Alsubaie, Has-san A Alahmed, Ghadah Alabduljabbar, and 1 others. 2024. Allam: Large language models for arabic and english. arXiv preprint arXiv:2407.15390 .Alexandra Bazarova, Aleksandr Yugay, Andrey Shulga, Alina Ermilova, Andrei Volodichev, Konstantin Polev, Julia Belikova, Rauf Parchiev, Dmitry Simakov, Maxim Savchenko, and 1 others. 2025. Hallucination detection in llms with topological divergence on attention graphs. arXiv preprint arXiv:2504.10063 .Jakub Binkowski, Denis Janiak, Albert Sawczyn, Bog-dan Gabrys, and Tomasz Jan Kajdanowicz. 2025.
+
+Hallucination detection in llms using spectral fea-tures of attention maps. In Proceedings of the 2025 Conference on Empirical Methods in Natural Lan-guage Processing , pages 24365–24396. Anwoy Chatterjee, Yash Goel, and Tanmoy Chakraborty. 2025. Hide and seek: Detecting hallucinations in lan-guage models via decoupled representations. arXiv preprint arXiv:2506.17748 .Sehyun Choi, Tianqing Fang, Zhaowei Wang, and Yangqiu Song. 2023. Kcts: Knowledge-constrained tree search decoding with token-level hallucination detection. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing ,pages 14035–14053. Yung-Sung Chuang, Linlu Qiu, Cheng-Yu Hsieh, Ran-jay Krishna, Yoon Kim, and James Glass. 2024. Lookback lens: Detecting and mitigating contextual hallucinations in large language models using only attention maps. In Proceedings of the 2024 Con-ference on Empirical Methods in Natural Language Processing , pages 1419–1436. Sharanya Dasgupta, Sujoy Nath, Arkaprabha Basu, Pourya Shamsolmoali, and Swagatam Das. 2025. Hallushift: Measuring distribution shifts towards hal-lucination detection in llms. In 2025 International Joint Conference on Neural Networks (IJCNN) , pages 1–8. IEEE. Xuefeng Du, Chaowei Xiao, and Yixuan Li. 2024. Halo-scope: Harnessing unlabeled llm generations for hal-lucination detection. Advances in Neural Information Processing Systems , 37:102948–102972. Nuno M Guerreiro, Elena Voita, and André FT Martins. 2023. Looking for a needle in a haystack: A com-prehensive study of hallucinations in neural machine translation. In Proceedings of the 17th Conference of the European Chapter of the Association for Compu-tational Linguistics , pages 1059–1075. Xiaomeng Hu, Yiming Zhang, Ru Peng, Haozhe Zhang, Chenwei Wu, Gang Chen, and Junbo Zhao. 2024. Embedding and gradient say wrong: A white-box method for hallucination detection. In Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing , pages 1950–1959. Chongxuan Huang, Yongshi Ye, Biao Fu, Qifeng Su, and Xiaodong Shi. 2025a. From neurons to seman-tics: Evaluating cross-linguistic alignment capabili-ties of large language models via neurons alignment. In Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 28956–28974. Lei Huang, Weijiang Yu, Weitao Ma, Weihong Zhong, Zhangyin Feng, Haotian Wang, Qianglong Chen, Weihua Peng, Xiaocheng Feng, Bing Qin, and 1 oth-ers. 2025b. A survey on hallucination in large lan-guage models: Principles, taxonomy, challenges, and open questions. ACM Transactions on Information Systems , 43(2):1–55. Saad Obaid Ul Islam, Anne Lauscher, and Goran Glavaš. 2025. How much do llms hallucinate across lan-guages? on realistic multilingual estimation of llm hallucination. In Proceedings of the 2025 Confer-ence on Empirical Methods in Natural Language Processing , pages 29077–29098. Ziwei Ji, Nayeon Lee, Rita Frieske, Tiezheng Yu, Dan Su, Yan Xu, Etsuko Ishii, Ye Jin Bang, Andrea Madotto, and Pascale Fung. 2023. Survey of hal-lucination in natural language generation. ACM com-puting surveys , 55(12):1–38. Haitao Li, Qian Dong, Junjie Chen, Huixue Su, Yu-jia Zhou, Qingyao Ai, Ziyi Ye, and Yiqun Liu. 2024a. Llms-as-judges: a comprehensive survey on llm-based evaluation methods. arXiv preprint arXiv:2412.05579 .Zhen Li, Xiaohan Xu, Tao Shen, Can Xu, Jia-Chen Gu, Yuxuan Lai, Chongyang Tao, and Shuai Ma. 2024b. Leveraging large language models for nlg evaluation: Advances and challenges. In Proceedings of the 2024 Conference on Empirical Methods in Natural Lan-guage Processing , pages 16028–16045. Stephanie Lin, Jacob Hilton, and Owain Evans. 2022. Truthfulqa: Measuring how models mimic human falsehoods. In Proceedings of the 60th annual meet-ing of the association for computational linguistics (volume 1: long papers) , pages 3214–3252. Danni Liu and Jan Niehues. 2025. Middle-layer repre-sentation alignment for cross-lingual transfer in fine-tuned llms. In Proceedings of the 63rd Annual Meet-ing of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 15979–15996. Qiang Liu, Xinlong Chen, Yue Ding, Bowen Song, Weiqiang Wang, Shu Wu, and Liang Wang. 2025. Attention-guided self-reflection for zero-shot hallu-cination detection in large language models. In Pro-ceedings of the 2025 Conference on Empirical Meth-ods in Natural Language Processing , pages 21016– 21032. José Antonio Hernández López, Martin Weyssow, Jesús Sánchez Cuadrado, and Houari Sahraoui. 2026. Syntactic multilingual probing of pre-trained lan-guage models of code. Journal of Systems and Soft-ware , 231:112604. Potsawee Manakul, Adian Liusie, and Mark Gales. 2023. Selfcheckgpt: Zero-resource black-box hallucination detection for generative large language models. In 
+
+Proceedings of the 2023 conference on empirical methods in natural language processing , pages 9004– 9017. Joshua Maynez, Shashi Narayan, Bernd Bohnet, and Ryan McDonald. 2020. On faithfulness and factu-ality in abstractive summarization. In Proceedings of the 58th annual meeting of the association for computational linguistics , pages 1906–1919. Microsoft. 2025. Phi-4-mini-instruct. 
+
+https://huggingface.co/microsoft/ Phi-4-mini-instruct . Hugging Face model card. Cheng Niu, Yuanhao Wu, Juno Zhu, Siliang Xu, KaShun Shum, Randy Zhong, Juntong Song, and Tong Zhang. 2024. Ragtruth: A hallucination cor-pus for developing trustworthy retrieval-augmented language models. In Proceedings of the 62nd An-nual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 10862– 10878. Mengjia Niu, Hamed Haddadi, and Guansong Pang. 2025. Robust hallucination detection in llms via adaptive token selection. arXiv preprint arXiv:2504.07863 .Yuya Ogasa and Yuki Arase. 2025. Hallucinated span detection with multi-view attention features. In Pro-ceedings of the 14th Joint Conference on Lexical and Computational Semantics (* SEM 2025) , pages 381–394. Frederick Riemenschneider and Anette Frank. 2025. Cross-lingual generalization and compression: from language-specific to shared neurons. In Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) ,pages 13470–13491. Shreyas N Samaga, Gilberto Gonzalez Arroyo, and Tamal K Dey. 2026. Halluzig: Hallucination de-tection using zigzag persistence. arXiv preprint arXiv:2601.01552 .Thibault Sellam, Dipanjan Das, and Ankur Parikh. 2020. Bleurt: Learning robust metrics for text generation. In Proceedings of the 58th annual meeting of the as-sociation for computational linguistics , pages 7881– 7892. Artem Shelmanov, Ekaterina Fadeeva, Akim Tsvigun, Ivan Tsvigun, Zhuohan Xie, Igor Kiselev, Nico Da-heim, Caiqi Zhang, Artem Vazhentsev, Mrinmaya Sachan, and 1 others. 2025. A head to predict and a head to question: Pre-trained uncertainty quantifica-tion heads for hallucination detection in llm outputs. In Proceedings of the 2025 Conference on Empiri-cal Methods in Natural Language Processing , pages 35700–35719. silma-ai. 2024. Silma 9b instruct v1.0. 
+
+https://huggingface.co/silma-ai/ SILMA-9B-Instruct-v1.0 .Gaurang Sriramanan, Siddhant Bharti, Vinu Sankar Sadasivan, Shoumik Saha, Priyatham Kattakinda, and Soheil Feizi. 2024. Llm-check: Investigating detection of hallucinations in large language models. 
+
+Advances in Neural Information Processing Systems ,37:34188–34216. Tsegaye Misikir Tashu, Eduard-Raul Kontos, Matthia Sabatelli, and Matias Valdenegro-Toro. 2025. Cross-lingual document recommendations with transformer-based representations: Evaluating multilingual mod-els and mapping techniques. In Proceedings of the Second Workshop on Scaling Up Multilingual & Multi-Cultural Evaluation , pages 39–47. Alibaba Cloud Qwen Team. 2024. Qwen2.5-14b-instruct. https://huggingface.co/Qwen/Qwen2. 5-14B-Instruct . Hugging Face model card. Chaodong Tong, Qi Zhang, Jiayang Gao, Lei Jiang, Yanbing Liu, and Nannan Sun. 2025. Halunet: Multi-granular uncertainty modeling for efficient halluci-nation detection in llm question answering. arXiv preprint arXiv:2512.24562 .Hetong Wang, Pasquale Minervini, and Edoardo Ponti. 2024. Probing the emergence of cross-lingual align-ment during llm training. In Findings of the Associa-tion for Computational Linguistics: ACL 2024 , pages 12159–12173. Fujie Zhang, Peiqi Yu, Biao Yi, Baolei Zhang, Tong Li, and Zheli Liu. 2025. Prompt-guided internal states for hallucination detection of large language models. In Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 21806–21818. Appendix 
+
+This appendix provides supplementary material to support the main findings of this work. It is orga-nized as follows: • Appendix A: Related Work 
+
+Additional background on hallucination de-tection, internal representation analysis, and cross-lingual representation alignment. • Appendix B: Datasets 
+
+Detailed descriptions of the evaluated datasets. • Appendix C: Implementation Details 
+
+Detailed explanation of model configurations, training settings, computational resources, and reproducibility details. • Appendix D: Hallucination Labeling Prompt The GPT-4o judging prompt used for hallucination annotation, including evaluation rules and bilingual prompt design. • Appendix E Qualitative Analysis 
+
+Additional analysis of layer-wise hidden-state dynamics, cosine similarity, and Wasserstein trajectories, and comparative feature behavior across transfer settings. 
+
+A Related Work 
+
+Hallucination Detection. Existing hallucination detection approaches broadly fall into two cate-gories: black-box and white-box methods (Hu et al., 2024). Black-box methods treat the LLM as an opaque system and, therefore, rely only on observable inputs and outputs without accessing the LLM’s internal representations. These methods typically detect hallucinations using techniques, such as self-consistency sampling (Manakul et al., 2023), retrieval-based methods (Sriramanan et al., 2024; Niu et al., 2024), or external classifiers (Choi et al., 2023; Zhang et al., 2025). While black-box methods are model-agnostic and easy to apply to proprietary systems, they often require multiple inference calls, additional resources, or external knowledge bases (Alansari and Luqman, 2025b). White-box methods, in contrast, leverage access to the model’s internal states, such as attention weights (Liu et al., 2025), logits (Guerreiro et al., 2023), and uncertainty signals (Shelmanov et al., 2025). These methods aim to detect hallucinations by analyzing internal activation patterns, represen-tation shifts, or confidence distributions during gen-eration (Chuang et al., 2024; Dasgupta et al., 2025; Samaga et al., 2026). White-box methods can provide deeper insights into the causes of hallu-cinations and may enable more efficient detection without additional generation steps. However, they require access to model internals and are therefore typically limited to open-weight models (Alansari and Luqman, 2025b). 
+
+Internal Representation Analysis for Halluci-nation Detection. Recent studies have demon-strated that it is possible to train lightweight de-tectors that predict hallucinations directly from internal activations, often outperforming surface-level confidence heuristics based on probabilities or entropy (Chuang et al., 2024). This perspective reframes hallucination detection as a problem of representation understanding, where hallucinations are not just incorrect outputs but distinct modes in the model’s latent space that can be identified and monitored. Prior work has explored this di-rection by analyzing distribution shifts in hidden states and attention patterns (Dasgupta et al., 2025), modeling token-level uncertainty from internal rep-resentations (Shelmanov et al., 2025; Niu et al., 2025), and leveraging uncertainty-aware architec-tures that combine probability, entropy, and hidden-state features (Tong et al., 2025). Other approaches examine structural properties of attention dynam-ics using graph and topological representations to identify unstable reasoning patterns associated with hallucinations (Binkowski et al., 2025; Sam-aga et al., 2026; Bazarova et al., 2025). Together, these studies suggest that internal representations provide reliable and generalizable signals for hal-lucination detection. However, most of these stud-ies focus on single-language settings, leaving the cross-lingual transferability of internal hallucina-tion signals largely unexplored. 
+
+Cross-lingual Representation Alignment. Re-cent research indicates that multilingual LLMs es-tablish partially shared internal semantic represen-tations that facilitate cross-lingual transfer. How-ever, this alignment frequently varies between lan-guages. Probing studies demonstrate that cross-lingual transfer improves when languages activate overlapping neurons, which indicates that internal alignment strongly correlates with zero-shot multi-lingual performance (Wang et al., 2024). Similarly, neuron-level alignment analysis demonstrate that consistency of neuron activations across parallel sentences provides a reliable indicator of multi-lingual transferability and benchmark performance (Huang et al., 2025a). Other probing studies further show that multilingual models encode transferable syntactic structures in language-agnostic subspaces, which suggests that shared abstractions naturally emerge during pretraining (López et al., 2026). An-other study also shows that cross-lingual alignment is strongest in the middle layers of LLMs and that explicitly aligning these representations during fine-tuning can significantly improve transfer, particu-larly for low-resource languages (Liu and Niehues, 2025). Additionally, recent hallucination detection research suggests that mismatches between inter-nal representations of inputs and outputs can signal factual inconsistencies, highlighting the potential role of internal alignment as a reliability indicator (Chatterjee et al., 2025). These findings suggest that cross-lingual generalization depends heavily on the degree of internal representation alignment, motivating further investigation into whether hal-lucination signals derived from model internals re-main consistent across languages. 
+
+B Datasets 
+
+TruthfulQA (Lin et al., 2022) is a benchmark de-signed to evaluate the tendency of LLMs to gen-erate plausible but factually incorrect answers to questions that exploit common human misconcep-tions, which they refer to as imitative falsehoods. The dataset contains 817 questions that spans 38 categories, including health, law, science, and con-spiracy theories. The dataset is designed to test LLMs truthfulness in a zero-shot generative QA setting. 
+
+HalluScore (Alansari and Luqman, 2026) is a multi-domain Arabic QA benchmark designed to evaluate hallucinations in LLMs under diverse lin-guistic, cultural, and reasoning challenges. The dataset contains 827 carefully curated questions covering multiple domains such as science, history, health, culture, and language. It includes questions designed to trigger different hallucination types in-cluding misconceptions, false presuppositions, and reasoning traps. Each question is linked to verified ground-truth evidence, reference answers, and ex-planation annotations to support reliable evaluation. It is also designed to test LLMs truthfulness in a zero-shot generative QA setting. 
+
+C Implementation Details 
+
+Models loading. All models are loaded in 
+
+bfloat16 precision with automatic device map-ping via the HuggingFace Transformers library. All models are loaded from the HuggingFace Hub with attn_implementation="eager" 
+
+to ensure compatibility across architectures. Model weights are cached locally to avoid repeated downloads across experiments. Re-sponses are generated using greedy decoding (do_sample=False ) with a maximum of 128 new tokens and the end-of-sequence token set as the padding token. Internal states are collected by enabling output_hidden_states=True ,
+
+output_attentions=True , and 
+
+output_logits=True during generation. 
+
+MLP training details. The hallucination detec-tor consists of three fully connected layers with input dimension equal to the feature vector size, followed by hidden dimensions of 64 and 32, and a single output neuron. It is trained using the Adam optimizer with a learning rate of 1 × 10 −3 for 50 epochs. A dropout rate of 0.3 is applied af-ter each hidden layer. The random seed is fixed to 42 throughout all experiments for reproducibility. 
+
+Computational resources. All LLM inference experiments are conducted on a single NVIDIA A100 GPU with 40GB of memory. The halluci-nation detector training is performed on CPU and completes in under one minute per experiment due to the small size of the classifier and the relatively small training sets. 
+
+Reproducibility. The full codebase, including feature extraction, hallucination labelling, clas-sifier training, and evaluation scripts, is made publicly available at https://anonymous.4open. science/r/CrossHal-CD3C/README.md .
+
+D Hallucination Labeling Prompt 
+
+Figure 5 illustrates the prompt template used for hallucination labelling. The judge is provided with three inputs: the original question, the reference answer, and the model-generated response. To en-sure reliable and consistent labelling, the prompt enforces four explicit judging rules. First, the judge focuses on factual equivalence rather than surface-level wording, treating valid paraphrases as correct. Second, partially correct answers that contain at least one clear factual error are labelled as hallu-cinated, since we mainly focus on response-level hallucination detection rather than span-level hallu-cination detection. Third, responses expressing un-certainty, such as “I don’t know” or “it depends” ,are always labelled as not hallucinated, since a model that refuses to guess is not fabricating in-formation. Fourth, for questions designed around common misconceptions, the judge is instructed to trust the reference answer even when it contradicts popular belief, which is the primary failure mode of TruthfulQA and HalluScore. The prompt uses a chain-of-thought format that requires the judge to produce one sentence of rea-soning followed by the binary label on a new line. This explicit reasoning step reduces premature com-mitment errors in LLM-based evaluation. Separate prompt templates are designed for English and Ara-bic datasets, as illustrated in Figure 5. The Arabic prompt is a semantic translation of the English ver-sion to ensure consistent evaluation criteria across languages. The judge is called with temperature zero and a fixed random seed, with value 42, to guarantee deterministic and reproducible labels. 
+
+E Qualitative Analysis 
+
+E.1 Layer-wise hallucination signal propagation 
+
+Figure 6 shows the layer-wise cosine similarity of hidden state representations across three settings: cross-lingual, cross-domain, and combined cross-lingual cross-domain transfer. Cosine similarity be-tween consecutive layers measures how smoothly internal representations evolve as information prop-agates through the transformer. High similarity indicates gradual and consistent representational refinement, while lower similarity reflects abrupt representational shifts, suggesting that the model is performing a qualitatively different computation at that transition. In the context of hallucination detection, sharp drops in cosine similarity in the final layers are particularly informative, as they may indicate the model transitioning toward a final output representation that deviates from earlier se-mantic processing. Such divergence is often more pronounced for hallucinated responses, where the model may rely more on generative priors than on grounded internal representations. As illustrated in Figure 6, a consistent pattern emerges across all settings: cosine similarity re-mains high and stable (typically between 0.85 and 1.0) across the early and middle layers, indicating smooth representational refinement as information propagates through the network. This stability is followed by a sharp drop in the final few layer pairs, often approaching near-zero values at the last layer, reflecting the transition from intermediate semantic processing to final output formation. This late-layer collapse appears for both hallucinated and non-hallucinated examples, suggesting it is a general property of transformer generation. How-ever, small deviations between the two trajectories are observable in some models, particularly in the upper layers, which may provide useful discrimi-native signals for hallucination detection. 
+
+Cross-lingual. As shown in Figure 6, in the cross-lingual setting, the green (TruthfulQA EN) and red (TruthfulQA AR) lines of the same style overlap closely throughout all layer pairs for Mistral and 
+
+Phi4-mini . This confirms that these models encode both languages through the same internal computa-tional pathway. The final-layer collapse occurs at the same layer pair and with similar magnitude in both languages, explaining why cross-lingual trans-fer succeeds for these models. Aya shows more divergence between the two languages in middle layers (pairs 6–10), with Arabic trajectories show-ing greater oscillation than English. Yet, both con-verge to the same final-layer collapse. Silma ex-hibits the greatest cross-lingual divergence, with English and Arabic following noticeably different oscillatory patterns throughout the middle layers, which explains its inconsistent cross-lingual trans-fer performance. 
+
+Cross-domain. As shown in Figure 6, the cross-domain setting (Row 2) exhibits highly similar cosine-similarity trajectories for TruthfulQA AR and HalluScore across most models, indicating that the overall layer-wise evolution of hidden states remains relatively stable when the dataset changes but the language is held constant. This consistency is generally stronger than in the cross-lingual set-ting, suggesting that domain shift within Arabic perturbs internal dynamics less than language shift. The clearest examples are Mistral and Qwen2.5 ,whose curves remain nearly aligned across the two Arabic datasets, while Phi4-mini also preserves a similar trajectory shape despite stronger late-layer deviations. In contrast, Silma shows substantial oscillation across layers, indicating less stable in-ternal dynamics, and ALLaM exhibits a recurring dip around the middle layers across both datasets, suggesting that this pattern reflects model-specific processing behavior on Arabic text rather than a dataset-specific effect. Overall, the stronger tra-System prompt     
+
+> You are an expert factual judge for a hallucination detection task. You will be given a question, a reference answer, and a generated answer. Your task is to determine whether the generated answer is factually correct relative to the reference answer.
+> Rules:
+> 1. Focus on factual equivalence, not wording. A paraphrase of the reference answer that preserves the same meaning is correct (label 0). 2. If the answer is partially correct but contains a clear factual error, it should be labeled hallucinated (label 1). 3. Answers such as "I don't know", "I am not sure", or "it depends" are always considered correct (label 0). Expressing uncertainty is not hallucination. 4. If the question contains a common misconception and the reference answer contradicts popular belief, trust the reference answer — it is correct.
+> Output format (follow strictly):
+> Line 1: One sentence explaining your reasoning. Line 2: 0 (correct, not hallucinated) or 1 (wrong, hallucinated). Do not output anything else.
+> User prompt
+> Question: {question} Reference answer: {reference} Generated answer: {generated} Is the generated answer factually correct relative to the reference? Explain briefly, then output 0 or 1 on a new line.
+
+اﻟﻧظﺎم ﺗﻌﻠﯾﻣﺎت 
+
+إﻋطﺎؤك ﺳﯾﺗم .اﻟﻠﻐوﯾﺔ اﻟﻧﻣﺎذج إﺟﺎﺑﺎت ﻓﻲ اﻟﮭﻠوﺳﺔ اﻛﺗﺷﺎف ﻣﮭﻣﺔ ﻓﻲ ﺧﺑﯾر ﻣﺣﻛّم أﻧت 
+
+اﻟﻣُوﻟﱠدة اﻹﺟﺎﺑﺔ ﻛﺎﻧت إذا ﻣﺎ ﺗﺣدﯾد ھﻲ ﻣﮭﻣﺗك .ﻣُوﻟﱠدة  ً وإﺟﺎﺑﺔ  ً ﻣرﺟﻌﯾﺔ  ً وإﺟﺎﺑﺔ  ً ﺳؤاﻻ 
+
+.اﻟﻣرﺟﻌﯾﺔ ﺑﺎﻹﺟﺎﺑﺔ  ً ﻣﻘﺎرﻧﺔ  ً واﻗﻌﯾﺎ  ً ﺻﺣﯾﺣﺔ 
+
+:اﻟﻘواﻋد 
+
+.1 ﺗﺣﺎﻓظ اﻟﺗﻲ اﻟﺻﯾﺎﻏﺔ إﻋﺎدة .اﻟﺻﯾﺎﻏﺔ ﻋﻠﻰ وﻟﯾس اﻟواﻗﻌﻲ اﻟﺗﻛﺎﻓؤ ﻋﻠﻰ رﻛّز 
+
+.(0) ﺻﺣﯾﺣﺔ إﺟﺎﺑﺔ ﺗُﻌد اﻟﻣﻌﻧﻰ ﻧﻔس ﻋﻠﻰ 
+
+.2 ﻓﯾﺟب واﺿﺢ، واﻗﻌﻲ ﺧطﺄ ﻋﻠﻰ ﺗﺣﺗوي ﻟﻛﻧﮭﺎ ﺻﺣﯾﺣﺔ  ً ﺟزﺋﯾﺎ اﻹﺟﺎﺑﺔ ﻛﺎﻧت إذا 
+
+.(1) ﻛﮭَﻠوﺳﺔ ﺗﺻﻧﯾﻔﮭﺎ 
+
+.3  ً داﺋﻣﺎ ﺗُﻌﺗﺑر "اﻷﻣر ﯾﻌﺗﻣد " أو "ً ﻣﺗﺄﻛدا ﻟﺳت " أو "أﻋﻠم ﻻ" ﻣﺛل اﻹﺟﺎﺑﺎت 
+
+.ھَﻠوﺳﺔ ﯾُﻌد ﻻ اﻟﯾﻘﯾن ﻋدم ﻋن اﻟﺗﻌﺑﯾر .(0) ﺻﺣﯾﺣﺔ 
+
+.4 ﺗﺧﺎﻟف اﻟﻣرﺟﻌﯾﺔ اﻹﺟﺎﺑﺔ وﻛﺎﻧت  ً ﺷﺎﺋﻌﺎ  ً ﺧﺎطﺋﺎ  ً ﻣﻔﮭوﻣﺎ ﯾﺗﺿﻣن اﻟﺳؤال ﻛﺎن إذا 
+
+.اﻟﺻﺣﯾﺣﺔ ﻓﮭﻲ — اﻟﻣرﺟﻌﯾﺔ ﺑﺎﻹﺟﺎﺑﺔ ﻓﺛق اﻟﺷﺎﺋﻊ، اﻻﻋﺗﻘﺎد 
+
+:( ﺑدﻗﺔ ﺑﮫ اﻟﺗزم ) اﻹﺧراج ﺗﻧﺳﯾق 
+
+.اﻟﺣﻛم ﺳﺑب ﺗﺷرح واﺣدة ﺟﻣﻠﺔ :اﻷول اﻟﺳطر 
+
+أي ﺗﻛﺗب ﻻ .( ﻣﮭﻠوﺳﺔ ﺧﺎطﺋﺔ، ) 1 أو (ﻣﮭﻠوﺳﺔ ﻏﯾر ﺻﺣﯾﺣﺔ، ) 0 : اﻟﺛﺎﻧﻲ اﻟﺳطر 
+
+.آﺧر ﺷﻲء 
+
+اﻟﻣﺳﺗﺧدم طﻠب 
+
+{question} : اﻟﺳؤال 
+
+{reference} : اﻟﻣرﺟﻌﯾﺔ اﻹﺟﺎﺑﺔ 
+
+{generated} : اﻟﻣُوﻟﱠدة اﻹﺟﺎﺑﺔ 
+
+اﻟﻣرﺟﻌﯾﺔ؟ ﺑﺎﻹﺟﺎﺑﺔ  ً ﻣﻘﺎرﻧﺔ  ً واﻗﻌﯾﺎ ﺻﺣﯾﺣﺔ اﻟﻣُوﻟﱠدة اﻹﺟﺎﺑﺔ ھل 
+
+.ﺟدﯾد ﺳطر ﻓﻲ 1 أو 0 اﻛﺗب ﺛم ﺑﺈﯾﺟﺎز، اﺷرح 
+
+Hallucination Labelling Prompt Figure 5: GPT-4o prompt template for labelling hallucination and non-hallucination responses. 
+
+jectory consistency in Row 2 provides a plausible explanation for why cross-domain transfer is gen-erally more successful than cross-lingual transfer. 
+
+Combined cross-lingual cross-domain. As shown in Figure 6, the combined cross-lingual cross-domain setting (Row 3) shows largely similar cosine-similarity trajectories to those observed in the cross-lingual setting. This suggests that adding domain shift does not substantially disrupt the over-all layer-wise dynamics beyond the effect of lan-guage shift alone. For most models, including Mis-tral , Qwen2.5 , and Phi4-mini , the trajectories for TruthfulQA EN and HalluScore follow comparable patterns across the middle layers before exhibiting the characteristic late-layer collapse. While some deviations appear in intermediate layers for models such as Aya and Allam , these differences are mod-erate. Importantly, the final-layer collapse pattern remains consistent across all models and datasets, suggesting that late-layer representational transi-tions are a stable property of the generation process rather than being strongly affected by language or domain shifts. Overall, the similarity between the cross-lingual and the combined cross-lingual cross-domain settings suggests that language differences may play a larger role than domain differences in shaping internal representation dynamics. 
+
+E.2 Comparative Analysis of Cosine and Wasserstein Layer Dynamics 
+
+Although Wasserstein distance captures the mag-nitude of distributional shifts between consecutive hidden-state layers, our analysis suggests that it is less discriminative as a standalone hallucination signal. As shown in Figure 7, the trajectories of hal-lucinated and non-hallucinated examples within the same dataset generally follow similar trends across most models and transfer settings, with compara-tively smaller deviations between the two trajec-tories than those observed in the cosine similarity plots. This substantial overlap indicates limited separability between the two classes when relying solely on Wasserstein-based signals. 0.0                                                  
+
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Cosine similarity
+> CL
+> ALLaM-7B
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Aya-23-8B
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Mistral-8B
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Phi4-mini
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Qwen2.5-14B
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Silma-9B
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Cosine similarity
+> CD
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 1357911 13 15
+> Layer pair index
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Cosine similarity
+> CL-CD
+> 1357911 13 15
+> Layer pair index
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 1357911 13 15 17
+> Layer pair index
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 1357911 13 15
+> Layer pair index
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 14710 13 16 19 22
+> Layer pair index
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 14710 13 16 19
+> Layer pair index
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Not hal. TQA EN
+> Hal. TQA EN
+> Not hal. TQA AR
+> Hal. TQA AR
+> Not hal. HalluScore Hal. HalluScore
+
+Figure 6: Layer-wise cosine similarity trajectories of hidden states across layer pairs for representative hallucinated (dashed) and non-hallucinated (solid) examples, shown for all six models under three transfer settings: cross-lingual (TruthfulQA EN vs TruthfulQA AR, Row 1), cross-domain (TruthfulQA AR vs HalluScore, Row 2), and combined cross-lingual cross-domain (TruthfulQA EN vs HalluScore, Row 3). 
+
+A second observation is that Wasserstein trajec-tories appear strongly influenced by architecture-specific representational dynamics rather than hallucination-specific behavior. For example, Al-lam consistently exhibits a mid-layer peak around layer pairs 10–12, Mistral shows a gradual increase toward later layers, and Qwen2.5 and Silma display prominent early-layer spikes. Importantly, these patterns remain largely consistent across halluci-nated and non-hallucinated examples as well as across transfer settings, suggesting that Wasserstein distance primarily reflects how different architec-tures evolve internal representations across layers. In contrast, cosine similarity (Figure 6) exhibits more consistent deviations between hallucinated and non-hallucinated trajectories, particularly in the upper layers for several models. These late-layer divergences appear more pronounced than those observed in the Wasserstein plots, suggest-ing that cosine similarity better captures direc-tional changes in representations than distributional magnitude shifts alone. This indicates that while Wasserstein distance provides useful information about the overall evolution of hidden-state distri-butions, cosine similarity contributes stronger dis-criminative cues for hallucination detection. To-gether, these complementary signals enable the classifier to capture both the structural evolution of representations and the directional deviations associated with hallucination-related generation be-havior. 
+
+E.3 Feature Discriminability Analysis 
+
+To better understand which internal signals con-tribute most to hallucination detection, we analyze each feature’s discriminative ability using kernel density estimates (KDEs) across the three evalu-ated datasets: TruthfulQA EN, TruthfulQA AR, and HalluScore, as shown in Figures 8, 9, and 10. Rather than analyzing transfer behavior, this sec-tion focuses on how well each feature separates hallucinated and non-hallucinated examples within each dataset. 
+
+Low probability count. The low-probability count features (minimum and maximum) measure how often the model assigns very low probabili-ties to generated tokens, reflecting decoding un-certainty. The maximum-based variant measures how often the LLM exhibits low confidence in its selected token, which reflects decoding uncertainty during generation. In contrast, the minimum-based variant measures how often the model assigns ex-tremely small probabilities to the least likely tokens in the vocabulary. It shows the sharpness and con-centration of the output probability distribution and how strongly unlikely alternatives are suppressed. Higher values of the maximum-based feature in-dicate increased generation uncertainty, whereas 0.000000                                                  
+
+> 0.000025
+> 0.000050
+> 0.000075
+> 0.000100
+> 0.000125
+> 0.000150
+> 0.000175
+> Wasserstein distance
+> CL
+> ALLaM-7B
+> 0.00000
+> 0.00005
+> 0.00010
+> 0.00015
+> 0.00020
+> 0.00025
+> 0.00030
+> Aya-23-8B
+> 0.0000
+> 0.0001
+> 0.0002
+> 0.0003
+> 0.0004
+> Mistral-8B
+> 0.00000
+> 0.00005
+> 0.00010
+> 0.00015
+> 0.00020
+> 0.00025
+> 0.00030
+> 0.00035
+> Phi4-mini
+> 0.00000
+> 0.00002
+> 0.00004
+> 0.00006
+> 0.00008
+> 0.00010
+> 0.00012
+> 0.00014
+> Qwen2.5-14B
+> 0.00000
+> 0.00002
+> 0.00004
+> 0.00006
+> 0.00008
+> 0.00010
+> 0.00012
+> Silma-9B
+> 0.00000
+> 0.00002
+> 0.00004
+> 0.00006
+> 0.00008
+> 0.00010
+> 0.00012
+> 0.00014
+> Wasserstein distance
+> CD
+> 0.00000
+> 0.00005
+> 0.00010
+> 0.00015
+> 0.00020
+> 0.00025
+> 0.00030
+> 0.00035
+> 0.0000
+> 0.0001
+> 0.0002
+> 0.0003
+> 0.0004
+> 0.00005
+> 0.00010
+> 0.00015
+> 0.00020
+> 0.00025
+> 0.00000
+> 0.00002
+> 0.00004
+> 0.00006
+> 0.00008
+> 0.00010
+> 0.00012
+> 0.00014
+> 0.00000
+> 0.00002
+> 0.00004
+> 0.00006
+> 0.00008
+> 0.00010
+> 1357911 13 15
+> Layer pair index
+> 0.000000
+> 0.000025
+> 0.000050
+> 0.000075
+> 0.000100
+> 0.000125
+> 0.000150
+> 0.000175
+> Wasserstein distance
+> CL-CD
+> 1357911 13 15
+> Layer pair index
+> 0.00000
+> 0.00005
+> 0.00010
+> 0.00015
+> 0.00020
+> 0.00025
+> 0.00030
+> 0.00035
+> 1357911 13 15 17
+> Layer pair index
+> 0.0000
+> 0.0001
+> 0.0002
+> 0.0003
+> 0.0004
+> 1357911 13 15
+> Layer pair index
+> 0.00000
+> 0.00005
+> 0.00010
+> 0.00015
+> 0.00020
+> 0.00025
+> 0.00030
+> 0.00035
+> 14710 13 16 19 22
+> Layer pair index
+> 0.00000
+> 0.00002
+> 0.00004
+> 0.00006
+> 0.00008
+> 0.00010
+> 0.00012
+> 0.00014
+> 14710 13 16 19
+> Layer pair index
+> 0.00000
+> 0.00002
+> 0.00004
+> 0.00006
+> 0.00008
+> 0.00010
+> 0.00012
+> Not hal. TQA EN
+> Hal. TQA EN
+> Not hal. TQA AR
+> Hal. TQA AR
+> Not hal. HalluScore Hal. HalluScore
+
+Figure 7: Layer-wise Wasserstein distance trajectories of hidden states across layer pairs for representative hallu-cinated (dashed) and non-hallucinated (solid) examples, shown for all six models under the same three transfer settings as Figure 6. 
+
+higher values of the minimum-based feature indi-cate a more concentrated and peaked probability distribution. The KDE distributions reveal that the probability-based features exhibit substan-tially different behaviors across models and datasets. Across datasets, this feature appears slightly more informative in HalluScore and TruthfulQ AR than in TruthfulQA EN, suggesting that factual hallucinations may induce more uncertainty spikes in Arabic QA settings. Since some hallucinations can be produced with high confidence, this feature alone is insufficient and must be combined with representation-based features such as cosine similarity. For models such as Phi4-mini , Allam , and 
+
+Silma , the maximum-based variant shows that hallucinated responses frequently exhibit broader distributions and heavier tails compared to non-hallucinated responses. This indicates that halluci-nations in these models are often associated with increased decoding uncertainty and lower confi-dence in the selected tokens. On the other hand, this feature shows moderate separation for Aya and 
+
+Mistral , with hallucinated examples tending to ex-hibit slightly higher counts. The pattern suggests that for these models, confident but incorrect gen-eration (hallucination with high token confidence) is more common than uncertain generation. The minimum-based variant is less informative for models such as Allam and Aya due to substantial overlap between hallucinated and non-hallucinated distributions. In contrast, it becomes highly dis-criminative for Qwen2.5 , particularly in Truth-fulQA AR and HalluScore, where the hallucinated and non-hallucinated distributions exhibit markedly different shapes. Interestingly, for Qwen2.5 on TruthfulQA EN, the maximum-based variant col-lapses to a constant value across all samples, mak-ing it entirely non-informative, while the minimum-based variant still captures meaningful distribu-tional differences. This suggests that Qwen2.5 
+
+hallucinations are not associated with a reduced confidence in decoding, but rather with changes in the behavior of probability concentration. 
+
+Gradient-based features. Gradient-based fea-tures reveal distinct hallucination behaviors across models and datasets, with the maximum-gradient feature generally providing stronger and more con-sistent separability than the minimum-gradient feature. The maximum-gradient feature captures abrupt changes in the LLM’s token confidence tra-jectory during generation. In the context of hallu-cination, higher gradients often suggest unstable reasoning dynamics, in which the model may revise its internal representation as it attempts to construct an answer without strong factual grounding. Across TruthfulQA EN, the maximum-gradient feature exhibits varying levels of discriminative behavior across architectures. Aya , Allam , and 0.0 0.5 1.0 1.5 2.0 
+
+> low prob count (max)
+
+ALLaM-7B 
+
+Hallucinated 
+
+0.0 0.5 1.0 1.5 2.0 
+
+Aya-23-8B 
+
+0.0 0.5 1.0 1.5 2.0 
+
+Mistral-8B 
+
+0.0 0.5 1.0 1.5 2.0 2.5 3.0 
+
+Phi4-mini 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+Qwen2.5-14B 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+Silma-9B 
+
+0 10 20 30 40 50 
+
+> low prob count (min)
+
+0 20 40 60 80 100 120 0 20 40 60 80 100 120 0 20 40 60 80 100 120 0 20 40 60 80 100 120 5 10 15 20 
+
+0.1 0.2 0.3 0.4 0.5 
+
+> (mean) grad (max)
+
+0.0 0.2 0.4 0.6 0.8 0.1 0.2 0.3 0.4 0.5 0.1 0.2 0.3 0.4 0.00 0.05 0.10 0.15 0.20 0.25 0.30 0.2 0.4 0.6 0.8 
+
+0 1 2 3 4
+
+1e 13 
+
+> (mean) grad (min)
+
+0.0 0.2 0.4 0.6 0.8 1.0 1.2 
+
+1e 8
+
+0.0 0.2 0.4 0.6 0.8 1.0 1.2 
+
+1e 10 
+
+0 1 2 3
+
+1e 15 
+
+0.0 0.2 0.4 0.6 0.8 1.0 1.2 1.4 
+
+1e 17 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+1e 15 
+
+0.5 1.0 1.5 2.0 
+
+> norm entropy (max)
+
+0.0 0.5 1.0 1.5 2.0 2.5 3.0 1 2 3 4 5 0.0 0.5 1.0 1.5 2.0 2.5 3.0 0 1 2 3 4 0.2 0.4 0.6 0.8 1.0 1.2 1.4 
+
+0.0 0.5 1.0 1.5 2.0 2.5 3.0 
+
+1e 11 
+
+> norm entropy (min)
+
+0.0 0.5 1.0 1.5 2.0 2.5 3.0 
+
+1e 7
+
+0.0 0.2 0.4 0.6 0.8 1.0 1.2 
+
+1e 8
+
+0.0 0.5 1.0 1.5 2.0 2.5 
+
+1e 13 
+
+0 1 2 3 4 5
+
+1e 15 
+
+0 1 2 3 4 5 6
+
+1e 14 
+
+0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 
+
+> p25 (max)
+
+0.2 0.4 0.6 0.8 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 0.5 0.6 0.7 0.8 0.9 1.0 0.2 0.4 0.6 0.8 1.0 
+
+0.4 0.5 0.6 0.7 0.8 0.9 1.0 
+
+> p50 (max)
+
+0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 0.5 0.6 0.7 0.8 0.9 1.0 0.75 0.80 0.85 0.90 0.95 1.00 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 
+
+0.4 0.5 0.6 0.7 0.8 0.9 1.0 
+
+> p75 (max)
+
+0.5 0.6 0.7 0.8 0.9 1.0 0.6 0.7 0.8 0.9 1.0 0.75 0.80 0.85 0.90 0.95 1.00 0.970 0.975 0.980 0.985 0.990 0.995 1.000 0.5 0.6 0.7 0.8 0.9 1.0 
+
+Feature KDE Distributions TruthfulQA EN Figure 8: Kernel density estimates of the four most discriminative features for hallucinated (red) and non-hallucinated (green) examples on TruthfulQA English across all six models. 
+
+Silma show noticeable differences between halluci-nated and non-hallucinated distributions, including shifted peaks and broader density regions. This suggests that hallucinations are associated with al-tered confidence-transition dynamics during decod-ing. Qwen2.5 exhibits a distinct bimodal behavior, where hallucinated and non-hallucinated responses follow visibly different density structures rather than simple mean shifts. In TruthfulQA AR, the maximum-gradient feature exhibits moderate and highly model-dependent separability between hallucinated and 0 2 4 6 8
+
+> low prob count (max)
+
+ALLaM-7B 
+
+Hallucinated 
+
+Not hallucinated 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+Aya-23-8B 
+
+0 2 4 6 8 10 12 
+
+Mistral-8B 
+
+0 2 4 6 8 10 
+
+Phi4-mini 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+Qwen2.5-14B 
+
+0.0 0.5 1.0 1.5 2.0 
+
+Silma-9B 
+
+0 20 40 60 80 100 120 
+
+> low prob count (min)
+
+0 20 40 60 80 100 120 0 20 40 60 80 100 120 0 20 40 60 80 100 120 20 40 60 80 100 120 2.5 5.0 7.5 10.0 12.5 15.0 17.5 20.0 
+
+0.2 0.3 0.4 0.5 
+
+> (mean) grad (max)
+
+0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.1 0.2 0.3 0.4 0.5 0.1 0.2 0.3 0.4 0.5 0.05 0.10 0.15 0.20 0.25 0.30 0.0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 
+
+0.00 0.25 0.50 0.75 1.00 1.25 1.50 1.75 
+
+1e 12 
+
+> (mean) grad (min)
+
+0.0 0.5 1.0 1.5 2.0 2.5 
+
+1e 9
+
+0.0 0.5 1.0 1.5 2.0 2.5 
+
+1e 10 
+
+0 1 2 3 4 5
+
+1e 17 
+
+0.0 0.5 1.0 1.5 2.0 
+
+1e 17 
+
+0.00 0.25 0.50 0.75 1.00 1.25 1.50 1.75 
+
+1e 18 
+
+1 2 3 4 5
+
+> norm entropy (max)
+
+0.0 0.5 1.0 1.5 2.0 2.5 3.0 3.5 1 2 3 4 5 0 1 2 3 4 5 0 1 2 3 4 0.2 0.4 0.6 0.8 1.0 1.2 1.4 
+
+0 1 2 3 4
+
+1e 10 
+
+> norm entropy (min)
+
+0.0 0.2 0.4 0.6 0.8 1.0 1.2 1.4 
+
+1e 7
+
+0.0 0.5 1.0 1.5 2.0 2.5 
+
+1e 8
+
+0 1 2 3 4 5 6
+
+1e 15 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+1e 14 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+1e 16 
+
+0.2 0.4 0.6 0.8 
+
+> p25 (max)
+
+0.2 0.4 0.6 0.8 1.0 0.2 0.4 0.6 0.8 0.2 0.4 0.6 0.8 1.0 0.5 0.6 0.7 0.8 0.9 1.0 0.2 0.4 0.6 0.8 1.0 
+
+0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 
+
+> p50 (max)
+
+0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 0.2 0.4 0.6 0.8 1.0 0.2 0.4 0.6 0.8 1.0 0.75 0.80 0.85 0.90 0.95 1.00 0.2 0.4 0.6 0.8 1.0 
+
+0.5 0.6 0.7 0.8 0.9 1.0 
+
+> p75 (max)
+
+0.5 0.6 0.7 0.8 0.9 1.0 0.4 0.5 0.6 0.7 0.8 0.9 1.0 0.4 0.6 0.8 1.0 0.980 0.985 0.990 0.995 1.000 0.4 0.6 0.8 1.0 
+
+Feature KDE Distributions TruthfulQA AR Figure 9: Kernel density estimates of the four most discriminative features for hallucinated (red) and non-hallucinated (green) examples on TruthfulQA Arabic across all six models. 
+
+non-hallucinated responses. Most models still show substantial overlap between the two distri-butions, indicating that confidence-transition dy-namics alone are insufficient for strong discrim-ination. Aya displays the clearest separation, where hallucinated responses exhibit shifted or structurally different density patterns compared to non-hallucinated responses. Other models show moderate-to-high overlap distributions with limited discriminative separation. Overall, the maximum-gradient feature in TruthfulQA AR exhibits weaker, less consistent separability than initially expected, 0 2 4 6 8
+
+> low prob count (max)
+
+ALLaM-7B 
+
+Hallucinated 
+
+Not hallucinated 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+Aya-23-8B 
+
+0 2 4 6 8 10 
+
+Mistral-8B 
+
+0 1 2 3 4 5
+
+Phi4-mini 
+
+0.0 0.2 0.4 0.6 0.8 1.0 
+
+Qwen2.5-14B 
+
+0.0 0.5 1.0 1.5 2.0 
+
+Silma-9B 
+
+0 20 40 60 80 100 120 
+
+> low prob count (min)
+
+0 20 40 60 80 100 120 0 20 40 60 80 100 120 0 20 40 60 80 100 120 20 40 60 80 100 120 5 10 15 20 
+
+0.10 0.15 0.20 0.25 0.30 0.35 0.40 0.45 
+
+> (mean) grad (max)
+
+0.1 0.2 0.3 0.4 0.5 0.1 0.2 0.3 0.4 0.5 0.1 0.2 0.3 0.4 0.5 0.05 0.10 0.15 0.20 0.25 0.30 0.1 0.2 0.3 0.4 0.5 0.6 0.7 
+
+0 2 4 6 8
+
+1e 13 
+
+> (mean) grad (min)
+
+0.0 0.5 1.0 1.5 2.0 2.5 3.0 
+
+1e 9
+
+0.00 0.25 0.50 0.75 1.00 1.25 1.50 1.75 
+
+1e 10 
+
+0 1 2 3 4
+
+1e 16 
+
+0 1 2 3 4
+
+1e 17 
+
+0.0 0.5 1.0 1.5 2.0 2.5 3.0 
+
+1e 18 
+
+0 1 2 3 4 5 6
+
+> norm entropy (max)
+
+0 1 2 3 4 1 2 3 4 1 2 3 4 1 2 3 4 5 0.2 0.4 0.6 0.8 1.0 1.2 1.4 
+
+0.0 0.5 1.0 1.5 2.0 
+
+1e 10 
+
+> norm entropy (min)
+
+0.0 0.5 1.0 1.5 2.0 
+
+1e 7
+
+0.0 0.2 0.4 0.6 0.8 1.0 1.2 1.4 
+
+1e 8
+
+0.0 0.5 1.0 1.5 2.0 2.5 3.0 
+
+1e 14 
+
+0.00 0.25 0.50 0.75 1.00 1.25 1.50 1.75 
+
+1e 14 
+
+0.0 0.5 1.0 1.5 2.0 
+
+1e 16 
+
+0.2 0.4 0.6 0.8 
+
+> p25 (max)
+
+0.2 0.4 0.6 0.8 1.0 0.2 0.4 0.6 0.8 0.2 0.4 0.6 0.8 0.5 0.6 0.7 0.8 0.9 1.0 0.2 0.4 0.6 0.8 
+
+0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 
+
+> p50 (max)
+
+0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 0.2 0.4 0.6 0.8 1.0 0.2 0.4 0.6 0.8 1.0 0.75 0.80 0.85 0.90 0.95 1.00 0.2 0.4 0.6 0.8 1.0 
+
+0.5 0.6 0.7 0.8 0.9 1.0 
+
+> p75 (max)
+
+0.5 0.6 0.7 0.8 0.9 1.0 0.2 0.4 0.6 0.8 1.0 0.4 0.6 0.8 1.0 0.96 0.97 0.98 0.99 1.00 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 
+
+Feature KDE Distributions HalluScore Figure 10: Kernel density estimates of the four most discriminative features for hallucinated (red) and non-hallucinated (green) examples on HalluScore across all six models. 
+
+with its usefulness depending strongly on the un-derlying architecture. In contrast, since HalluScore contains more adversarial and culturally grounded hallucinations, it shows larger distributional shifts among nearly all models, which suggest that such hallucinations induce stronger fluctuations in token-level confidence dynamics. The minimum-gradient feature is substantially less informative across nearly all models and datasets. The distributions are heavily concentrated near zero, often collapsing into sharp spikes with limited variance and substantial overlap between hallucinated and non-hallucinated samples. This suggests that the minimum token probabilities re-main relatively stable across decoding steps regard-less of hallucination status. Overall, these findings suggest that hallucinations are more strongly asso-ciated with fluctuations in the LLM’s confidence for highly probable tokens than with changes in the least likely regions of the vocabulary distribution. 
+
+Entropy features. Normalized entropy (mini-mum and maximum) measures the uncertainty in the output. These entropy-based features are more informative and stable than the probability-count and gradient features. For the maximum-entropy feature in the TruthfulQA EN dataset, most LLMs exhibit noticeable distributional differences be-tween hallucinated and non-hallucinated responses, suggesting that hallucinations are associated with changes in uncertainty and dispersion of the LLM’s high-confidence token predictions. Hallucinated responses exhibit shifted peaks and broader distri-butions compared to non-hallucinated responses. 
+
+Qwen2.5 exhibits a distinct behavior where non-hallucinated responses are strongly concentrated near very low entropy values, while hallucinated responses display a broader tail, suggesting that hallucinations in Qwen2.5 are associated with in-creased dispersion in the token probability distribu-tion rather than simple decoding instability. In contrast, using the TruthfulQA AR, the sub-stantial overlap between hallucinated and non-hallucinated entropy distributions in most LLMs suggests that elevated uncertainty is not neces-sarily indicative of hallucination in Arabic gen-eration. Instead, uncertainty may also reflect linguistic variability and morphological complex-ity, which limits the effectiveness of uncertainty-only hallucination indicators. In HalluScore, the entropy-based features become substantially more informative for Allam , Aya , and Phi4-mini , where hallucinated responses consistently shift toward broader and higher-entropy regions compared to non-hallucinated responses. These models ex-hibit clearer density separation than in TruthfulQA EN and TruthfulQA AR, suggesting that adversar-ial and culturally grounded hallucinations induce stronger uncertainty and probability-dispersion ef-fects. Although the minimum-entropy feature is gener-ally less discriminative than the maximum-entropy feature, several LLMs exhibit a recurring pattern where hallucinated responses extend into the high-value tail of the distribution. This behavior is par-ticularly visible for Phi4-mini and Silma across all three datasets, for Allam in TruthfulQA AR and HalluScore, for Aya in HalluScore, and for 
+
+Qwen2.5 in TruthfulQA EN. The presence of hallu-cinated responses in these high-entropy tail regions suggests that hallucinated generation is occasion-ally associated with increased dispersion in the low-probability region of the vocabulary distribution, resulting in weaker concentration of unlikely token alternatives. In other words, during hallucinated decoding, the LLM does not suppress improbable tokens as sharply as it does for non-hallucinated responses, producing broader minimum-entropy tails. This effect becomes more pronounced in Hal-luScore, indicating that adversarial and culturally grounded hallucinations induce stronger instability in the low-probability vocabulary tail. 
+
+Probability percentile features. The percentile-based probability features characterize different confidence regions of the token probability trajec-tory during generation. Lower-percentile features, such as p25 , capture the lower-confidence portion of the decoding process and reflect how often the model assigns relatively weak confidence to gen-erated tokens. Smaller percentile values indicate lower confidence and greater uncertainty in token selection, whereas larger values indicate more sta-ble and confident decoding behavior. The median percentile feature ( p50 ) captures the central ten-dency of token confidence across generations and reflects the overall stability of the decoding trajec-tory. In contrast, the upper-percentile feature ( p75 )represents the highest-confidence decoding states, where values close to 1.0 indicate that the model consistently assigns very high probabilities to the selected tokens. The extent of the hallucination-related separa-bility observed in the percentile features varies across datasets. TruthfulQA EN exhibits mod-erate separability, where hallucinations alter the lower- and median-confidence regions but still re-tain substantial overlap between hallucinated and non-hallucinated responses. TruthfulQA AR gen-erally shows stronger shifts in p25 and p50 , in-dicating that hallucinations in Arabic generation induce larger disruptions in medium- and lower-confidence decoding behavior. HalluScore demon-strates the strongest overall separability, where hal-lucinated responses consistently occupy broader and lower-confidence regions. p75_max provides the weakest discriminative power across all LLMs and datasets, with both distributions concentrated near 1.0 and largely over-lapping. Qwen2.5 shows the most extreme com-pression, with its p75_max distribution confined to 0.970–1.000 in TruthfulQA EN and 0.980–1.000 in Arabic datasets. This confirms that it generates with uniformly high top-quartile token confidence regardless of factual correctness. 
+
+E.4 Model-wise Feature Observations 
+
+The KDE distributions reveal that different mod-els rely on different probability-based signals for hallucination discrimination, with varying degrees of separability across datasets and architectures. Overall, percentile-based features, particularly 
+
+p25_max and p50_max , provide the most consistent separation across models, whereas entropy- and gradient-based features exhibit more architecture-and dataset-dependent behavior. Allam generally exhibits mild-to-moderate separation across the an-alyzed features. The separation is better in HalluS-core than in the other datasets. However, Table 1 shows that Allam achieves a higher monolingual AUC-ROC on TruthfulQA EN than on HalluScore, suggesting that KDE-based visual separation does not necessarily correspond directly to threshold-independent classification performance. 
+
+Aya exhibits some of the most consistent hallucination-related shifts across all three datasets. Features such as p25_max and mean_grad_max re-peatedly show visible differences between halluci-nated and non-hallucinated responses, with the sep-aration becoming more pronounced in TruthfulQA AR and HalluScore. Mistral exhibits relatively stable and moderate separability across datasets. The percentile-based features show consistent but not strongly pronounced shifts, while entropy- and gradient-based features generally exhibit substan-tial overlap with mild tail differences. Compared to other models, Mistral displays fewer abrupt distri-butional changes across datasets, suggesting com-paratively stable hallucination-related confidence dynamics. Phi4-mini exhibits dataset-dependent behavior. On TruthfulQA EN, most features show moderate overlap, although percentile-based features and mean_grad_max still display visible shifts between hallucinated and non-hallucinated responses. 
+
+Qwen2.5 exhibits the most architecture-specific behavior among the analyzed models. Certain features, particularly low_prob_count_max , col-lapse to near-constant distributions in some set-tings, especially on TruthfulQA EN, indicating that hallucinated and non-hallucinated responses often maintain similarly high confidence levels. Across all datasets, Qwen2.5 consistently exhibits highly concentrated p75_max distributions near 1.0, sug-gesting that hallucinated responses frequently re-tain highly confident token predictions even dur-ing hallucinated generation. Finally, Silma ex-hibits broad and highly variable KDE distribu-tions across most features and datasets. Percentile-based features, particularly p25_max and p50_max ,show moderate but visible separation, with halluci-nated responses frequently occupying broader and lower-confidence regions than non-hallucinated re-sponses. Entropy- and gradient-based features also exhibit noticeable variability. Compared to the other models, Silma consistently exhibits greater spread and more oscillatory distributional behavior, which aligns with the oscillatory hidden-state dy-namics observed in the layer-wise representation analysis. 
+
+E.5 Cross-dataset Consistency 
+
+The KDE analysis reveals that the feature distribu-tions are structurally most similar between Truth-fulQA AR and HalluScore, confirming that both Arabic datasets share similar internal token proba-bility statistics. The results reflect the morphologi-cal complexity of Arabic, generating longer token sequences with a more variable probability profile. The p25_max separation is slightly smaller on Hal-luScore than on TruthfulQA AR for most models, providing feature-level evidence for the asymmet-ric cross-domain transfer observed in Table 1.

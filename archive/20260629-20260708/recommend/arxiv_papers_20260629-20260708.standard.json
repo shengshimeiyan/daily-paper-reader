@@ -1,16 +1,770 @@
 {
   "mode": "standard",
-  "generated_at": "2026-07-08T02:10:04.656315+00:00",
+  "generated_at": "2026-07-08T07:10:07.082748+00:00",
   "stats": {
     "mode": "standard",
-    "tag_count": 0,
-    "deep_divecandidates": 0,
-    "deep_cap": null,
-    "deep_selected": 0,
-    "quick_candidates": 0,
-    "quick_skim_target": 10,
-    "quick_selected": 0
+    "tag_count": 1,
+    "deep_divecandidates": 12,
+    "deep_cap": 6,
+    "deep_selected": 8,
+    "quick_candidates": 17,
+    "quick_skim_target": 11,
+    "quick_selected": 11
   },
-  "deep_dive": [],
-  "quick_skim": []
+  "deep_dive": [
+    {
+      "id": "2606.29809v1",
+      "source": "arxiv",
+      "title": "How Far Can You Get Without a GPU? A Systematic Benchmark of Lightweight Hallucination Detection Across Question Answering, Dialogue, and Summarisation",
+      "abstract": "Hallucination detection has become a pressing requirement for trustworthy AI deployment at scale. The most accurate detection methods depend on GPU-intensive inference, proprietary API calls, or white-box access to the generating model. This puts them out of reach for resource-constrained researchers and practitioners. In this paper, we explore a practical alternative: how well can hallucination detection perform using only lightweight, CPU-feasible methods built on publicly available models? We systematically benchmark five such methods: ROUGE-L, semantic similarity, BERTScore, a Natural Language Inference (NLI) detector based on a FEVER-trained DeBERTa model, and a score-level ensemble of similarity and NLI. We evaluate them across all three tasks of the HaluEval benchmark: question answering (QA), dialogue, and summarisation. We calibrate each method on a held-out validation split and evaluate it on 2,000 test instances per task. We find that no single method dominates and performance is highly task-dependent. The ensemble performs best on QA (F1 = 0.792, AUC-ROC = 0.873), the NLI detector leads on dialogue (AUC-ROC = 0.713), and all five methods degrade to near-random performance on summarisation (AUC-ROC between 0.469 and 0.574). This task-dependence and the systematic failure on summarisation map the practical frontier of GPU-free hallucination detection. They give practical guidance for method selection under computational constraints. All experiments run on a standard laptop CPU using public models.",
+      "authors": [
+        "Kriti Faujdar",
+        "Smit Kadvani"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "published": "2026-06-29T05:43:03+00:00",
+      "link": "https://arxiv.org/pdf/2606.29809v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Systematic benchmark of lightweight hallucination detection",
+      "llm_evidence_cn": "轻量级幻觉检测的系统基准",
+      "llm_evidence": "轻量级幻觉检测的系统基准",
+      "canonical_evidence": "轻量级幻觉检测的系统基准",
+      "llm_tldr_en": "Systematically benchmarks lightweight, CPU-feasible hallucination detection methods like ROUGE-L, BERTScore, and NLI detectors, providing a practical alternative to GPU-intensive detection for resource-constrained settings.",
+      "llm_tldr_cn": "针对现有高精度幻觉检测方法依赖GPU密集推理或白盒访问的问题，系统评估了五种轻量级、仅用CPU的幻觉检测方法。实验结果表明，基于NLI的检测器等轻量方法在资源受限场景下表现出色，为大规模可信AI部署提供了实用替代方案。",
+      "llm_tldr": "针对现有高精度幻觉检测方法依赖GPU密集推理或白盒访问的问题，系统评估了五种轻量级、仅用CPU的幻觉检测方法。实验结果表明，基于NLI的检测器等轻量方法在资源受限场景下表现出色，为大规模可信AI部署提供了实用替代方案。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2606.31033v1",
+      "source": "arxiv",
+      "title": "CORTEX: Token-Level Hallucination Detection in RAG via Comparative Internal Representations",
+      "abstract": "In this paper, we propose CORTEX, a token-level hallucination detection method for Retrieval-Augmented Generation (RAG). In long-form RAG outputs, hallucinations often arise in localized spans rather than throughout an entire response. CORTEX therefore identifies ungrounded content at the token level, enabling fine-grained localization of hallucinations. The key intuition behind CORTEX is that tokens grounded in retrieved documents should be more strongly influenced by those documents than hallucinated tokens. To capture this document-induced effect, CORTEX compares internal representations of a large language model (LLM) under two conditions: with and without the retrieved documents. Instead of relying solely on each token's immediate sensitivity to the retrieved documents, CORTEX also leverages the propagation of document-grounded information through preceding tokens, reducing false positives for tokens whose evidence has already been absorbed into the context. Finally, CORTEX applies post-processing smoothing step that models the tendency of hallucination labels to persist over contiguous spans, reducing local noise and encouraging span-consistent predictions. Experiments on two RAG benchmarks and three LLMs show that CORTEX substantially improves token-level hallucination detection, with each component consistently contributing to performance gains.",
+      "authors": [
+        "Kazuaki Furumai",
+        "Shuichiro Haruta",
+        "Kazunori Matsumoto",
+        "Daisuke Kamisaka"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-06-30T02:04:24+00:00",
+      "link": "https://arxiv.org/pdf/2606.31033v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Token-level hallucination detection in long-form RAG",
+      "llm_evidence_cn": "长格式RAG中的Token级幻觉检测",
+      "llm_evidence": "长格式RAG中的Token级幻觉检测",
+      "canonical_evidence": "长格式RAG中的Token级幻觉检测",
+      "llm_tldr_en": "CORTEX is a token-level hallucination detection method for long-form RAG outputs. It identifies ungrounded content by comparing internal LLM representations with and without retrieved documents to capture document-induced effects.",
+      "llm_tldr_cn": "在长格式RAG输出中，幻觉通常出现在局部片段而非整个回答中。本文提出CORTEX方法，通过比较有和无检索文档时大型语言模型的内部表示，在Token级别识别无根据内容，实现细粒度的幻觉定位。",
+      "llm_tldr": "在长格式RAG输出中，幻觉通常出现在局部片段而非整个回答中。本文提出CORTEX方法，通过比较有和无检索文档时大型语言模型的内部表示，在Token级别识别无根据内容，实现细粒度的幻觉定位。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "how to detect and mitigate hallucinations in long form text generation",
+      "matched_requirement_id": "req-8",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.00158v1",
+      "source": "arxiv",
+      "title": "Readable but Not Controllable: Neuron-Level Evidence for Medical LLM Hallucination",
+      "abstract": "Hallucination remains one of the central obstacles to deploying medical LLMs. Yet, even when hallucination can be detected, it is still unclear whether the internal representations associated with it can be used for control rather than detection alone. Using four open-source models across a suite of medical question-answering datasets, we show that a simple, carefully conditioned probe can reliably detect hallucination, with AUROC scores between 0.77 and 0.86 in our case. We further show that this signal is distributed and redundant rather than narrowly localized. Systematically selected neurons outperform random neurons only at very small subset sizes, whereas random subsets of a few hundred neurons recover nearly the full signal, and low-dimensional random projections preserve most of the detection performance. Beyond detection, we test whether this representation is causally actionable. Across 16 model--dataset combinations, our results reveal a sharp gap between decodability and controllability. The same internal structure that makes hallucination easy to detect does not translate into reliable neuron-level control. These findings show that medical hallucination seems to be readily visible in internal activations, but not easily corrected by steering the neurons most associated with it. More broadly, our results suggest that hallucination mitigation is not simply a matter of identifying the right neurons, and point to a deeper separation between what representations reveal and what they allow us to change.",
+      "authors": [
+        "Vijay Vankadaru",
+        "Asha Matthews",
+        "Tanya Roosta",
+        "Peyman Passban"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-06-30T20:34:45+00:00",
+      "link": "https://arxiv.org/pdf/2607.00158v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Detecting hallucinations using internal representations in medical LLMs",
+      "llm_evidence_cn": "使用内部表示检测医学大模型幻觉",
+      "llm_evidence": "使用内部表示检测医学大模型幻觉",
+      "canonical_evidence": "使用内部表示检测医学大模型幻觉",
+      "llm_tldr_en": "Medical LLM hallucination is a deployment obstacle, but it is unclear if internal representations can control it. We show a conditioned probe reliably detects hallucination (AUROC 0.77-0.86) and find the signal is distributed and redundant, making control via few neurons difficult.",
+      "llm_tldr_cn": "医学大语言模型的幻觉是部署的主要障碍，但目前尚不清楚与幻觉相关的内部表示能否用于控制而不仅是检测。本文提出一种条件探针，在医学问答数据集上实现了0.77至0.86的AUROC幻觉检测。研究发现幻觉信号是分布式且冗余的，而非局部化，随机选取数百个神经元即可恢复几乎全部信号。这表明幻觉检测相对容易，但通过少量神经元进行控制极具挑战。",
+      "llm_tldr": "医学大语言模型的幻觉是部署的主要障碍，但目前尚不清楚与幻觉相关的内部表示能否用于控制而不仅是检测。本文提出一种条件探针，在医学问答数据集上实现了0.77至0.86的AUROC幻觉检测。研究发现幻觉信号是分布式且冗余的，而非局部化，随机选取数百个神经元即可恢复几乎全部信号。这表明幻觉检测相对容易，但通过少量神经元进行控制极具挑战。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.00447v1",
+      "source": "arxiv",
+      "title": "Understanding Why Language Models Hallucinate: Testing Reasoning Against Priors",
+      "abstract": "Large language models often produce hallucinated answers that violate prompt-level constraints. A key diagnostic question is whether these failures reflect missing knowledge, or whether the model has the relevant information but follows the wrong inference path. We study this phenomenon as inference misalignment: a mismatch between the answer supported by the prompt and the answer favored by statistically salient latent associations. We formalize this view with a latent key-task model, in which pretraining-frequency imbalance can cause a shortcut path to dominate the constraint-sensitive path and induce positive inference loss. The framework predicts two failure modes: task-retrieval bias in entity disambiguation and key-selection bias in action choice. We introduce TrapQA, a controlled diagnostic testbed with two components. ScientistQA tests disambiguation among similar scientists with supplementary factual probes, while Real-Life Constrained QA tests everyday constraint following under salient shortcuts. Our results show that hallucination can arise from biased latent inference rather than absent knowledge alone.",
+      "authors": [
+        "Yangfan Hu",
+        "Xuhan Tong",
+        "Haoyue Bai",
+        "Xi Ding",
+        "Shashank Muralidhar Bharadwaj",
+        "Siyang Cao",
+        "Robert Nowak",
+        "Jiawei Zhang"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-07-01T05:02:43+00:00",
+      "link": "https://arxiv.org/pdf/2607.00447v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Understanding why LLMs hallucinate via inference misalignment",
+      "llm_evidence_cn": "通过推理错位理解大模型为何产生幻觉",
+      "llm_evidence": "通过推理错位理解大模型为何产生幻觉",
+      "canonical_evidence": "通过推理错位理解大模型为何产生幻觉",
+      "llm_tldr_en": "LLMs often hallucinate answers violating constraints. We study this as inference misalignment: a mismatch between prompt-supported answers and statistically salient associations. A latent key-task model shows pretraining-frequency imbalance causes shortcut paths, predicting task-retrieval and key-selection biases.",
+      "llm_tldr_cn": "大语言模型常产生违反提示约束的幻觉，关键在于判断这是知识缺失还是推理路径错误。本文将此现象研究为推理错位，即提示支持的答案与统计显著潜在关联偏好的答案不匹配。通过潜在键任务模型形式化，发现预训练频率不平衡会导致捷径路径主导约束敏感路径。该框架成功预测了实体消歧和动作生成中的两种失败模式，深化了对幻觉机制的理解。",
+      "llm_tldr": "大语言模型常产生违反提示约束的幻觉，关键在于判断这是知识缺失还是推理路径错误。本文将此现象研究为推理错位，即提示支持的答案与统计显著潜在关联偏好的答案不匹配。通过潜在键任务模型形式化，发现预训练频率不平衡会导致捷径路径主导约束敏感路径。该框架成功预测了实体消歧和动作生成中的两种失败模式，深化了对幻觉机制的理解。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "hallucination in large language models",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.00895v1",
+      "source": "arxiv",
+      "title": "Beyond Document Grounding: Span-Level Hallucination Detection over Code, Tool Output, and Documents",
+      "abstract": "Hallucination detection for retrieval-augmented generation (RAG) is usually evaluated on natural-language document evidence. However, grounded generation systems increasingly rely on structured inputs: source code, developer-tool output, markdown documents, tables, and repository metadata. We introduce a unified benchmark for span-level hallucination detection over code, tool output, structured documents, and existing natural-language RAG datasets. The benchmark is built by starting from grounded correct answers, injecting localized hallucinations with exact character labels, and validating the code test split with evidence-based review. Our fine-tuned Qwen3.5-2B detector reaches 0.689 span-F1 on the unified test set and 0.60 on the code-agent source, where it substantially outperforms LettuceDetect-large (0.17) and the strongest zero-shot LLM judges we evaluated (at most 0.22). The same model remains competitive on established natural-language benchmarks, with 81.8 RAGTruth example-F1 and 0.724 English PsiloQA IoU.",
+      "authors": [
+        "Ádám Kovács",
+        "Bowei He",
+        "Xue Liu",
+        "István Boros",
+        "Szilveszter Tóth",
+        "Gábor Recski"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-07-01T13:01:42+00:00",
+      "link": "https://arxiv.org/pdf/2607.00895v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Span-level hallucination detection over structured inputs and documents",
+      "llm_evidence_cn": "针对结构化输入和文档的跨度级幻觉检测",
+      "llm_evidence": "针对结构化输入和文档的跨度级幻觉检测",
+      "canonical_evidence": "针对结构化输入和文档的跨度级幻觉检测",
+      "llm_tldr_en": "Hallucination detection for RAG usually focuses on natural-language documents, ignoring structured inputs like code. We introduce a unified benchmark for span-level hallucination detection over code, tool output, and documents. A fine-tuned detector achieves 0.689 span-F1 on the unified test set.",
+      "llm_tldr_cn": "检索增强生成中的幻觉检测通常仅在自然语言文档上进行评估，但接地生成系统越来越依赖代码和工具输出等结构化输入。本文引入了一个统一的跨度级幻觉检测基准，通过注入局部幻觉并验证构建。基于该基准微调的Qwen3.5-2B检测器在统一测试集上取得了0.689的跨度F1分数，有效推动了结构化输入场景下的幻觉检测研究。",
+      "llm_tldr": "检索增强生成中的幻觉检测通常仅在自然语言文档上进行评估，但接地生成系统越来越依赖代码和工具输出等结构化输入。本文引入了一个统一的跨度级幻觉检测基准，通过注入局部幻觉并验证构建。基于该基准微调的Qwen3.5-2B检测器在统一测试集上取得了0.689的跨度F1分数，有效推动了结构化输入场景下的幻觉检测研究。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.04029v1",
+      "source": "arxiv",
+      "title": "CrossHallu: Do Hallucination Signals Generalize Across Languages and Domains in Large Language Model's Internals?",
+      "abstract": "Recent hallucination detection techniques in large language models (LLMs) focus on directly extracting features from a model's internal representations and training a classifier on these features to detect hallucinations, demonstrating promising results. Notwithstanding this advancement, most internal-state hallucination detection techniques have been explored predominantly in English, raising the question of whether such internal signals generalize across different languages and domains. To address this gap, we present CrossHallu, the first study to evaluate the cross-lingual and cross-domain generalization of hallucination detection using internal representations from six LLMs on the generative question-answering task. We conduct a systematic Arabic <-> English evaluation using TruthfulQA, an Arabic translated version of TruthfulQA, and HalluScore. This evaluation encompasses monolingual training and testing, cross-lingual transfer, cross-domain transfer, and combined cross-lingual and cross-domain transfer. The results reveal that internal-state hallucination signals in LLMs transfer across languages and domains for most models, with cross-lingual performance highly dependent on both class separability and language alignment in the feature space, whereas cross-domain transfer within Arabic varies depending on the training and testing datasets used for the hallucination detector. The code is publicly available at https://github.com/aishaalansari57/CrossHal.",
+      "authors": [
+        "Aisha Alansari",
+        "Malak Alkhorasani",
+        "Hamzah Luqman"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-07-04T21:01:37+00:00",
+      "link": "https://arxiv.org/pdf/2607.04029v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Cross-lingual and cross-domain generalization of hallucination detection",
+      "llm_evidence_cn": "幻觉检测的跨语言和跨领域泛化",
+      "llm_evidence": "幻觉检测的跨语言和跨领域泛化",
+      "canonical_evidence": "幻觉检测的跨语言和跨领域泛化",
+      "llm_tldr_en": "Internal-state hallucination detection in LLMs is mostly explored in English. We present CrossHallu, the first study evaluating cross-lingual and cross-domain generalization of hallucination detection using internal representations from six LLMs on generative QA tasks.",
+      "llm_tldr_cn": "近期大语言模型幻觉检测技术利用模型内部表示训练分类器，但主要局限于英语。为探究这些内部信号能否跨语言和领域泛化，本文提出CrossHallu研究。通过在六个大语言模型和生成式问答任务上的评估，揭示了内部幻觉信号在不同语言和领域间的泛化能力与局限，为构建更鲁棒的跨语言幻觉检测器提供了重要见解。",
+      "llm_tldr": "近期大语言模型幻觉检测技术利用模型内部表示训练分类器，但主要局限于英语。为探究这些内部信号能否跨语言和领域泛化，本文提出CrossHallu研究。通过在六个大语言模型和生成式问答任务上的评估，揭示了内部幻觉信号在不同语言和领域间的泛化能力与局限，为构建更鲁棒的跨语言幻觉检测器提供了重要见解。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.04223v1",
+      "source": "arxiv",
+      "title": "Detecting Hallucinations in Retrieval-Augmented Generation through Grounding-Aware Sensitivity by Perturbation (GASP)",
+      "abstract": "Retrieval-augmented generation (RAG) reduces but does not eliminate hallucination, and existing detectors return a single answer-level score that does not indicate which sentence is unsupported, or why. To close this gap, we introduce Grounding-Aware Sensitivity by Perturbation (GASP), a span-level detector that scores each answer sentence by how strongly its likelihood depends on the retrieved evidence, a quantity we term grounding sensitivity. GASP holds the answer fixed and re-scores it under the full context, under no context, and with each chunk removed, then measures the log-likelihood drops and Jensen-Shannon divergences (JSD). The likelihood of a grounded sentence collapses once its supporting passage is removed, whereas a hallucinated sentence is almost unaffected, a contrast we interpret by casting decoding as a random nonlinear iterated function system (RNIFS). We evaluate GASP on three benchmarks (RAGTruth, TofuEval, RAGBench) with three instruction-tuned scorers from two model families (Qwen2.5-0.5B, Qwen2.5-1.5B, and SmolLM2-1.7B) under a leakage-clean protocol. On RAGTruth it reaches a response-level area under the ROC curve (AUC) of about 0.73 and a span-level AUC of about 0.67, improving significantly over perplexity and by clear margins over length, whole-context natural language inference (NLI), and self-consistency baselines. The only baseline competitive at the span level is a well-configured chunk-level entailment verifier, which requires a separate model, whereas a training-free threshold on the grounding features matches the trained classifier without labeled data and serves as the default detector. Beyond RAGTruth, the signal transfers to TofuEval but not to short-answer question answering in RAGBench, showing GASP is best suited to outputs constructed from the retrieved context rather than answers recoverable from parametric knowledge.",
+      "authors": [
+        "Mohamed Aly Bouke"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-07-05T10:35:30+00:00",
+      "link": "https://arxiv.org/pdf/2607.04223v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Detecting hallucinations in RAG via grounding sensitivity",
+      "llm_evidence_cn": "通过扎根敏感性在RAG中检测幻觉",
+      "llm_evidence": "通过扎根敏感性在RAG中检测幻觉",
+      "canonical_evidence": "通过扎根敏感性在RAG中检测幻觉",
+      "llm_tldr_en": "GASP is a span-level hallucination detector for RAG that scores sentences by their grounding sensitivity—how strongly their likelihood depends on retrieved evidence—by re-scoring the answer under different context perturbations.",
+      "llm_tldr_cn": "检索增强生成仍存在幻觉，且现有检测器仅提供答案级评分。本文提出GASP，一种跨度级检测器，通过在完整上下文、无上下文和移除块下重新评分，测量句子似然度对检索证据的依赖程度（即扎根敏感性），从而定位不支持的句子。",
+      "llm_tldr": "检索增强生成仍存在幻觉，且现有检测器仅提供答案级评分。本文提出GASP，一种跨度级检测器，通过在完整上下文、无上下文和移除块下重新评分，测量句子似然度对检索证据的依赖程度（即扎根敏感性），从而定位不支持的句子。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.05861v1",
+      "source": "arxiv",
+      "title": "Mitigating Factual Hallucination in Large Reasoning Models via Mixed-Mode Advantage Regularization",
+      "abstract": "Large reasoning models (LRMs) improve language model capabilities by generating explicit thinking traces before final answers. In factuality-oriented question answering (QA), such thinking often improves overall performance by helping the model recover relevant knowledge and refine its answers. However, we find that this benefit is not uniform at the instance level: explicit thinking can also overturn correct non-thinking answers and lead to factual drift. We refer to this failure mode as \\emph{thinking-induced hallucination}. To explain this phenomenon, we formulate explicit thinking in factuality QA as a thinking residual over the model's direct-answer tendency, which can either recover missing knowledge or introduce unsupported associations. Based on this formulation, we propose MARGO, \\underline{\\textit{M}}ixed-Mode \\underline{\\textit{A}}dvantage \\underline{\\textit{R}}egularization for \\underline{\\textit{G}}rounded \\underline{\\textit{O}}ptimization, a reinforcement learning framework that uses non-thinking rollouts as same-model references in advantage estimation. By constructing mixed-mode rollout groups with both thinking and non-thinking trajectories, MARGO evaluates whether explicit thinking adds factual value beyond direct answering, thereby suppressing hallucination-prone thinking while preserving beneficial thinking behaviors. Experiments across multiple factuality-oriented QA benchmarks demonstrate that MARGO improves factual reliability over strong baselines, while evaluations on mathematical benchmarks show that it preserves general reasoning ability.",
+      "authors": [
+        "Kaishen Wang",
+        "Tong Zheng",
+        "Xuehao Cui",
+        "Ruibo Chen",
+        "Tianyi Xiong",
+        "Heng Huang"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.LG"
+      ],
+      "published": "2026-07-07T05:34:25+00:00",
+      "link": "https://arxiv.org/pdf/2607.05861v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Mitigating factual hallucination in Large Reasoning Models",
+      "llm_evidence_cn": "缓解大型推理模型中的事实幻觉",
+      "llm_evidence": "缓解大型推理模型中的事实幻觉",
+      "canonical_evidence": "缓解大型推理模型中的事实幻觉",
+      "llm_tldr_en": "This paper identifies thinking-induced hallucination in Large Reasoning Models where explicit thinking overturns correct answers. It proposes Mixed-Mode Advantage Regularization to mitigate this factual drift and hallucination.",
+      "llm_tldr_cn": "大型推理模型在生成显式思考轨迹时可能会推翻原本正确的直接答案，导致事实漂移和思考诱导的幻觉。本文将显式思考建模为思考残差，并提出混合模式优势正则化方法来缓解这种事实幻觉。",
+      "llm_tldr": "大型推理模型在生成显式思考轨迹时可能会推翻原本正确的直接答案，导致事实漂移和思考诱导的幻觉。本文将显式思考建模为思考残差，并提出混合模式优势正则化方法来缓解这种事实幻觉。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2606.30093v1",
+      "source": "arxiv",
+      "title": "Efficient Retrieval-Augmented Generation via Token Co-occurrence Graphs",
+      "abstract": "Retrieval-Augmented Generation (RAG) mitigates hallucinations in Large Language Models (LLMs) by grounding the generation process on external knowledge. However, standard RAG approaches struggle with multi-hop reasoning. While recent graph-based RAG methods improve the retrieval of interconnected chunks, they often rely on computationally expensive and error-prone LLM-based extraction pipelines. To address these issues, we propose TIGRAG (Token-Induced GraphRAG), an efficient graph-augmented RAG framework based on a token co-occurrence Knowledge Graph. TIGRAG directly models topological relationships between tokens using sliding-window co-occurrence statistics, thus enabling scalable graph construction. During inference, it combines graph-based semantic expansion and neural reranking to retrieve interconnected evidence for multi-hop reasoning. Specifically, it introduces an iterative entity-driven retrieval strategy that progressively expands the query using bridging entities extracted from previously retrieved contexts. We evaluated TIGRAG on three widely adopted multi-hop Question Answering (QA) benchmarks. Experimental results demonstrated that our framework consistently outperforms dense retrieval and graph-based RAG methods in both retrieval and downstream QA tasks, while substantially reducing indexing time, inference latency, and prompt footprint.",
+      "authors": [
+        "Gianluca Bonifazi",
+        "Christopher Buratti",
+        "Michele Marchetti",
+        "Federica Parlapiano",
+        "Giulia Quaglieri",
+        "Davide Traini",
+        "Domenico Ursino",
+        "Luca Virgili"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.IR"
+      ],
+      "published": "2026-06-29T10:29:51+00:00",
+      "link": "https://arxiv.org/pdf/2606.30093v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Mitigating hallucinations via efficient graph-based RAG",
+      "llm_evidence_cn": "通过高效的基于图的RAG缓解幻觉",
+      "llm_evidence": "通过高效的基于图的RAG缓解幻觉",
+      "canonical_evidence": "通过高效的基于图的RAG缓解幻觉",
+      "llm_tldr_en": "RAG mitigates LLM hallucinations via external knowledge, but standard RAG struggles with multi-hop reasoning and graph RAG relies on expensive LLM extraction. We propose TIGRAG, using token co-occurrence graphs for scalable construction, effectively reducing hallucinations in multi-hop tasks.",
+      "llm_tldr_cn": "检索增强生成通过外部知识接地缓解大语言模型幻觉，但标准RAG在多跳推理中受限，图RAG又依赖昂贵的LLM提取。本文提出TIGRAG框架，利用滑动窗口共现统计构建令牌共现知识图，实现可扩展的图构建。推理时结合图语义信息，在多跳推理任务中有效缓解了幻觉问题，提升了生成的事实一致性。",
+      "llm_tldr": "检索增强生成通过外部知识接地缓解大语言模型幻觉，但标准RAG在多跳推理中受限，图RAG又依赖昂贵的LLM提取。本文提出TIGRAG框架，利用滑动窗口共现统计构建令牌共现知识图，实现可扩展的图构建。推理时结合图语义信息，在多跳推理任务中有效缓解了幻觉问题，提升了生成的事实一致性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2606.29805v1",
+      "source": "arxiv",
+      "title": "Clearer Sight, Fewer Lies: Oriented Pickup Preference Optimization for Multimodal Hallucination Mitigation",
+      "abstract": "Multimodal Large Language Models (MLLMs) are prone to hallucination as their generation preferences are insufficiently calibrated to visual evidence, causing them to fall back on linguistic priors, rather than faithful grounding. In this work, we start from an empirical observation: when query-relevant visual evidence is explicitly strengthened using the model's own attention, generation becomes more accurate, suggesting that many failures do not arise solely from missing perception, but from an insufficient tendency to trust the evidence the model has already attended to. Motivated by this finding, we propose Oriented Pickup Preference Optimization (\\texttt{OPPO}), an evidence-aware alignment objective that learns preferences over the strength of visual evidence, rather than only response quality. Concretely, \\texttt{OPPO} contrasts the same faithful response under stronger, anchored, weaker-evidence views, turning naive visual preference into ordered visual-evidence alignment. We further combine this objective with fine-grained span-level and token-level regularization to stabilize the training. Besides, we provide a theoretical analysis showing that ordered evidence margins induce a positive lower bound on local visual sensitivity. Extensive evaluations across hallucination and general-purpose benchmarks demonstrate that \\texttt{OPPO} consistently outperforms baseline methods.",
+      "authors": [
+        "Xin Zou",
+        "Haolin Deng",
+        "Yibo Yan",
+        "Shuliang Liu",
+        "Zhiwei Jin",
+        "Chen Chen",
+        "Haonan Lu",
+        "Xuming Hu"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-06-29T05:33:22+00:00",
+      "link": "https://arxiv.org/pdf/2606.29805v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Mitigating hallucinations via preference optimization",
+      "llm_evidence_cn": "通过偏好优化缓解幻觉",
+      "llm_evidence": "通过偏好优化缓解幻觉",
+      "canonical_evidence": "通过偏好优化缓解幻觉",
+      "llm_tldr_en": "Proposes OPPO, an evidence-aware alignment objective to mitigate multimodal hallucinations by calibrating generation preferences to visual evidence.",
+      "llm_tldr_cn": "多模态大语言模型因生成偏好未与视觉证据校准而容易产生幻觉，倾向于依赖语言先验。本文发现，当使用模型自身的注意力加强视觉证据时，生成会更准确，表明许多失败源于对已关注证据的信任不足。基于此，提出了定向拾取偏好优化（OPPO），这是一种证据感知的对齐目标，学习优先拾取视觉信息。该方法有效缓解了多模态幻觉，提升了生成的事实一致性。",
+      "llm_tldr": "多模态大语言模型因生成偏好未与视觉证据校准而容易产生幻觉，倾向于依赖语言先验。本文发现，当使用模型自身的注意力加强视觉证据时，生成会更准确，表明许多失败源于对已关注证据的信任不足。基于此，提出了定向拾取偏好优化（OPPO），这是一种证据感知的对齐目标，学习优先拾取视觉信息。该方法有效缓解了多模态幻觉，提升了生成的事实一致性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2606.29805v2",
+      "source": "arxiv",
+      "title": "Clearer Sight, Fewer Lies: Oriented Pickup Preference Optimization for Multimodal Hallucination Mitigation",
+      "abstract": "Multimodal Large Language Models (MLLMs) are prone to hallucination as their generation preferences are insufficiently calibrated to visual evidence, causing them to fall back on linguistic priors, rather than faithful grounding. In this work, we start from an empirical observation: when query-relevant visual evidence is explicitly strengthened using the model's own attention, generation becomes more accurate, suggesting that many failures do not arise solely from missing perception, but from an insufficient tendency to trust the evidence the model has already attended to. Motivated by this finding, we propose Oriented Pickup Preference Optimization (\\texttt{OPPO}), an evidence-aware alignment objective that learns preferences over the strength of visual evidence, rather than only response quality. Concretely, \\texttt{OPPO} contrasts the same faithful response under stronger, anchored, weaker-evidence views, turning naive visual preference into ordered visual-evidence alignment. We further combine this objective with fine-grained span-level and token-level regularization to stabilize the training. Besides, we provide a theoretical analysis showing that ordered evidence margins induce a positive lower bound on local visual sensitivity. Extensive evaluations across hallucination and general-purpose benchmarks demonstrate that \\texttt{OPPO} consistently outperforms baseline methods.",
+      "authors": [
+        "Xin Zou",
+        "Haolin Deng",
+        "Yibo Yan",
+        "Shuliang Liu",
+        "Zhiwei Jin",
+        "Chen Chen",
+        "Haonan Lu",
+        "Xuming Hu"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-06-29T05:33:22+00:00",
+      "link": "https://arxiv.org/pdf/2606.29805v2",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Preference optimization for multimodal hallucination mitigation",
+      "llm_evidence_cn": "用于缓解多模态幻觉的偏好优化",
+      "llm_evidence": "用于缓解多模态幻觉的偏好优化",
+      "canonical_evidence": "用于缓解多模态幻觉的偏好优化",
+      "llm_tldr_en": "Proposes Oriented Pickup Preference Optimization (OPPO), an evidence-aware alignment objective that mitigates hallucination in MLLMs by calibrating generation preferences to trust attended visual evidence rather than falling back on linguistic priors.",
+      "llm_tldr_cn": "针对多模态大语言模型因生成偏好未校准到视觉证据而产生幻觉的问题，提出了定向拾取偏好优化（OPPO）方法。该方法通过证据感知的对齐目标，促使模型信任其已关注的视觉证据，而非依赖语言先验，有效缓解了多模态幻觉。",
+      "llm_tldr": "针对多模态大语言模型因生成偏好未校准到视觉证据而产生幻觉的问题，提出了定向拾取偏好优化（OPPO）方法。该方法通过证据感知的对齐目标，促使模型信任其已关注的视觉证据，而非依赖语言先验，有效缓解了多模态幻觉。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.00918v1",
+      "source": "arxiv",
+      "title": "From Personas to Plot: Character-Grounded Multi-Agent Story Generation for Long-Form Narratives",
+      "abstract": "Although large language models (LLMs) have demonstrated impressive creative fiction generation, they struggle to maintain narrative consistency and coherent plot lines in long-form stories. In this work, we introduce a unified framework for long-form narrative generation and verification. MAGNET, a multi-agent goal-driven narrative engine for storytelling, generates stories with persona-grounded character agents that propose actions based on a shared world state and evolving story goals, while ATLAS is a graph-based pipeline that compares scene-level world representations across a generated story to detect hallucinations. By evaluating MAGNET using an LLM editor, pairwise rubric scoring, and ATLAS, we show that our framework produces coherent narratives compared to single-model prompting and IBSEN. At 100 pages, MAGNET reduced annotations and hallucinations by 41 and 50%, respectively, compared to the single model baseline and by 34 and 45%, respectively, compared to IBSEN, with pairwise rubric evaluation showing similar results. These results suggest that long-form narratives can emerge from explicit world-state tracking and goal-driven multi-agent generation, providing a foundation for controllable and structurally coherent long-form narrative generation.",
+      "authors": [
+        "Aayush Aluru",
+        "Chloe Ho",
+        "Muhammad Hammouri",
+        "Kerry Luo",
+        "Myra Malik",
+        "Ryan Lagasse",
+        "Arjun Bahuguna",
+        "Vasu Sharma"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.MA"
+      ],
+      "published": "2026-07-01T13:23:07+00:00",
+      "link": "https://arxiv.org/pdf/2607.00918v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Detecting hallucinations in long-form narrative generation",
+      "llm_evidence_cn": "检测长篇叙事生成中的幻觉",
+      "llm_evidence": "检测长篇叙事生成中的幻觉",
+      "canonical_evidence": "检测长篇叙事生成中的幻觉",
+      "llm_tldr_en": "Introduces a unified framework for long-form narrative generation and verification, featuring MAGNET for persona-grounded multi-agent story generation and ATLAS for graph-based hallucination detection to maintain plot consistency.",
+      "llm_tldr_cn": "针对大语言模型在长篇故事中难以保持叙事一致性和连贯情节的问题，提出了一个统一的长篇叙事生成与验证框架。该框架包含多智能体叙事引擎MAGNET和基于图的幻觉检测流水线ATLAS，有效检测并缓解了长文本生成中的幻觉，提升了叙事连贯性。",
+      "llm_tldr": "针对大语言模型在长篇故事中难以保持叙事一致性和连贯情节的问题，提出了一个统一的长篇叙事生成与验证框架。该框架包含多智能体叙事引擎MAGNET和基于图的幻觉检测流水线ATLAS，有效检测并缓解了长文本生成中的幻觉，提升了叙事连贯性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "how to detect and mitigate hallucinations in long form text generation",
+      "matched_requirement_id": "req-8",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2606.29847v1",
+      "source": "arxiv",
+      "title": "See Only When Needed: Context-Aware Attention Intervention for Mitigating Hallucinations in LVLMs",
+      "abstract": "Large Vision-Language Models (LVLMs) excel at multimodal tasks but remain prone to object hallucinations. Prior training-free remedies often uniformly strengthen visual signals, which may also amplify irrelevant regions and introduce spurious evidence, harming fluency. We propose Context-aware Attention Intervention (CAI), a training-free inference-time mechanism that enforces a see only when needed principle via two-axis selectivity: where to look and when to intervene. At each decoding step, CAI derives token-specific visual relevance from early-layer representations to localize semantically aligned regions, and applies a conservative, entropy- and depth-gated attention tilt only for uncertainty-spiking tokens in deeper layers where visual grounding degrades, leaving confident tokens and irrelevant regions largely unchanged. This targeted intervention strengthens visual grounding while preserving linguistic fluency, and it yields consistent improvements even without contrastive decoding, which remains optional as an auxiliary bias-suppression module. Extensive experiments across multiple LVLM backbones and benchmarks show that CAI achieves state-of-the-art hallucination mitigation, and our analysis characterizes CAI as a KL-minimal attention reweighting with bounded interference under inactive gates or small tilts. Code is available at https://github.com/Iris1946/CAI.",
+      "authors": [
+        "Yuqing Lei",
+        "Wenbo Lyu",
+        "Yingjun Du",
+        "Xiantong Zhen",
+        "Cees G. M. Snoek",
+        "Ling Shao"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-06-29T06:35:47+00:00",
+      "link": "https://arxiv.org/pdf/2606.29847v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Mitigating object hallucinations in LVLMs",
+      "llm_evidence_cn": "缓解视觉语言模型中的物体幻觉",
+      "llm_evidence": "缓解视觉语言模型中的物体幻觉",
+      "canonical_evidence": "缓解视觉语言模型中的物体幻觉",
+      "llm_tldr_en": "Proposes CAI, a training-free inference-time mechanism to mitigate hallucinations in LVLMs by selectively intervening on attention based on visual relevance and uncertainty.",
+      "llm_tldr_cn": "大型视觉语言模型容易产生物体幻觉，现有的免训练补救措施通常均匀增强视觉信号，可能放大无关区域。本文提出上下文感知注意力干预（CAI），一种免训练的推理时机制，通过“仅在需要时看”原则进行选择性干预。CAI从早期层推导标记特定的视觉相关性，并在深层仅对不确定性激增的标记应用保守的注意力倾斜，有效缓解了幻觉并保持了流畅性。",
+      "llm_tldr": "大型视觉语言模型容易产生物体幻觉，现有的免训练补救措施通常均匀增强视觉信号，可能放大无关区域。本文提出上下文感知注意力干预（CAI），一种免训练的推理时机制，通过“仅在需要时看”原则进行选择性干预。CAI从早期层推导标记特定的视觉相关性，并在深层仅对不确定性激增的标记应用保守的注意力倾斜，有效缓解了幻觉并保持了流畅性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2606.31054v1",
+      "source": "arxiv",
+      "title": "ADAPT: Attention Dynamics Alignment with Preference Tuning for Faithful MLLMs",
+      "abstract": "Multimodal Large Language Models (MLLMs) are critically hampered by hallucination, generating content inconsistent with the provided image. In this paper, we identify an internal signature of hallucination: progressive degradation of text-to-image cross-attention during generation, leading to specific failure patterns like unfocused or biased attention. Existing mitigation strategies are largely outcome-driven and do not explicitly target this failure mode. To address this problem, we propose ADAPT (Attention Dynamics Alignment with Preference Tuning), an attention-based framework that intervenes directly on text-to-image cross-attention dynamics. We propose ADAPT with three key contributions: a cross-attention visual anchor refined from early decoding to provide stable spatial grounding, an attention-supervised inference mechanism that detects and corrects attention drift online, and a Visual Attention Guidance DPO that aligns preferences toward visually grounded responses. Experiments show that each component of ADAPT contributes to hallucination reduction, and the full framework achieves new best results across multiple hallucination benchmarks, reducing hallucination rates by 40%-60% across mainstream backbones while preserving general multimodal capabilities. Our work provides an attention-based perspective on mitigating hallucinations by exploring the model's internal text-to-image cross-attention behaviors. Code is available at https://github.com/yao-ustc/ADAPT",
+      "authors": [
+        "Zhiyuan Yao",
+        "Zheren Fu",
+        "Zhixiao Zheng",
+        "Jiajun Li",
+        "Yi Tu",
+        "Zhendong Mao"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI",
+        "cs.CL",
+        "cs.MM"
+      ],
+      "published": "2026-06-30T02:46:10+00:00",
+      "link": "https://arxiv.org/pdf/2606.31054v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Attention-based framework for hallucination mitigation in MLLMs",
+      "llm_evidence_cn": "基于注意力的多模态大语言模型幻觉缓解框架",
+      "llm_evidence": "基于注意力的多模态大语言模型幻觉缓解框架",
+      "canonical_evidence": "基于注意力的多模态大语言模型幻觉缓解框架",
+      "llm_tldr_en": "Proposes ADAPT, an attention-based framework that mitigates hallucination in MLLMs by directly intervening on text-to-image cross-attention dynamics and aligning them with visual anchors through preference tuning.",
+      "llm_tldr_cn": "针对多模态大语言模型因跨注意力退化而产生幻觉的问题，提出了ADAPT框架。该框架通过偏好调优直接干预文本到图像的跨注意力动态，并利用视觉锚点对齐注意力，有效缓解了幻觉，提升了生成内容与视觉证据的一致性。",
+      "llm_tldr": "针对多模态大语言模型因跨注意力退化而产生幻觉的问题，提出了ADAPT框架。该框架通过偏好调优直接干预文本到图像的跨注意力动态，并利用视觉锚点对齐注意力，有效缓解了幻觉，提升了生成内容与视觉证据的一致性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.01457v1",
+      "source": "arxiv",
+      "title": "Grounded Optimization: A Layered Engineering Framework for Reducing LLM Hallucination in Automated Personal Document Rewriting",
+      "abstract": "Large language models (LLMs) are increasingly applied to resume optimization for applicant tracking systems, introducing hallucination failures distinct from general text generation: anachronistic technology injection, cross-domain terminology contamination, structural mutation, and content fabrication. We present Grounded Optimization, a five-layer framework combining temporal context validation, deterministic contamination detection, structural invariant enforcement, prompt-level grounding, and an evaluator agent.   In ablation experiments across three LLMs, four temperature settings, and six layer configurations on 25 synthetic resumes spanning 14 industries, undefended baselines produce 2.48-5.36 detected hallucinations per resume. Among detectors independent of the active defenses, temporal hallucinations are reduced by 50-95% across all conditions; overall detected hallucination rate falls to 0.04-0.24. Prompt-level grounding alone achieves zero detected hallucinations at low temperature with a capable instruction-following model; higher temperatures and weaker models reveal the need for the deterministic layers as a complement. We release the contamination taxonomy, evaluation code, and raw data.",
+      "authors": [
+        "Shashank Indukuri",
+        "Adarsh Agrawal"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "published": "2026-07-01T20:22:18+00:00",
+      "link": "https://arxiv.org/pdf/2607.01457v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Reducing LLM hallucination in document rewriting",
+      "llm_evidence_cn": "减少文档重写中的LLM幻觉",
+      "llm_evidence": "减少文档重写中的LLM幻觉",
+      "canonical_evidence": "减少文档重写中的LLM幻觉",
+      "llm_tldr_en": "This paper presents Grounded Optimization, a five-layer framework to reduce LLM hallucinations in automated resume rewriting by combining temporal validation, contamination detection, structural enforcement, prompt grounding, and an evaluator agent.",
+      "llm_tldr_cn": "大型语言模型在简历优化中容易产生时代错乱、术语污染等幻觉问题。本文提出扎根优化框架，结合时间上下文验证、污染检测、结构不变性执行、提示级扎根和评估器代理，有效减少了自动文档重写中的幻觉。",
+      "llm_tldr": "大型语言模型在简历优化中容易产生时代错乱、术语污染等幻觉问题。本文提出扎根优化框架，结合时间上下文验证、污染检测、结构不变性执行、提示级扎根和评估器代理，有效减少了自动文档重写中的幻觉。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2607.00247v1",
+      "source": "arxiv",
+      "title": "Adaptive Perturbation Selection for Contrastive Audio Decoding",
+      "abstract": "Large audio-language models (LALMs) frequently hallucinate by overriding acoustic evidence with language priors. While contrastive decoding (CD) offers training-free mitigation, existing methods rely on blunt perturbations like masking or noise, leaving structured audio transformations unexplored. We explore this design space by evaluating a diverse library of targeted audio perturbations and adaptively selecting the optimal negative branch for each task and example. First, we improve upon earlier prompt engineering by showing that a simple binary yes/no constraint reduces the model's tendency to falsely confirm absent audio features. Second, evaluating our library across temporal, spectral, frequency, and amplitude domains reveals that optimal transformations are highly task-dependent; for instance, reversing the audio array disrupts temporal coherence, raising accuracy on the temporal order task from 74.7% to 81.4%. Finally, we trained a light-weight perturbation selector on model hidden states to dynamically route negative branches, yielding an additional +4.3% gain on the existence task.",
+      "authors": [
+        "Aaron Isidore Grace",
+        "Zhouyuan Huo",
+        "Weiran Wang"
+      ],
+      "primary_category": "cs.SD",
+      "categories": [
+        "cs.SD",
+        "cs.AI"
+      ],
+      "published": "2026-06-30T22:55:22+00:00",
+      "link": "https://arxiv.org/pdf/2607.00247v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Mitigating hallucinations in audio-language models",
+      "llm_evidence_cn": "缓解音频语言模型中的幻觉",
+      "llm_evidence": "缓解音频语言模型中的幻觉",
+      "canonical_evidence": "缓解音频语言模型中的幻觉",
+      "llm_tldr_en": "Proposes adaptive perturbation selection for contrastive decoding to mitigate hallucinations in audio-language models by overriding language priors.",
+      "llm_tldr_cn": "大型音频语言模型常以语言先验覆盖声学证据而产生幻觉。虽然对比解码提供了免训练的缓解方案，但现有方法依赖粗粒度扰动。本文评估了多种目标音频扰动，并为每个任务和样本自适应选择最优负分支。研究发现，简单的二元约束能减少错误确认，且自适应选择音频变换优于粗粒度方法，有效缓解了音频语言模型中的幻觉问题。",
+      "llm_tldr": "大型音频语言模型常以语言先验覆盖声学证据而产生幻觉。虽然对比解码提供了免训练的缓解方案，但现有方法依赖粗粒度扰动。本文评估了多种目标音频扰动，并为每个任务和样本自适应选择最优负分支。研究发现，简单的二元约束能减少错误确认，且自适应选择音频变换优于粗粒度方法，有效缓解了音频语言模型中的幻觉问题。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2606.31933v1",
+      "source": "arxiv",
+      "title": "No Place to Hide: Benchmarking Video Hallucination with Background-Controlled Pairs",
+      "abstract": "We introduce VidPair-Halluc, a new benchmark for evaluating video hallucination in large video models (LVMs) under rigorous and controlled conditions. Unlike previous benchmarks that primarily rely on text-based perturbations or adversarial questions while neglecting the consistency of visual backgrounds, VidPair-Halluc features video pairs with highly similar backgrounds but distinctly different foreground semantics, enabling precise attribution of model errors to genuine hallucination rather than background variation. The benchmark is constructed through PairFlow, a pipeline that leverages recent advances in text-to-image and video generation to systematically compose stories, generate coherent video clips, and assemble them into adversarial pairs. Covering both spatial and temporal reasoning across ten semantic aspects, VidPair-Halluc comprises 1K high-quality adversarial video pairs and 11K spatio-temporal QA pairs with control over background and foreground variations. Evaluations on mainstream LVMs show persistent difficulty with robust fine-grained video understanding in adversarial settings, and code and data are available at the https://jethrojames.github.io/VidPair-Halluc/.",
+      "authors": [
+        "Haojian Huang",
+        "Harold Haodong Chen",
+        "Meng Luo",
+        "Junjia Du",
+        "Shanqing Xu",
+        "Ziheng Chen",
+        "Yanxiang Huang",
+        "Yinchuan Li",
+        "Ying-Cong Chen"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-06-30T16:38:41+00:00",
+      "link": "https://arxiv.org/pdf/2606.31933v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Benchmarking video hallucination evaluation",
+      "llm_evidence_cn": "视频幻觉评估基准测试",
+      "llm_evidence": "视频幻觉评估基准测试",
+      "canonical_evidence": "视频幻觉评估基准测试",
+      "llm_tldr_en": "Introduces VidPair-Halluc, a benchmark for evaluating video hallucination using background-controlled pairs to precisely attribute model errors to genuine hallucination.",
+      "llm_tldr_cn": "现有视频幻觉基准多依赖文本扰动或对抗性问题，忽略了视觉背景的一致性，难以精确归因模型错误。本文引入VidPair-Halluc基准，采用背景高度相似但前景语义不同的视频对，实现将模型错误精确归因于幻觉。通过PairFlow流水线系统生成对抗性视频对，为评估大型视频模型的幻觉提供了更严谨的控制条件，推动了视频幻觉检测的发展。",
+      "llm_tldr": "现有视频幻觉基准多依赖文本扰动或对抗性问题，忽略了视觉背景的一致性，难以精确归因模型错误。本文引入VidPair-Halluc基准，采用背景高度相似但前景语义不同的视频对，实现将模型错误精确归因于幻觉。通过PairFlow流水线系统生成对抗性视频对，为评估大型视频模型的幻觉提供了更严谨的控制条件，推动了视频幻觉检测的发展。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.02052v1",
+      "source": "arxiv",
+      "title": "Mitigating Package Hallucinations in Large Language Models via Model Editing",
+      "abstract": "Large language models (LLMs) have demonstrated strong capabilities in software engineering tasks, such as code generation, library recommendation, and dependency configuration. However, recent studies show that LLMs may suffer from package hallucination, where they generate non-existent or invalid package names. These hallucinations can be exploited in software supply chain attacks, as attackers may register malicious packages under hallucinated names. Therefore, mitigating package hallucination is important for improving the reliability and security of LLM-assisted software development. In this paper, we introduce BOUND, a lightweight localized model editing framework for mitigating package hallucinations in LLMs. BOUND formulates package hallucination mitigation as a package-validity boundary editing problem, where the boundary refers to the model's ability to distinguish valid packages from hallucinated package names under a given task context. It first locates modules related to package hallucination through a risk-aware localization strategy, and then edits these modules with lightweight LoRA adapters using a boundary-aware objective that reinforces valid packages, suppresses hallucinated packages, and preserves locality behavior. Experimental results show that BOUND effectively reduces package hallucinations while preserving valid package recommendations. In the package recommendation task, BOUND reduces package-level hallucination rate (Package-HR) by 79.9% on edit prompts and by 65.4% on unseen prompts. The learned package-validity boundary further generalizes to other package-related tasks, reducing Package-HR by 12.8% in code generation and by 34.0% in pip install recommendation. These results show that BOUND refines the package-validity boundary of LLMs and improves the reliability of package-related outputs.",
+      "authors": [
+        "Shuhan Liu",
+        "Yukai Zhao",
+        "Xing Hu",
+        "Kui Liu",
+        "Xiaohu Yang",
+        "Xin Xia"
+      ],
+      "primary_category": "cs.SE",
+      "categories": [
+        "cs.SE"
+      ],
+      "published": "2026-07-02T11:27:01+00:00",
+      "link": "https://arxiv.org/pdf/2607.02052v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "mitigating package hallucinations via model editing",
+      "llm_evidence_cn": "通过模型编辑缓解包幻觉",
+      "llm_evidence": "通过模型编辑缓解包幻觉",
+      "canonical_evidence": "通过模型编辑缓解包幻觉",
+      "llm_tldr_en": "To mitigate package hallucinations in LLMs that threaten software supply chain security, this paper introduces BOUND, a lightweight localized model editing framework that effectively reduces invalid package generation.",
+      "llm_tldr_cn": "针对大语言模型在代码生成中产生不存在的包名（包幻觉）从而引发软件供应链攻击风险的问题，本文提出了BOUND框架。该框架是一种轻量级的局部模型编辑方法，通过定位并修改模型中导致包幻觉的特定知识来缓解这一问题。实验表明，BOUND能有效降低包幻觉的发生率，提升LLM辅助软件开发的可靠性与安全性。",
+      "llm_tldr": "针对大语言模型在代码生成中产生不存在的包名（包幻觉）从而引发软件供应链攻击风险的问题，本文提出了BOUND框架。该框架是一种轻量级的局部模型编辑方法，通过定位并修改模型中导致包幻觉的特定知识来缓解这一问题。实验表明，BOUND能有效降低包幻觉的发生率，提升LLM辅助软件开发的可靠性与安全性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2607.00415v1",
+      "source": "arxiv",
+      "title": "A Mechanistic View of Authority Hierarchy in LLM Sycophancy",
+      "abstract": "Authority bias poses a critical safety concern in language models: models systematically prioritize social cues from authority figures over factual consistency, swaying their answers based on source credibility rather than evidence. We mechanistically investigate this phenomenon using a controlled medical QA setting, where hints suggesting incorrect answers are attributed to personas of varying expertise. Across Llama-3.1-8B, Qwen3-8B, and Gemma-2-9B, we find that models respond in a graded manner proportional to perceived authority, a hierarchy that is never explicitly prompted but emerges from training. Logit lens analysis and linear/non-linear probing localize this effect to a critical late layer where correct answer representations are actively erased, an erasure that scales with authority level, resists mean vector intervention, and is only partially reversible through chain-of-thought reasoning. Our findings suggest that authority-induced sycophancy is not a surface-level output bias but mechanistic knowledge erasure, a precise, layer-localized overwriting of correct internal representations by high-status authority signals.",
+      "authors": [
+        "Emil Joswin",
+        "Srujananjali Medicherla",
+        "Priyanka Mary Mammen"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.LG"
+      ],
+      "published": "2026-07-01T04:16:59+00:00",
+      "link": "https://arxiv.org/pdf/2607.00415v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Factual inconsistency due to authority bias in LLMs",
+      "llm_evidence_cn": "权威偏见导致LLM的事实不一致",
+      "llm_evidence": "权威偏见导致LLM的事实不一致",
+      "canonical_evidence": "权威偏见导致LLM的事实不一致",
+      "llm_tldr_en": "Investigates how authority bias causes factual inconsistency in LLMs via sycophancy, localizing the effect to late layers where correct representations are erased.",
+      "llm_tldr_cn": "权威偏见导致语言模型优先考虑社会线索而非事实一致性，引发严重的安全问题。本文在受控的医疗问答环境中机制性地研究了这一现象，发现模型会根据感知到的权威等级按比例调整回答。通过逻辑透镜分析和探测，将该效应定位到模型的关键后期层，此时正确答案表征被主动擦除。这揭示了谄媚现象的内在机制，为提升模型事实一致性提供了依据。",
+      "llm_tldr": "权威偏见导致语言模型优先考虑社会线索而非事实一致性，引发严重的安全问题。本文在受控的医疗问答环境中机制性地研究了这一现象，发现模型会根据感知到的权威等级按比例调整回答。通过逻辑透镜分析和探测，将该效应定位到模型的关键后期层，此时正确答案表征被主动擦除。这揭示了谄媚现象的内在机制，为提升模型事实一致性提供了依据。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "factual consistency in text generation",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
 }
