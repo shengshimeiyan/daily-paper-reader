@@ -58,6 +58,7 @@ jobs:
       DPR_RERANK_GLOBAL_POOL_LIMIT: "120"
       DPR_RERANK_GUARANTEED_PER_LANE: "2"
       DPR_EMBED_API_TIMEOUT: "60"
+      DPR_LLM_MAX_OUTPUT_TOKENS: "131072"
       DPR_EMBED_API_URL: ${{ secrets.DPR_EMBED_API_URL || 'https://zwwen.online/embed' }}
       DPR_EMBED_API_KEY: ${{ secrets.DPR_EMBED_API_KEY }}
       LLM_PRIMARY_BASE_URL: ${{ secrets.LLM_PRIMARY_BASE_URL }}
