@@ -1,0 +1,42 @@
+{
+  "version": 2,
+  "extractor": "papercropper",
+  "figures": [
+    {
+      "url": "assets/figures/acl-2026-findings/anthology-2026.findings-acl.689/fig-001.webp",
+      "caption": "",
+      "page": 0,
+      "index": 1,
+      "width": 818,
+      "height": 497,
+      "label": "Figure"
+    },
+    {
+      "url": "assets/figures/acl-2026-findings/anthology-2026.findings-acl.689/fig-002.webp",
+      "caption": "",
+      "page": 0,
+      "index": 2,
+      "width": 1652,
+      "height": 851,
+      "label": "Figure"
+    },
+    {
+      "url": "assets/figures/acl-2026-findings/anthology-2026.findings-acl.689/fig-003.webp",
+      "caption": "",
+      "page": 0,
+      "index": 3,
+      "width": 774,
+      "height": 463,
+      "label": "Figure"
+    },
+    {
+      "url": "assets/figures/acl-2026-findings/anthology-2026.findings-acl.689/fig-004.webp",
+      "caption": "",
+      "page": 0,
+      "index": 4,
+      "width": 1623,
+      "height": 955,
+      "label": "Figure"
+    }
+  ]
+}

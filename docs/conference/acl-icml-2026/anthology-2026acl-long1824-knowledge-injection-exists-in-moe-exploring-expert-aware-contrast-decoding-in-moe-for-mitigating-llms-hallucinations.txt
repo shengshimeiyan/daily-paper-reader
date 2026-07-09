@@ -1,0 +1,3846 @@
+Title: 2026.acl-long.1824.pdf
+
+URL Source: https://aclanthology.org/2026.acl-long.1824.pdf
+
+Published Time: Thu, 11 Jun 2026 01:29:01 GMT
+
+Number of Pages: 18
+
+Markdown Content:
+> Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 39326–39343 July 2-7, 2026 ©2026 Association for Computational Linguistics
+
+## Knowledge Injection Exists in MoE? Exploring Expert-Aware Contrast Decoding in MoE for Mitigating LLMs’ Hallucinations 
+
+Xinyue Fang 1, Zhiliang Tian 1*, Zhen Huang 1*, Ziyi Pan 1, Zhihua Wen 1,Xi Wang 1, Quntian Fang 1, Dongsheng Li 1
+
+> 1
+
+College of Computer Science and Technology, National University of Defense Technology   
+
+> {fangxinyue, tianzhiliang, huangzhen, panziyi, zhwen, wangxi25, fangquntian, dsli }@nudt.edu.cn
+
+Abstract 
+
+Existing LLM hallucination mitigation meth-ods, including prompt engineering and model optimization, either hardly alter models’ inter-nal knowledge or have poor cross-domain gen-eralization. Contrastive decoding mitigates hal-lucinations by using layer-wise differences in LLMs. However, prior studies only explore transformer-based models (e.g., GPT), ignor-ing other effective frameworks like mixture-of-experts (MoE) models. Since MoE alters the traditional transformer architecture, we con-duct empirical studies to investigate whether similar layer-wise differences exist in MoEs. Our results show that they do not exist in MoE with shared experts; nevertheless, across differ-ent MoEs, higher layers exhibit distinct expert activation patterns between factual and non-factual outputs. Building on these, we propose 
+
+EAACD , an expert-aware adaptive contrast de-coding that uses expert differences in MoE’s higher layers to mitigate hallucinations on QA tasks. EAACD splits high -layer experts into a higher-reliability group and several lower-reliability groups based on their confidence and consistency. It contrasts the higher-reliability group’s prediction with each lower-reliability group’s prediction to calibrate the model’s orig-inal predictions. To strengthen this contrast, EAACD amplifies hallucinations from lower-reliability experts via attention and masking to provide stronger negative references. EAACD outperforms all baselines on four datasets 1.
+
+1 Introduction 
+
+Large language models (LLMs) show strong perfor-mance but suffer from hallucination, limiting their application (Fang et al., 2025c; Liu et al., 2025a). Existing mitigation methods mainly include: (1) 
+
+Prompt engineering uses task instructions to guide models to generate factual outputs (Mondal et al.,  
+
+> *Corresponding Author
+> 1Code is: anonymous.4open.science/r/EAACD-D388/
+
+2024). It is easy to apply, but cannot fundamen-tally alter the model’s internal knowledge (Cheng et al., 2025). (2) Model parameter optimization 
+
+fine-tunes LLMs with supplementary knowledge (Wang et al., 2022). These methods mitigate hallu-cinations by calibrating the model’s internal knowl-edge. But they lack domain generalization, and potential errors in fine-tuning data may exacerbate the hallucination (Iyer et al., 2022). To improve domain generalization and reduce reliance on fine-tuning data, researchers propose contrastive decoding, which improves the output’s accuracy by using less reliable outputs as negative references (Li et al., 2023). This approach includes: (1) Inter - model contrastive decoding compares the original model’s outputs with an unreliable model’s outputs (Yang et al., 2024a). These methods use the unreliable model’s outputs as negative references, removing such negative information from the orig-inal model’s outputs. However, if the unreliable model produces factual outputs, this may adversely affect the original model’s predictions (Yin et al., 2025). (2) Intra -model contrastive decoding lever-ages internal differences within a single model, contrasting logits between lower and higher lay-ers to obtain next -token probabilities (Yang et al., 2025). Researchers (Chuang et al., 2023) find that transformer-based models (e.g., GPT) have a “knowledge injection” phenomenon where higher layers incorporate more factual knowledge during generation, while the lower layers store less factual knowledge. Following this, researchers develop several variants (Gera et al., 2023; Das et al., 2025), which use layer-wise differences to mitigate hallu-cinations without external resources. Recently, the Mixture - of -Experts (MoE) archi-tecture has become a popular approach for build-ing large LLMs (e.g., DeepSeek-R1 (Guo et al., 2025), GPT-4 (Achiam et al., 2023)) due to its excellent performance. However, even advanced MoE models still suffer from hallucination (Su 
+
+39326 No Knowledge     
+
+> injection
+> attention
+> experts
+> layer n
+> layer 1
+> …
+> attention
+> experts
+> layer n
+> layer 1
+> …
+> cluster
+> Int ra -Model Contrast Decoding for
+> Transformer -Based Model
+> Int ra -Model Contrast Decoding for
+> MoE Model EAACD for MoE Model
+> layer 1
+> Knowledge
+> injection
+> …
+> attention
+> ffn
+> layer n
+> lower -reliability expert
+> …
+> higher -reliability expert
+
+Figure 1: Overview of prior intra-model contrast decoding and EAACD (ours). Prior intra-model contrast decoding relies on “knowledge injection” in transformer-based models, limiting its applicability to MoE. Our EAACD leverages expert diversity within MoE layers to mitigate hallucinations effectively. 
+
+et al., 2025). MoE splits the model into multi-ple experts and dynamically routes each token to a small subset of them (Zhao et al., 2024). This design alters the model’s structure, making the ex-isting intra -model contrastive decoding for classi-cal transformer-based models face challenges when mitigating hallucinations in MoE models. Because MoE models may not exhibit the same layer-wise differences as classical transformer-based models. To address these problems, we explore whether MoE models exhibit the “knowledge injection” found in classical transformer-based models. We find that this phenomenon depends on the MoE architecture: (1) the “knowledge injection” only occurs in MoE without shared experts, but not in MoE with shared experts. This suggests that the intra - model contrastive decoding may only be effective in the MoE model without shared ex-perts. Given this limitation, we explore whether we could use differences among experts for con-trastive decoding. By examining expert activation patterns during factual versus non-factual outputs, we find: (2) higher layers consistently show dis-tinct expert activation patterns between factual and non-factual outputs across all MoE architec-tures. This insight enables us to use higher-layer expert differences for intra - model contrastive de-coding to mitigate hallucinations in all MoEs. In this paper, we propose an expert - aware adap-tive contrastive decoding strategy ( EAACD ) that separates higher-reliability experts from lower-reliability experts; and higher-reliability experts treat amplified hallucinations in lower-reliability experts as a negative reference to enhance factual-ity via contrastive decoding (Fig. 1). Our empir-ical findings show that across MoE architectures, higher layers exhibit divergent expert activation when generating factual versus non-factual outputs. Since the router aims to select experts most suit-able for specific scenarios, its differing preferences in factual and non-factual situations indicate vary-ing expert capabilities in factual output generation. To use the inherent difference between experts for contrastive decoding, we split experts into one high-reliability and multiple low-reliability groups based on confidence and consistency. To ensure lower-reliability experts provide a valid negative refer-ence during contrast, we amplify hallucinations in low-reliability experts via attention and mask-ing mechanisms. Finally, our contrast decoding module adaptively penalizes lower-reliability pre-dictions based on their differences from the higher-reliability prediction during contrast, and calibrates original predictions using contrast results to miti-gate hallucinations on QA tasks. Our main contributions are: (1) To our knowl-edge, we are the first to explore the “knowledge injection” in MoE models and expert activation differences between factual and non-factual out-puts. (2) We reveal how “knowledge injection” and expert activation differences during factual versus non-factual outputs relate to the MoE’s architec-ture. (3) We propose an expert-aware adaptive con-trastive decoding method to mitigate MoE models’ hallucinations without external resources. (4) Our method is SOTA across four datasets. 
+
+2 Related Work 
+
+Hallucination Mitigation in LLMs aims to re-duce factual inconsistencies in LLMs outputs.(Si et al., 2022). Existing mitigation methods: (1) Prompt Engineering improves the model’s factu-ality by including a few examples in the prompt (Brown et al., 2020). Chain -of - Thought (Mondal et al., 2024) prompting guided models through in-termediate steps to boost factuality. Ji et al. (2023) proposed an iterative self-reflection incorporating prior outputs for correction. (2) Optimizing Model 39327 Parameters aligns the model’s internal knowledge with facts (Wang et al., 2022). Supervised Fine-Tuning (SFT) helps LLMs learn task-specific fea-tures from labeled data and improve accuracy (Iyer et al., 2022; Shi et al., 2023). Model Editing re-moves hallucinations via localization and interven-tion (Zheng et al., 2023; Zhang et al., 2024). 
+
+Contrastive decoding mitigates hallucinations 
+
+by comparing outputs between models or different parts of the same model (Li et al., 2023; Chuang et al., 2023), mainly divided into two types: (1) Inter-model contrastive decoding compares out-puts from a large model with a less accurate model (Chen et al., 2024). Li et al. (2023) used a smaller model to calibrate the larger model’s output. Zhang et al. (2025) fine-tuned the original model on hal-lucinated data to construct a less factual model as a negative comparator for the original model. 
+
+(2) Intra-model contrastive decoding mitigates hallucinations by leveraging internal discrepancies in the model (Wu et al., 2025; Shi et al., 2024a). DoLa (Chuang et al., 2023) contrasted the model’s final-layer prediction with earlier layers to high-light reliable outputs. Das et al. (2025) selected lower layers based on layer-wise entropy, improv-ing DoLa’s performance. Context-Aware Decoding (Shi et al., 2024b) compared context-aware with context-agnostic outputs to mitigate hallucinations. 
+
+Mixture-of-Experts (MoE) (Li et al., 2025) en-ables LLMs to scale model capacity while maintain-ing efficiency. MoE architectures are categorized as: (1) MoE without shared experts fully decou-ples experts (Jiang et al., 2024). Mixtral 8x7B (Jiang et al., 2024) used equally sized, indepen-dent experts and activated top-2 during inference. LLaMA - MoE (Zhu et al., 2024) employed non-overlapping partitions for better generalization. (2) MoE with shared experts has shared experts al-ways activated, while others are routed (Zhao et al., 2024). DeepSeekMoE (Dai et al., 2024) and XMoE (Yang et al., 2024b) split experts into sub-experts and activated top-K at inference. Cartesian -MoE (Su et al., 2025) merged shared and routed experts to enlarge compositional capacity. 
+
+3 Empirical Study 
+
+We conduct an empirical study to explore general differences in MoE models that enable intra - model contrast decoding for hallucination mitigation. It has two key experiments. First, we examine whether MoE models with different architectures exhibit the “knowledge injection” phenomenon ob-served in classical transformer-based models. Re-sults show “knowledge injection” only occurs in MoE without shared experts, but not in MoE with shared experts. Therefore, we turn to explore more general differences between factual and non-factual outputs across all MoE models. The 
+
+> sun
+> is
+> all
+> colors
+> mixed
+> together
+> .
+
+0
+
+4
+
+8
+
+12 
+
+16 
+
+20 
+
+24 
+
+28                                                                                                                 
+
+> Layer
+> 17.19 18.57 18.10 15.28 15.32 16.03 18.50 17.38
+> 17.07 18.44 17.98 15.14 15.21 15.87 18.38 17.21
+> 16.87 18.35 17.91 15.02 15.15 15.65 18.22 17.06
+> 16.78 18.17 17.81 14.91 15.07 15.50 17.93 16.78
+> 16.56 17.89 17.57 14.73 14.84 15.25 17.52 16.38
+> 16.16 17.60 17.23 14.58 14.65 15.13 17.40 16.09
+> 16.14 17.65 17.02 14.38 14.57 14.76 17.23 15.75
+> 15.72 17.07 16.51 13.84 14.03 14.48 16.43 15.69
+> 15.09 16.05 16.00 12.90 12.78 14.04 15.06 15.39
+> 13.29 13.10 13.85 11.31 11.22 13.80 10.90 14.17
+> 10.47 7.13 11.25 8.51 10.13 12.67 6.39 12.81
+> 7.51 1.76 6.73 4.32 6.23 10.65 1.49 10.34
+> 6.07 0.86 2.94 3.40 4.53 7.05 0.17 6.42
+> 3.52 0.91 1.38 2.80 1.81 4.83 0.12 3.11
+> 0.66 0.12 0.25 1.34 0.61 1.24 0.04 0.54
+> 1.00 0.07 0.36 0.19 1.61 2.35 0.93 0.69
+
+LLaMA 
+
+> The
+> sun
+> is
+> all
+> colors
+> mixed
+> together
+> .
+
+0
+
+4
+
+8
+
+12 
+
+16 
+
+20 
+
+24 
+
+28                                                                                                                 
+
+> Layer
+> 3.56 3.37 3.42 3.52 3.36 3.49 3.11 3.47
+> 3.36 3.43 3.20 3.76 4.01 3.45 3.01 3.14
+> 3.21 4.07 4.08 3.66 3.24 4.14 3.64 3.17
+> 3.78 3.48 3.76 4.27 3.43 3.75 3.68 3.63
+> 3.37 3.34 3.42 3.36 3.42 3.94 3.88 3.41
+> 3.51 4.43 3.64 4.86 4.06 4.48 3.78 3.23
+> 4.00 3.92 3.79 3.77 3.67 3.40 4.14 3.40
+> 3.27 3.27 2.64 2.86 2.66 2.94 0.00 3.21
+> 2.87 2.67 1.79 0.77 1.37 2.48 0.00 2.23
+> 2.17 2.47 0.00 0.37 0.17 0.00 0.00 1.40
+> 0.00 0.47 0.00 0.00 0.00 0.00 0.00 0.40
+> 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+> 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+> 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+> 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+> 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+
+Mixtral 
+
+> The
+> sun
+> is
+> all
+> colors
+> mixed
+> together
+> .
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10 
+
+12 
+
+14 
+
+16 
+
+18 
+
+20 
+
+22 
+
+24 
+
+26                                                                                                                                                                                              
+
+> Layer
+> 5.36 6.31 5.77 5.23 5.01 5.34 6.81 6.05
+> 5.33 6.28 5.76 5.22 4.99 5.28 6.82 6.02
+> 5.33 6.28 5.75 5.22 5.02 5.25 6.82 6.04
+> 5.29 6.32 5.74 5.24 5.01 5.28 6.79 6.08
+> 5.30 6.31 5.75 5.23 4.98 5.25 6.84 6.14
+> 5.33 6.32 5.74 5.28 4.99 5.26 6.82 6.23
+> 5.25 6.29 5.79 5.29 5.05 5.30 6.74 6.29
+> 5.21 6.34 5.79 5.25 5.05 5.32 6.72 6.29
+> 5.26 6.32 5.81 5.25 5.05 5.38 6.70 6.20
+> 5.32 6.44 5.91 5.33 5.10 5.47 6.74 6.38
+> 5.44 6.37 6.02 5.46 5.11 5.44 6.76 6.40
+> 5.57 6.44 6.06 5.47 5.10 5.64 6.76 6.48
+> 5.41 6.46 6.16 5.51 5.09 5.85 6.76 6.46
+> 5.28 6.46 6.15 5.52 5.09 5.84 6.63 6.56
+> 5.20 6.52 6.33 5.78 5.38 6.04 6.75 7.08
+> 5.21 6.62 6.31 5.95 5.38 6.16 6.74 7.50
+> 5.10 6.37 6.40 5.87 5.45 6.52 6.95 7.81
+> 5.02 6.34 6.14 5.61 5.21 6.31 6.51 7.60
+> 4.79 6.25 5.97 5.47 5.11 6.56 5.98 7.80
+> 4.48 5.63 5.83 5.40 5.02 6.70 5.07 7.93
+> 4.75 5.16 5.85 5.43 5.31 7.49 4.60 7.95
+> 4.29 3.56 4.73 5.33 4.93 7.36 4.81 7.71
+> 4.51 3.39 4.61 5.42 4.89 7.13 4.75 7.36
+> 4.84 3.48 4.67 5.38 4.94 7.31 4.06 7.31
+> 5.61 0.60 4.79 5.32 4.96 7.38 4.00 7.20
+> 6.35 0.64 3.60 4.78 4.92 6.88 3.87 6.32
+> 4.43 0.07 2.70 3.36 3.98 4.87 3.01 3.53
+
+DeepSeek 
+
+> The
+> sun
+> is
+> all
+> colors
+> mixed
+> together
+> .
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10 
+
+12 
+
+14 
+
+16 
+
+18 
+
+20 
+
+22                                                                                                                                                                  
+
+> Layer
+> 3.23 4.11 3.79 3.43 2.82 3.08 4.17 3.37
+> 3.22 4.10 3.78 3.43 2.81 3.07 4.17 3.36
+> 3.22 4.10 3.78 3.43 2.81 3.07 4.17 3.36
+> 3.22 4.10 3.78 3.43 2.81 3.06 4.17 3.37
+> 3.21 4.10 3.78 3.43 2.81 3.06 4.17 3.37
+> 3.20 4.09 3.78 3.43 2.80 3.05 4.17 3.36
+> 3.21 4.09 3.78 3.43 2.80 3.06 4.15 3.35
+> 3.19 4.08 3.77 3.42 2.80 3.04 4.16 3.36
+> 3.18 4.08 3.76 3.42 2.80 3.02 4.15 3.35
+> 3.17 4.07 3.74 3.42 2.79 2.99 4.14 3.34
+> 3.17 4.07 3.74 3.41 2.77 3.02 4.12 3.33
+> 3.16 4.05 3.74 3.39 2.76 2.99 4.11 3.31
+> 3.14 4.03 3.73 3.37 2.74 2.94 4.10 3.29
+> 3.11 4.02 3.71 3.36 2.72 2.93 4.06 3.25
+> 3.09 4.01 3.71 3.33 2.69 2.93 4.04 3.25
+> 3.04 3.96 3.68 3.30 2.67 2.88 3.97 3.21
+> 2.97 3.94 3.62 3.23 2.61 2.80 3.92 3.19
+> 2.95 3.87 3.55 3.15 2.58 2.78 3.78 3.18
+> 2.80 3.72 3.52 3.08 2.45 2.73 3.55 3.14
+> 2.72 3.58 3.41 2.96 2.37 2.63 3.47 3.02
+> 2.62 3.54 3.34 2.63 2.32 2.59 3.46 3.05
+> 2.50 3.29 3.04 2.50 2.15 2.50 3.31 2.98
+> 2.30 2.90 2.67 2.42 2.11 2.38 3.21 2.73
+
+Qwen 
+
+2.5 
+
+5.0 
+
+7.5 
+
+10.0 
+
+12.5 
+
+15.0 
+
+17.5 
+
+0.0 
+
+1.0 
+
+2.0 
+
+3.0 
+
+4.0 
+
+1.0 
+
+2.0 
+
+3.0 
+
+4.0 
+
+5.0 
+
+6.0 
+
+7.0 
+
+2.2 
+
+2.5 
+
+2.8 
+
+3.0 
+
+3.2 
+
+3.5 
+
+3.8 
+
+4.0 
+
+Input: What color is the sun when viewed from space? 
+
+Figure 2: JSD (scaled by 10 5) between the final layer and each lower layer across different models. Column labels indicate tokens in each step. Row labels indicate layer indices. The input sample is from TruthfulQA dataset; see App. A for results on other datasets. 
+
+3.1 Experimental setting 
+
+We investigate two mainstream MoE architectures: LLaMA -MoE (Zhu et al., 2024) and Mixtral (Jiang et al., 2024) for MoE without shared experts, Deepseek -MoE (Dai et al., 2024) and Qwen - MoE (Team, 2024) for MoE with shared experts. Our experiments cover three QA datasets widely used for hallucination analysis: TruthfulQA for com-monsense QA (Lin et al., 2022), StrategyQA for commonsense reasoning (Geva et al., 2021), and GSM8K for math reasoning (Cobbe et al., 2021). 
+
+3.2 RQ 1: Do MoE models also exhibit the “knowledge injection” phenomenon? 
+
+To investigate whether MoE models also exhibit the “knowledge injection” phenomenon, we intro-duce the early exit mechanism (Teerapittayanon and McDanel, 2016): at each time step, we ap-ply a language head (Chuang et al., 2023) to every layer’s hidden state to obtain the layer’s next-token logits. And we convert these logits to probabilities via softmax. We then calculate the Jensen-Shannon Divergence (JSD) between each layer’s and the fi-39328 012345678910 11 12 13 14 15 
+
+Expert 
+
+> 04812 16 20 24 28
+> Layer
+
+1.00 0.98 0.99 0.00 0.99 0.02 0.00 0.01 0.00 0.00 0.01 0.02 0.01 0.01 0.00 0.01 1.00 0.99 0.99 0.00 0.00 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.00 0.99 0.01 0.01 0.01 0.01 0.01 1.00 0.01 0.01 0.01 0.01 1.00 0.00 0.99 0.01 0.01 0.01 0.01 0.99 0.99 0.01 0.01 0.00 0.01 0.01 0.01 0.01 1.00 0.01 0.99 0.01 0.01 0.01 0.01 0.99 0.01 1.00 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.99 0.01 0.99 0.01 0.01 1.00 0.99 0.01 0.01 0.99 0.99 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.99 0.01 1.00 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.99 0.01 0.01 0.01 0.01 1.00 1.00 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.99 0.99 0.01 0.01 0.01 0.01 1.00 0.01 0.00 0.01 0.01 0.99 0.01 0.99 0.01 0.00 0.99 0.99 0.01 0.01 0.00 0.01 0.01 0.01 0.00 0.99 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 1.00 0.99 0.01 0.01 1.00 0.01 0.01 0.99 1.00 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.99 0.00 0.01 0.99 0.01 0.01 0.01 0.01 0.99 0.01 0.99 0.99 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.04 0.00 1.00 0.01 0.97 0.01 0.01 1.00 0.01 0.00 0.01 0.99 0.01 0.00 0.01 1.00 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.99 1.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.05 0.94 1.00 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.99 0.01 1.00 0.01 0.01 0.01 0.99 0.99 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.00 0.99 0.00 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.99 0.01 0.99 0.01 0.01 0.01 0.99 0.00 0.01 0.01 0.99 0.01 0.01 0.01 0.01 1.00 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.99 1.00 0.01 0.01 0.02 0.01 0.01 1.00 0.01 0.01 0.01 0.01 0.01 0.01 0.98 0.01 1.00 0.99 1.00 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.01 1.00 0.99 0.01 0.01 0.01 0.01 0.01 0.99 0.99 0.01 0.99 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 1.00 0.01 0.99 0.01 0.99 0.01 1.00 0.01 0.00 0.01 0.01 0.01 0.01 0.99 0.01 0.01 1.00 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.99 0.01 0.01 1.00 0.99 0.01 0.01 0.99 0.01 0.00 0.01 1.00 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.99 1.00 0.01 0.01 1.00 0.99 0.01 0.01 0.01 1.00 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.99 0.99 0.01 0.01 0.01 0.01 0.01 1.00 0.01 0.01 0.01 0.01 0.01 0.00 0.99 0.01 0.11 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.99 0.01 0.99 0.89 0.01 0.01 0.01 1.00 0.01 1.00 0.01 0.01 0.99 0.01 0.01 0.99 0.01 0.01 0.00 0.01 0.01 0.01 0.02 0.01 0.02 0.02 0.01 0.98 0.02 0.98 0.01 0.99 0.98 0.01 0.01 0.01 
+
+> 04812 16 20 24 28 32 36 40 44 48 52 56
+
+Expert 
+
+0246810 12 14 16 18 20 22 
+
+> Layer
+
+0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.14 0.25 0.00 0.00 1.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.99 0.00 0.00 0.00 0.00 0.02 0.00 0.99 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.79 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.00 0.00 0.00 0.99 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.99 0.00 0.00 0.49 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00 0.00 0.99 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.99 0.00 0.00 0.00 0.99 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.10 0.00 0.99 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00 0.00 0.00 0.99 0.00 0.00 0.00 0.00 0.00 0.01 0.00 0.00 1.00 0.00 0.00 0.00 0.00 0.01 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.00 0.00 0.65 0.00 0.00 0.99 0.00 0.35 0.00 0.00 0.00 0.00 0.00 0.99 0.00 0.00 0.00 0.99 0.00 0.00 0.00 0.00 0.87 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00 0.00 0.00 0.00 0.00 0.00 0.99 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00 1.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.08 0.92 0.00 0.00 0.00 0.00 0.00 1.00 1.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 1.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 
+
+> 012345678910 11 12 13 14 15
+
+Expert 
+
+> 04812 16 20 24 28
+> Layer
+
+1.00 0.97 0.99 0.00 0.99 0.02 0.01 0.04 0.00 0.02 0.02 0.05 0.01 0.02 0.01 0.03 0.99 0.98 0.98 0.01 0.02 0.02 0.02 0.03 0.02 0.02 0.02 0.02 0.02 0.98 0.02 0.02 0.01 0.02 0.02 0.99 0.02 0.02 0.02 0.01 0.99 0.01 0.99 0.02 0.02 0.02 0.02 0.99 0.99 0.02 0.02 0.01 0.02 0.02 0.01 0.02 0.99 0.01 0.99 0.01 0.02 0.02 0.02 0.99 0.02 0.99 0.02 0.01 0.02 0.02 0.01 0.01 0.03 0.02 0.99 0.02 0.99 0.02 0.01 0.99 0.99 0.02 0.01 0.99 0.99 0.02 0.02 0.99 0.02 0.02 0.02 0.02 0.03 0.02 0.02 0.01 0.01 0.02 0.99 0.02 1.00 0.02 0.02 0.01 0.02 0.98 0.01 0.02 0.99 0.02 0.02 0.01 0.02 0.99 0.99 0.02 0.02 0.99 0.02 0.01 0.01 0.02 0.02 0.01 0.02 0.01 0.02 0.99 0.02 0.02 0.02 0.02 0.02 0.01 0.02 0.01 0.98 0.99 0.99 0.03 0.02 0.01 0.02 0.99 0.01 0.01 0.02 0.02 0.99 0.02 0.99 0.02 0.01 0.99 0.99 0.02 0.02 0.02 0.02 0.02 0.02 0.02 0.99 0.03 0.02 0.01 0.02 0.02 0.02 0.01 0.02 0.99 0.99 0.02 0.01 0.99 0.02 0.02 0.99 0.99 0.02 0.01 0.01 0.02 0.02 0.02 0.02 0.03 0.02 0.99 0.99 0.01 0.02 0.99 0.02 0.02 0.02 0.02 0.98 0.02 0.98 0.99 0.02 0.02 0.01 0.02 0.02 0.02 0.01 0.01 0.03 0.02 0.99 0.02 0.98 0.01 0.02 0.99 0.02 0.02 0.02 0.99 0.01 0.01 0.02 1.00 0.01 0.01 0.98 0.01 0.01 0.02 0.02 0.99 0.99 0.02 0.01 0.03 0.02 0.02 0.02 0.01 0.02 0.03 0.99 0.98 0.01 0.02 0.01 0.02 0.02 0.01 0.02 1.00 0.02 0.99 0.02 0.02 0.02 0.99 0.99 0.02 0.01 0.99 0.02 0.02 0.02 0.01 0.02 0.02 0.99 0.01 0.01 0.02 1.00 0.01 0.02 0.03 0.02 0.99 0.02 0.02 0.99 0.01 0.99 0.02 0.03 0.01 0.99 0.01 0.02 0.02 0.99 0.02 0.01 0.01 0.02 0.99 0.04 0.03 0.01 0.02 0.97 0.01 0.02 0.02 0.02 1.00 0.01 0.01 0.02 0.01 0.99 0.02 0.02 0.02 0.02 0.01 0.99 1.00 0.02 0.02 0.02 0.02 0.01 0.99 0.01 0.02 0.01 0.01 0.02 0.02 0.99 0.01 0.99 0.99 0.15 0.01 0.01 0.02 0.02 0.02 0.99 0.01 0.86 0.01 0.02 0.02 0.02 0.99 0.99 0.02 0.02 0.02 0.01 0.02 0.99 0.99 0.02 0.99 0.02 0.01 0.99 0.01 0.02 0.02 0.01 0.02 0.02 0.99 0.01 0.03 0.02 0.02 0.01 0.01 0.01 0.02 0.99 0.01 0.02 0.99 0.02 1.00 0.02 0.99 0.02 0.99 0.01 0.02 0.01 0.02 0.01 0.02 0.99 0.02 0.01 0.99 0.02 0.03 0.02 0.02 0.01 0.02 0.02 0.99 0.02 0.02 0.99 0.99 0.02 0.01 0.99 0.01 0.02 0.02 0.99 0.01 0.99 0.01 0.01 0.01 0.02 0.02 0.01 0.03 0.03 0.99 0.02 0.01 0.02 0.99 0.99 0.02 0.02 0.99 0.98 0.01 0.03 0.01 0.99 0.02 0.02 0.02 0.01 0.03 0.03 0.01 0.01 0.99 0.31 0.01 0.01 0.02 0.01 0.01 1.00 0.71 0.02 0.02 0.01 0.01 0.03 0.99 0.01 0.02 0.02 0.01 0.02 0.02 0.01 0.99 0.02 0.01 0.01 0.02 0.99 0.01 0.99 1.00 0.02 0.02 0.02 0.99 0.02 0.99 0.02 0.02 0.98 0.01 0.02 0.99 0.02 0.01 0.01 0.02 0.14 0.40 0.02 0.08 0.14 0.44 0.12 0.48 0.47 0.50 0.01 0.46 0.46 0.01 0.43 0.02 
+
+> 04812 16 20 24 28 32 36 40 44 48 52 56
+
+Expert 
+
+0246810 12 14 16 18 20 22 
+
+> Layer
+
+0.00 0.01 0.00 0.00 0.00 0.00 0.01 0.01 0.00 0.00 0.01 0.13 0.02 0.00 0.00 1.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.00 0.01 0.99 0.01 0.00 0.01 0.00 0.00 0.00 0.99 0.00 0.00 0.01 0.01 0.00 0.01 0.00 0.00 0.01 0.01 0.00 0.01 0.00 0.01 0.01 0.00 0.00 0.00 0.00 0.00 0.01 0.00 0.01 0.00 0.00 0.00 0.00 0.01 0.01 0.01 0.00 0.00 0.00 0.99 0.00 0.01 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.00 0.00 0.00 0.01 0.00 0.01 0.01 0.99 0.00 0.01 0.00 0.00 0.00 0.00 0.00 0.01 0.00 0.01 0.00 0.00 0.01 0.01 0.00 0.01 0.01 0.00 0.00 0.00 0.01 0.01 0.00 0.01 0.01 0.00 0.00 0.01 0.00 0.00 0.00 0.01 0.01 0.00 0.00 0.99 0.01 0.99 0.00 0.01 0.00 0.00 0.00 0.00 0.01 0.01 0.00 0.01 0.99 0.00 0.00 0.01 0.99 0.01 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.00 0.00 0.01 0.01 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.47 0.01 0.99 0.00 0.01 0.00 0.00 0.00 0.01 0.00 0.01 0.00 0.01 0.99 0.01 0.00 0.99 0.00 0.00 0.01 0.00 0.00 0.02 0.00 0.00 0.99 0.00 0.00 0.01 0.01 0.00 0.01 0.00 0.00 0.01 0.00 0.00 0.01 0.00 0.00 0.99 0.01 0.00 0.99 0.00 0.01 0.00 0.00 0.00 0.00 0.01 0.99 0.01 0.01 0.01 0.99 0.00 0.00 0.00 0.00 0.99 0.00 0.00 0.00 0.01 0.01 0.00 0.00 0.01 0.00 0.00 0.01 0.99 0.00 0.00 0.00 0.00 0.00 0.99 0.01 0.01 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.00 0.01 0.00 0.00 0.00 0.01 0.00 0.00 0.00 0.00 0.00 1.00 0.99 0.00 0.01 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.00 0.01 0.00 0.00 0.00 0.00 0.00 0.01 0.00 0.00 0.99 0.00 0.00 0.00 0.00 0.01 0.99 0.99 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.00 0.00 0.00 0.00 0.01 0.00 0.00 0.00 0.00 0.00 0.01 0.00 0.00 0.01 0.00 0.00 0.00 0.00 0.01 0.00 0.00 0.01 0.01 0.00 0.00 0.00 0.00 0.01 0.00 0.00 0.01 0.01 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.01 0.00 0.00 0.00 0.00 0.00 0.99 0.00 0.00 0.00 0.00 0.00 0.01 0.01 
+
+0.2 0.4 0.6 0.8 1.0 
+
+0.2 0.4 0.6 0.8 1.0 
+
+0.2 0.4 0.6 0.8 1.0 
+
+0.2 0.4 0.6 0.8 1.0 
+
+> Factual Non-Factual
+
+LLaMA Qwen Figure 3: Expert activation patterns across layers in dif-ferent MoE architectures during factual and non-factual generation on TruthfulQA. Column labels indicate ex-pert indices. We show results for LLaMA MoE (no shared experts) and Qwen MoE (with shared experts; every fourth expert shown); full results in App. C. 
+
+nal layer’s probability. The JSD changes indicate how predictions evolve across layers (Fig. 2). Fig. 2 shows that in MoE models without shared experts, JSD values between the lower and final layer start high but decrease as the layer goes deeper. A sharp drop in higher layers indicates the model substantially changes its prediction at these layers, which reflects the occurrence of the “knowledge injection”. However, in MoE models with shared experts, JSD values remain low across layers with minimal change. This indicates the “knowledge injection” does not exhibit in MoE with shared experts. We provide dataset-level statistics and additional results on more MoE mod-els in App. J and App. K. 
+
+3.3 RQ 2: How do expert activation patterns in MoE differ during factual and non-factual generation? 
+
+Since the “knowledge injection” doesn’t exist in all MoE models, we investigate general differ-ences that could support intra-model contrastive decoding. We analyze expert activation patterns (which experts the router activates (Szatkowski et al., 2024)) in MoE models during generating factual and non-factual outputs. To obtain non-factual generations under the same questions, we employ a malicious system prompt (see App. B) to bias the model toward non-factual outputs. Be-cause the model generates both outputs under the same input question, any observed differences in 0 5 10 15 20 25 30 0.0 0.5 1.0 
+
+1.5 2.0 
+
+> L2 Distance
+
+LLaMA 
+
+0 5 10 15 20 25 30 0.0 0.2 0.4 0.6 0.8 1.0 1.2 
+
+> L2 Distance
+
+Mixtra l
+
+0 5 10 15 20 25 0.0 0.2 0.4 0.6 0.8 1.0 1.2 
+
+> L2 Distance
+
+DeepSeek 
+
+0 5 10 15 20 0.0 0.2 0.4 0.6 0.8 1.0 1.2 1.4 
+
+> L2 Distance
+
+Qwen 
+
+TruthfulQA GSM8K StrategyQA 
+
+Figure 4: Differences in expert activation patterns be-tween factual and non-factual outputs for various MoE architectures and datasets (x-axis is layer indices). 
+
+expert activation can be attributed to changes in the model’s generation behavior rather than input ques-tion variations. Then, we select samples that the model outputs factually under the normal prompt but non - factually under the malicious prompt. We record each layer’s expert activation frequencies (Fig. 3). To quantify differences between factual and non-factual scenarios, we convert each layer’s expert activation frequencies into vectors and com-pute L2 distances between the factual and non-factual vector pairs (Fig. 4). Fig. 3 shows that, for a dataset, each layer’s router activates specific expert subsets across all MoE models. This indicates that experts within the same layer capture distinct features and guide routing decisions. Fig. 4 shows that higher lay-ers exhibit divergent expert activation patterns between factual and non-factual outputs across all MoE models . This difference supports distin-guishing factual from non-factual outputs, enabling intra-model contrastive decoding for hallucination mitigation across all MoE models. 
+
+4 Method 
+
+Our method consists of three modules (Fig. 5): (1) 
+
+Expert Partitioning via Confidence and Con-sistency (§ 4.1) evaluates experts via confidence and consistency, partitioning them into one higher-reliability group and multiple lower-reliability groups. (2) Attention - Guided Hallucination Am-plification (§ 4.2) uses attention and masking mechanisms to amplify lower-reliability experts’ hallucinations. Those experts provide stronger neg-ative references for contrastive decoding, where 39329 Input 
+
+> multi -head attention
+> add & norm
+
+… 
+
+> add & norm
+> layer n
+> linear
+> softmax
+> 𝑉
+> original
+> probabilities 𝑃 𝑂
+> layer 1
+> layer n-1
+
+## …                          
+
+> MoE Model Expert Partitioning via Confidence and Consistency
+> …
+> cluster
+> similarity
+> matrix
+> experts
+> 𝑉
+> calculate expert confidence
+> calculate expert
+> group consistency
+> lower -reliability
+> expert group
+> higher -reliability
+> expert group
+> 𝑉 𝑉 𝑉 𝑉
+> context tokens
+> attention matrix
+> importance score
+> mask
+> lower -reliability expert group
+> 𝑉 𝑉
+> 𝛼 1=𝐷 𝐾𝐿
+> Mitigating Hallu ci nation via Contrast Decoding
+> 𝛼 1×+𝛼 2×
+> contrasted
+> prediction 𝑃 ′
+> calculate the mean
+> contrast
+> 1−𝜆 𝑃 𝑂 +𝜆 𝑃 ′
+> entropy 𝜆
+> Attention -Guided Hallucination Amplification
+> final
+> probabilities
+> Output
+> original
+> probabilities 𝑃 𝑂
+> entropy
+> L2 norm
+> hallucination -amplified predictions
+> expert expert expert
+> router
+> 𝛼 2=𝐷 𝐾𝐿
+
+Figure 5: Overview of EAACD. Given an MoE input (left), we cluster final-layer expert predictions and evaluate each group’s reliability. We fuse predictions from the higher-reliability group (green, top) and mask attention-identified critical tokens for lower-reliability groups to amplify hallucinations (red and orange, bottom center). KL between two groups serves as a penalty to contrast. We calibrate the prediction via the contrast result (bottom right). 
+
+experts with higher - reliability and lower - reliability contrastively learns to mitigate hallucinations in de-coding. (3) Adaptive Expert Group Contrastive Decoding (§ 4.3) contrasts the higher-reliability ex-pert group’s prediction with lower-reliability expert groups’ predictions. It then dynamically removes information from the higher - reliability prediction that overlaps with the amplified hallucinations, and calibrates the original prediction via the contrast result to mitigate hallucinations. During generation, our decoding strategy first categorizes higher-layer experts into higher-reliability and lower-reliability groups based on their predictions (§ 4.1), then amplifies the lower-reliability experts’ hallucinations (§ 4.2), and con-trasts lower-reliability experts’ predictions with the high-reliability group’s prediction to dynamically calibrate the model’s original prediction (§ 4.3). Following (Shi et al., 2024a), we apply our method only at the final layer (see details in App.G). 
+
+4.1 Expert Partitioning via Confidence and Consistency 
+
+To distinguish a higher-reliability expert group from lower-reliability expert groups, we evaluate each group’s reliability by combining confidence and consistency (see § 5.3, which validates the ef-fectiveness of the module via ablation studies). The module involves: (1) clustering experts by predic-tion similarity; (2) calculating reliability scores to classify higher-reliability and lower-reliability ex-pert groups; and (3) integrating predictions from experts in the high-reliability group. 
+
+4.1.1 Expert Clustering 
+
+At each time step, we collect the logits le from all k experts in the MoE’s final layer and calcu-late the pairwise similarity matrix between experts’ predictions. Using this matrix, we apply Agglom-erative Clustering (Walter et al., 2008) to cluster the experts into m groups C = {c1, c 2, . . . , c m}.
+
+4.1.2 Reliability Evaluation of Expert Groups 
+
+We propose a metric to measure the reliability of each expert group, which considers both the confi-dence of each expert in the group and the group’s consistency by following two steps. 
+
+Step 1: Calculation of Expert Confidence. 
+
+For each expert e, we obtain its predicted logits 
+
+le = ( le1, . . . , l e|V |). We then calculate the entropy 
+
+he = − ∑|V | 
+
+> i=1
+
+pei log pei (with pei = softmax (lei ))and L2 norm ∥le∥2. Entropy reflects expert e’s uncertainty of prediction, while the L2 norm mea-39330 sures the activation magnitudes of that expert’s logits. A low-entropy distribution indicates that the expert assigns most of the probability to a small set of candidate tokens, suggesting high confidence in its prediction, whereas a high-entropy distribu-tion implies greater uncertainty due to dispersed probability (Liu et al., 2025b; Song et al., 2025). Meanwhile, the L2 norm captures the intensity of an expert’s activation: experts with larger logit magnitudes tend to produce decisive predictions and exhibit more stable output behaviors (Lo et al., 2025). As Eq.1 shows, we combine entropy with L2 norm to get expert e’s confidence score se to pro-vide a more comprehensive measure of expert confidence. The weight α is adaptively set via 
+
+α = σH  
+
+> σH+σL
+
+, where σH and σL are standard de-viations of all experts’ entropy and L2 norm, re-spectively. When σH > σ L, the weight corre-sponding to the entropy will increase. Conversely, the weight corresponding to the L2 norm will in-crease. This adaptive weighting emphasizes the metric with greater variance among experts, mak-ing se sensitive to inter-expert differences.             
+
+> se=α·hmax −he
+> hmax
+> + (1 −α)·∥le∥2
+> max e′∥le′∥2
+> (1)
+
+Step 2: Calculation of Expert Group Consis-tency. To improve robustness in expert group reli-ability evaluation, we evaluate each expert group with its overall consistency. For group cj , we cal-culate the proportion of the group size |cj | relative to the expert count k and the cluster count m as the consistency score. We then combine the consis-tency score |cj | 
+
+> k m
+
+with the average expert confidence of the group 1 
+
+> |cj|
+
+∑ 
+
+> e∈cj
+
+se as expert group’s relia-bility score Tj = 1 
+
+> |cj|
+
+∑ 
+
+> e∈cj
+
+se + |cj | 
+
+> k m
+
+. When most experts’ predictions fall into the same group, its higher consistency score increases Tj , reflecting stronger expert consensus and reliability. 2
+
+4.1.3 Higher-Reliability Experts Prediction Integration 
+
+We select the group with the highest reliabil-ity as the higher-reliability expert group Cs and the rest as lower-reliability expert groups Cw =
+
+{c1, . . . , c m} \ {C s}. To fuse the logits of all high-reliability experts in Cs into a unified log-its pr, we calculate a weighted sum of each ex-pert’s logits le using the router’s gate value we:
+
+> 2App. H illustrates the different prediction tendencies of low-reliability and high-reliability expert groups.
+
+pr = ∑ 
+
+> e∈Cs
+
+we le, which we will later compare with the lower-reliability expert groups. 
+
+4.2 Attention-Guided Hallucination Amplification 
+
+To allow lower - reliability experts to provide stronger negative references for higher -reliability experts during contrast decoding (§ 4.3), we am-plify the lower-reliability experts’ hallucinations via the attention and masking mechanism. The motivation is to enlarge the difference between lower-reliability experts’ predictions and higher-reliability experts’ predictions. If the prompt is sim-ple, even lower-reliability experts might make cor-rect predictions; these predictions cannot provide effective negative references for higher-reliability experts. Specifically, (1) we use the attention mech-anism to identify the most influential context to-kens; (2) then we mask these tokens and re-input the masked prompt to lower - reliability experts to obtain predictions with more hallucinations. MoE models retain the standard attention mecha-nism (Vaswani et al., 2017): given query Q, key K,and value V, it calculates context tokens’ attention weight via A = softmax ( QK ⊤ 
+
+> √d
+
+)V. Larger weights indicate a greater influence of the corresponding context token on the prediction. To quantify the importance of the i-th context token at time step t,we calculate the average attention weight A(L,h )
+
+> i,t
+
+across all attention heads h in the final layer L as its importance score Ii = 1
+
+> H
+
+∑Hh=1 A(L,h ) 
+
+> i,t
+
+.Then, we mask tokens whose importance score exceeds a threshold β. We choose β to balance amplifying hallucinations from lower-reliability ex-perts and preserving semantic similarity between the masked and original prompts (details in App. I). We re-input the masked prompt. Lacking crucial context, lower - reliability experts more easily gen-erate hallucinations, providing stronger negative references for higher-reliability experts. 
+
+4.3 Mitigating Hallucinations via Contrast Decoding 
+
+To mitigate hallucinations, we contrast the pre-diction of the higher -reliability expert group with those of lower -reliability groups. Traditional con-trast decoding methods directly subtract the low-reliability prediction from the high-reliability pre-diction during contrast, and then use a hyperpa-rameter to adjust the calibration strength of the contrastive result on the original prediction. Unlike 39331 this, we design adaptive penalty coefficients for each lower - reliability expert group during contrast and dynamically calibrate the model’s original pre-dictions via its uncertainty. This module has two steps: (1) generating adaptive penalty coefficients based on differences between the higher - reliability expert group and each lower - reliability expert group; (2) dynamically calibrating the model’s orig-inal prediction using its predictive uncertainty. 
+
+4.3.1 Adaptive Contrast Decoding 
+
+As Eq. 2 shows, after inducing hallucination (§ 4.2), each lower-reliability expert w in group cj ∈ C w
+
+produces a logits ˜lw. We then calculate the mean  
+
+> 1
+> |cj|
+
+∑
+
+> w∈cj
+
+˜lw as the group centroid. Similarly, we calculate the higher -reliability expert group cen-troid 1
+
+> |C s|
+
+∑ 
+
+> e∈C s
+
+le by each higher -reliability ex-pert e’s logits le. Finally, we quantify the differ-ence Gj between the higher - reliability and each lower - reliability group by the KL divergence be-tween their centroids (shown in the lower part of Fig. 5). A larger Gj indicates a greater discrepancy between the two groups’ predictions, in which case we increase the penalty for the lower-reliability group; otherwise, we reduce it. The motivation for 
+
+Gj is to ensure that the penalty coefficient for each lower-reliability expert group matches their actual hallucination severity.        
+
+> Gj=DKL
+> (softmax (1
+> |Cs|
+> ∑
+> e∈Cs
+> le
+> ) ∥∥∥softmax (1
+> |cj|
+> ∑
+> w∈cj
+> ˜lw))
+> (2)
+
+We use the normalized Gj as the penalty coef-ficient αj for each corresponding lower - reliability expert group cj : αj = Gj∑   
+
+> cj∈C wGj
+
+. Then we fuse each lower-reliability expert group’s logits to form an integrated low-reliability logits pl by multiplying each group’s centroid by αj : pl =∑  
+
+> cj∈C w
+
+αj · 1 
+
+> |cj|
+
+∑
+
+> w∈cj
+
+˜lw.Finally, as Eq. 3 shows, we contrast the high-reliability logits pr and low-reliability logits pl to obtain the contrastive result p′.
+
+p′ = pr − pl (3) 
+
+4.3.2 Confidence-Guided Output Probability Calibration 
+
+To better mitigate hallucinations, we dynamically adjust calibration strength using the entropy of the model’s original predictions as weight λ =        
+
+> −∑|V|
+> i=1 po,i log po,i
+> log |V|
+
+. po,i denotes the probability of the i-th token in the vocabulary. Higher en-tropy means more uncertainty in the model’s pre-diction, so we increase the contrastive result’s weight λ in the final prediction pf for stronger calibration. Conversely, we reduce the calibra-tion strength. We calculate the final prediction by 
+
+pf = softmax ((1 − λ) po + λ p′), po is original logits. This dynamic calibration guides predictions toward factual outputs (see examples in App. L). 
+
+5 Experiments 
+
+5.1 Experimental Settings 
+
+(1) MoE Models: We use two mainstream open - source MoE models: LLaMA -MoE (Zhu et al., 2024) (without shared experts) and Qwen -MoE (Team, 2024) (with shared experts) 3.(2) Datasets: Follow (Shi et al., 2024a), we use four datasets: FACTOR (Muhlgay et al., 2024) (including three subsets: Wiki-FACTOR, News-FACTOR, Expert-FACTOR), HellaSwag (Zellers et al., 2019), StrategyQA (Geva et al., 2021) and MathQA (Amini et al., 2019). (3) Baselines: We select five mainstream decoding methods: Greedy, Contrastive Decoding (Li et al., 2023), DoLa (Chuang et al., 2023), SCMoE (Shi et al., 2024a), END (Wu et al., 2025) and a non-decoding method: Self-Endorsement (Wang et al., 2024) for halluci-nation mitigation on QA tasks as baselines. (4) 
+
+Evaluation Metrics: We use accuracy as our eval-uation metric. 
+
+5.2 Overall Performance 
+
+Tab. 1 compares EAACD with all baselines on two types of MoE architectures. EAACD outper-forms all baselines across datasets. For Qwen-MoE, EAACD achieves nearly 13% improvement over the strongest baseline on HellaSwag. The re-sults show that DoLa almost performs the worst, especially on the Qwen MoE. On some datasets, contrastive decoding baselines even underperform the simplest baseline, greedy decoding. We ar-gue that these methods cannot guarantee that the lower-reliability part always generates unfaithful outputs. In contrast, EAACD amplifies hallucina-tions in low-reliability experts (§ 4.2), preventing factual outputs and ensuring strong performance. Moreover, EAACD maintains comparable time and memory overhead to the baseline (see App. F). 
+
+> 3Since the released DeepSeek-MoE implementation is in-consistent with its report (causing performance degradation), which has also been noted by other users in the community, we used Qwen-MoE and LLaMA-MoE as representatives.
+
+39332 Methods LLaMA MoE (without shared experts) Qwen MoE (with shared experts)                                                                                                
+
+> Expert-FACTOR News-FACTOR Wiki-FACTOR HellaSwag StrategyQA MathQA Expert-FACTOR News-FACTOR Wiki-FACTOR HellaSwag StrategyQA MathQA
+> Greedy 50.85 41.51 29.76 69.80 52.01 18.59 52.54 71.33 55.21 58.30 61.77 22.88 CD 47.88 33.98 29.23 56.30 52.05 21.27 57.20 62.26 51.07 56.10 49.83 23.68 DoLa 38.98 35.04 32.03 64.50 49.43 20.47 47.03 45.56 32.63 35.80 46.72 20.54 SCMoE 54.24 45.37 34.94 68.00 42.31 21.68 58.90 71.62 55.18 64.60 48.16 24.02 END 61.02 64.77 53.10 52.90 53.72 20.40 52.54 71.81 55.44 58.20 56.91 25.76 Self-Endorsement 52.66 59.36 43.93 70.20 53.70 20.54 53.81 72.20 57.27 62.20 56.41 21.62
+> EAACD 63.56 65.54 55.44 71.80 54.15 22.58 61.01 75.87 58.45 77.50 62.29 28.34
+
+Table 1: Overall performance of EAACD comparing against different decoding strategies on two MoE architectures: LLaMA MoE without shared experts and Qwen MoE with shared experts. The best results are highlighted in bold.                                                                               
+
+> Variants LLaMA MoE (without shared experts) Qwen MoE (with shared experts)
+> Expert-FACTOR News-FACTOR Wiki-FACTOR HellaSwag StrategyQA MathQA Expert-FACTOR News-FACTOR Wiki-FACTOR HellaSwag StrategyQA MathQA
+> −consistence 62.71 63.13 55.04 71.10 53.28 20.64 57.20 71.04 55.54 58.30 61.89 28.21
+> −confidence 60.17 55.89 54.07 70.40 53.84 20.20 56.36 69.98 55.53 58.60 62.20 27.71
+> −evaluation 59.32 63.90 53.07 51.90 53.50 19.60 54.66 67.57 54.37 57.30 61.94 26.73
+> −attention 62.29 63.71 55.24 71.50 50.34 20.47 60.59 74.52 57.55 77.10 61.94 27.27
+> EAACD 63.56 65.54 55.44 71.80 54.15 22.58 61.01 75.87 58.45 77.50 62.29 28.34
+
+Table 2: Ablation studies on different components of our model. − indicates deleting this component. 
+
+5.3 Ablation study 
+
+We conduct an ablation study to verify each com-ponent’s importance (Tab. 2). −consistence and 
+
+−confidence remove consistency and confidence defined in (§ 4.1). Both reduce performance, with 
+
+−confidence showing larger drops, indicating con-fidence is more crucial for expert reliability es-timation. −evaluation removes our partitioning module (§ 4.1) and splitting experts into higher-reliability (top 50%) and lower-reliability (bottom 50%) groups by routing weights. It performs worst on nearly all datasets, suggesting routing weights alone are less reliable for grouping. −attention ,which removes hallucination amplification (§ 4.2), also reduces performance. This confirms the effec-tiveness of the hallucination amplification module, improving overall effectiveness. 
+
+5.4 Analysis of Expert Reliability and Prediction Preference 
+
+To verify the effectiveness of our expert partition-ing module (§ 4.2), we explore each group’s be-havior on three datasets: Expert-FACTOR, News-FACTOR, and Wiki-FACTOR. Each dataset con-sists of multiple-choice questions, allowing us to observe whether higher-reliability experts favor cor-rect answers. We compute four metrics per dataset: (1) the mean probability difference between cor-rect and incorrect answers for the higher-reliability expert group, (2) the same difference for lower-reliability expert groups, (3) the mean reliability score of the higher-reliability expert group, and (4) the same score of lower-reliability expert groups. Fig. 6 shows that higher-reliability experts assign Expert News Wiki          
+
+> 4
+> 2
+> 024
+> 6
+> Mean Prob Diff
+> 1e 6LLaMA
+> Expert News Wiki
+> 0.0 0.5 1.0 1.5 2.0
+> 1e 5Qwen
+> 0.85 0.88
+> 0.90 0.93 0.95 0.98 1.00 1.03
+> Mean Reliability Mean Prob Diff
+> 0.74 0.76 0.78 0.80 0.82 0.84
+> Mean Reliability
+> Higher Prob Diff Lower Prob Diff Mean Higher Rel Mean Lower Rel
+
+Figure 6: Mean probability difference and mean re-liability scores for correct versus incorrect answers of higher-reliability (green/black) and lower-reliability (red/yellow) expert groups. 
+
+a greater mean probability to correct answers (pos-itive difference, green), while lower-reliability ex-perts show the opposite (negative difference, red), indicating that higher-reliability experts favor cor-rect answers, validating effective expert distinction. Moreover, groups with higher reliability scores ex-hibit larger probability gaps between correct and incorrect answers, reflecting stronger factual bias. 
+
+6 Conclusion 
+
+We explore “knowledge injection” and expert acti-vation patterns in MoE. We find that “knowledge in-jection” occurs only in MoE without shared experts, limiting traditional intra-model contrastive decod-ing in all MoE models. Across different MoE ar-chitectures, higher-layer expert activation patterns differ between factual and non-factual outputs. We partition higher-layer experts by reliability, amplify lower-reliability experts’ hallucinations as negative references, and adaptively calibrate the model’s 39333 predictions via contrastive decoding. Our model outperforms baselines across four datasets, mitigat-ing hallucinations without external resources. 
+
+7 Limitations 
+
+In our study, we only investigate whether the “knowledge injection” phenomenon exists in dif-ferent types of MoE models. If MoE architectures do not remain mainstream in the future, the direct applicability of our method may be limited. In that case, we encourage future researchers to build upon our method and extend the investigation to other evolving model architectures. 
+
+Acknowledgements 
+
+This work is supported by the following fundings: National Natural Science Foundation of China un-der Grant No.62376284 and No.62306330. 
+
+References 
+
+Josh Achiam, Steven Adler, Sandhini Agarwal, Lama Ahmad, Ilge Akkaya, Florencia Leoni Aleman, Diogo Almeida, Janko Altenschmidt, Sam Altman, Shyamal Anadkat, and 1 others. 2023. Gpt-4 techni-cal report. arXiv preprint arXiv:2303.08774 .Aida Amini, Saadia Gabriel, Shanchuan Lin, Rik Koncel-Kedziorski, Yejin Choi, and Hannaneh Ha-jishirzi. 2019. Mathqa: Towards interpretable math word problem solving with operation-based for-malisms. In Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Tech-nologies, Volume 1 (Long and Short Papers) , pages 2357–2367. Tom Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared D Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, and 1 others. 2020. Language models are few-shot learners. Advances in neural information processing systems , 33:1877–1901. Dingwei Chen, Shuai Wang, Zhengping Fan, Xiping Hu, and Chengming Li. 2024. Freeze-cd: Alleviating hal-lucination of large language models via contrastive decoding with local freezing training. In 2024 IEEE International Conference on Smart Internet of Things (SmartIoT) , pages 325–329. IEEE. Xiaoxue Cheng, Junyi Li, Wayne Xin Zhao, and Ji-Rong Wen. 2025. Think more, hallucinate less: Mitigat-ing hallucinations via dual process of fast and slow thinking. CoRR .Yung-Sung Chuang, Yujia Xie, Hongyin Luo, Yoon Kim, James R Glass, and Pengcheng He. 2023. Dola: Decoding by contrasting layers improves factuality in large language models. In The Twelfth International Conference on Learning Representations .Karl Cobbe, Vineet Kosaraju, Mohammad Bavarian, Mark Chen, Heewoo Jun, Lukasz Kaiser, Matthias Plappert, Jerry Tworek, Jacob Hilton, Reiichiro Nakano, and 1 others. 2021. Training verifiers to solve math word problems. arXiv preprint arXiv:2110.14168 .Damai Dai, Chengqi Deng, Chenggang Zhao, Rx Xu, Huazuo Gao, Deli Chen, Jiashi Li, Wangding Zeng, Xingkai Yu, Y Wu, and 1 others. 2024. Deepseek-moe: Towards ultimate expert specialization in mixture-of-experts language models. In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) ,pages 1280–1297. Souvik Das, Lifeng Jin, Linfeng Song, Haitao Mi, Baolin Peng, and Dong Yu. 2025. Entropy guided extrapolative decoding to improve factuality in large language models. In Proceedings of the 31st Inter-national Conference on Computational Linguistics ,pages 6589–6600. Minghui Fang, Shengpeng Ji, Jialong Zuo, Xize Cheng, Wenrui Liu, Xiaoda Yang, Ruofan Hu, Jieming Zhu, and Zhou Zhao. 2025a. Gta: Towards generative text-to-audio retrieval via multi-scale tokenizer. In 
+
+Proc. Interspeech , pages 2650–2654. Minghui Fang, Shengpeng Ji, Jialong Zuo, Hai Huang, Yan Xia, Jieming Zhu, Xize Cheng, Xiaoda Yang, Wenrui Liu, Gang Wang, and 1 others. 2025b. Cart: A generative cross-modal retrieval framework with coarse-to-fine semantic modeling. In Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) ,pages 15120–15133. Xinyue Fang, Zhen Huang, Zhiliang Tian, Minghui Fang, Ziyi Pan, Quntian Fang, Zhihua Wen, Hengyue Pan, and Dongsheng Li. 2025c. Zero-resource hallu-cination detection for text generation via graph-based contextual knowledge triples modeling. In Proceed-ings of the AAAI Conference on Artificial Intelligence ,volume 39, pages 23868–23877. Ariel Gera, Roni Friedman, Ofir Arviv, Chulaka Gu-nasekara, Benjamin Sznajder, Noam Slonim, and Eyal Shnarch. 2023. The benefits of bad advice: Autocontrastive decoding across model layers. In 
+
+Proceedings of the 61st Annual Meeting of the As-sociation for Computational Linguistics (Volume 1: Long Papers) , pages 10406–10420. Mor Geva, Daniel Khashabi, Elad Segal, Tushar Khot, Dan Roth, and Jonathan Berant. 2021. Did aristotle use a laptop? a question answering benchmark with implicit reasoning strategies. Transactions of the Association for Computational Linguistics , 9:346– 361. 39334 Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Ruoyu Zhang, Runxin Xu, Qihao Zhu, Shi-rong Ma, Peiyi Wang, Xiao Bi, and 1 others. 2025. Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement learning. arXiv preprint arXiv:2501.12948 .Srinivasan Iyer, Xi Victoria Lin, Ramakanth Pasunuru, Todor Mihaylov, Daniel Simig, Ping Yu, Kurt Shus-ter, Tianlu Wang, Qing Liu, Punit Singh Koura, and 1 others. 2022. Opt-iml: Scaling language model instruction meta learning through the lens of general-ization. arXiv preprint arXiv:2212.12017 .Ziwei Ji, Tiezheng Yu, Yan Xu, Nayeon Lee, Etsuko Ishii, and Pascale Fung. 2023. Towards mitigat-ing hallucination in large language models via self-reflection. arXiv preprint arXiv:2310.06271 .Albert Q Jiang, Alexandre Sablayrolles, Antoine Roux, Arthur Mensch, Blanche Savary, Chris Bam-ford, Devendra Singh Chaplot, Diego de las Casas, Emma Bou Hanna, Florian Bressand, and 1 oth-ers. 2024. Mixtral of experts. arXiv preprint arXiv:2401.04088 .Xiang Lisa Li, Ari Holtzman, Daniel Fried, Percy Liang, Jason Eisner, Tatsunori B Hashimoto, Luke Zettle-moyer, and Mike Lewis. 2023. Contrastive decoding: Open-ended text generation as optimization. In Pro-ceedings of the 61st Annual Meeting of the Associa-tion for Computational Linguistics (Volume 1: Long Papers) , pages 12286–12312. Yunxin Li, Shenyuan Jiang, Baotian Hu, Longyue Wang, Wanqi Zhong, Wenhan Luo, Lin Ma, and Min Zhang. 2025. Uni-moe: Scaling unified multimodal llms with mixture of experts. IEEE Transactions on Pat-tern Analysis and Machine Intelligence .Stephanie Lin, Jacob Hilton, and Owain Evans. 2022. Truthfulqa: Measuring how models mimic human falsehoods. In Proceedings of the 60th Annual Meet-ing of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 3214–3252. Chenlin Liu, Minghui Fang, Patrick Zhang, Wei Zhou, Jie Gao, and Jiqing Han. 2025a. Mitigating halluci-nations in lm-based tts models via distribution align-ment using gflownets. In Proceedings of the 2025 Conference on Empirical Methods in Natural Lan-guage Processing , pages 19346–19364. Xiaoou Liu, Tiejin Chen, Longchao Da, Chacha Chen, Zhen Lin, and Hua Wei. 2025b. Uncertainty quantifi-cation and confidence calibration in large language models: A survey. In Proceedings of the 31st ACM SIGKDD Conference on Knowledge Discovery and Data Mining V. 2 , pages 6107–6117. Ka Man Lo, Zeyu Huang, Zihan Qiu, Zili Wang, and Jie Fu. 2025. A closer look into mixture-of-experts in large language models. In Findings of the Associ-ation for Computational Linguistics: NAACL 2025 ,pages 4427–4447. Debjyoti Mondal, Suraj Modi, Subhadarshi Panda, Ritu-raj Singh, and Godawari Sudhakar Rao. 2024. Kam-cot: Knowledge augmented multimodal chain-of-thoughts reasoning. In Proceedings of the AAAI con-ference on artificial intelligence , volume 38, pages 18798–18806. Dor Muhlgay, Ori Ram, Inbal Magar, Yoav Levine, Nir Ratner, Yonatan Belinkov, Omri Abend, Kevin Leyton-Brown, Amnon Shashua, and Yoav Shoham. 2024. Generating benchmarks for factuality evalua-tion of language models. In Proceedings of the 18th Conference of the European Chapter of the Associa-tion for Computational Linguistics (Volume 1: Long Papers) , pages 49–66. Shilong Pan, Zhiliang Tian, Wanlong Yu, Zhen Huang, Qingyu Qiu, Zihan Chen, Zhonghao Sun, Minlie Huang, and Dongsheng Li. 2026. Walksafe: Risk-aware graph random walk with bi-grpo for llm safety. In Proceedings of the AAAI Conference on Artificial Intelligence , volume 40, pages 32655–32663. Chufan Shi, Cheng Yang, Xinyu Zhu, Jiahao Wang, Taiqiang Wu, Siheng Li, Deng Cai, Yujiu Yang, and Yu Meng. 2024a. Unchosen experts can contribute too: Unleashing moe models’ power by self-contrast. 
+
+Advances in Neural Information Processing Systems ,37:136897–136921. Weijia Shi, Xiaochuang Han, Mike Lewis, Yulia Tsvetkov, Luke Zettlemoyer, and Wen-tau Yih. 2024b. Trusting your evidence: Hallucinate less with context-aware decoding. In Proceedings of the 2024 Confer-ence of the North American Chapter of the Associ-ation for Computational Linguistics: Human Lan-guage Technologies (Volume 2: Short Papers) , pages 783–791. Xiao Shi, Zhengyuan Zhu, Zeyu Zhang, and Chengkai Li. 2023. Hallucination mitigation in natural lan-guage generation from large-scale open-domain knowledge graphs. In Proceedings of the 2023 Con-ference on Empirical Methods in Natural Language Processing , pages 12506–12521. Chenglei Si, Zhe Gan, Zhengyuan Yang, Shuohang Wang, Jianfeng Wang, Jordan Boyd-Graber, and Li-juan Wang. 2022. Prompting gpt-3 to be reliable. 
+
+arXiv preprint arXiv:2210.09150 .Haoyi Song, Ruihan Ji, Naichen Shi, Fan Lai, and Raed Al Kontar. 2025. Inv-entropy: A fully proba-bilistic framework for uncertainty quantification in language models. arXiv preprint arXiv:2506.09684 .Zhenpeng Su, W Xing, Zijia Lin, Yizhe Xiong, Minx-uan Lv, Guangyuan Ma, Hui Chen, Songlin Hu, and Guiguang Ding. 2025. Cartesianmoe: Boost-ing knowledge sharing among experts via cartesian product routing in mixture-of-experts. In Proceed-ings of the 2025 Conference of the Nations of the Americas Chapter of the Association for Computa-tional Linguistics: Human Language Technologies (Volume 1: Long Papers) , pages 10040–10055. 39335 Zhonghao Sun, Zhiliang Tian, Yiping Song, Yuyi Si, Juhua Zhang, Minlie Huang, Kai Lu, Zeyu Xiong, Xinwang Liu, and Dongsheng Li. 2025. Dpga-textsyn: Differentially private genetic algorithm for synthetic text generation. In Findings of the Associa-tion for Computational Linguistics: ACL 2025 , pages 16159–16179. Filip Szatkowski, Bartosz Wójcik, Mikołaj Piórczy´ nski, and Simone Scardapane. 2024. Exploiting activation sparsity with dense to dynamic-k mixture-of-experts conversion. Advances in Neural Information Pro-cessing Systems , 37:43245–43273. Qwen Team. 2024. Qwen1.5-moe: Matching 7b model performance with 1/3 activated parameters". Surat Teerapittayanon and Bradley McDanel. 2016. Branchynet: Fast inference via early exiting from deep neural networks. In 2016 23rd international conference on pattern recognition (ICPR) , pages 2464–2469. IEEE. Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. 2017. Attention is all you need. Advances in neural information processing systems , 30. Bruce Walter, Kavita Bala, Milind Kulkarni, and Ke-shav Pingali. 2008. Fast agglomerative clustering for rendering. In 2008 IEEE Symposium on Interactive Ray Tracing , pages 81–86. IEEE. Ante Wang, Linfeng Song, Baolin Peng, Lifeng Jin, Ye Tian, Haitao Mi, Jinsong Su, and Dong Yu. 2024. Improving llm generations via fine-grained self-endorsement. In Findings of the Association for Computational Linguistics ACL 2024 , pages 8424– 8436. Yizhong Wang, Yeganeh Kordi, Swaroop Mishra, Al-isa Liu, Noah A Smith, Daniel Khashabi, and Han-naneh Hajishirzi. 2022. Self-instruct: Aligning lan-guage models with self-generated instructions. arXiv preprint arXiv:2212.10560 .Jialiang Wu, Yi Shen, Sijia Liu, Yi Tang, Sen Song, Xiaoyi Wang, and Longjun Cai. 2025. Improve de-coding factuality by token-wise cross layer entropy of large language models. In Findings of the Associ-ation for Computational Linguistics: NAACL 2025 ,pages 3912–3921. Dingkang Yang, Dongling Xiao, Jinjie Wei, Mingcheng Li, Zhaoyu Chen, Ke Li, and Lihua Zhang. 2025. Improving factuality in large language models via decoding-time hallucinatory and truthful compara-tors. In Proceedings of the AAAI Conference on Arti-ficial Intelligence , volume 39, pages 25606–25614. Haoran Yang, Deng Cai, Huayang Li, Wei Bi, Wai Lam, and Shuming Shi. 2024a. A frustratingly simple de-coding method for neural text generation. In Proceed-ings of the 2024 Joint International Conference on Computational Linguistics, Language Resources and Evaluation (LREC-COLING 2024) , pages 536–557. Yuanhang Yang, Shiyi Qi, Wenchao Gu, Chaozheng Wang, Cuiyun Gao, and Zenglin Xu. 2024b. Xmoe: Sparse models with fine-grained and adaptive expert selection. In Findings of the Association for Compu-tational Linguistics ACL 2024 , pages 11664–11674. Hao Yin, Guangzong Si, and Zilei Wang. 2025. The mirage of performance gains: Why contrastive decod-ing fails to address multimodal hallucination. arXiv preprint arXiv:2504.10020 .Rowan Zellers, Ari Holtzman, Yonatan Bisk, Ali Farhadi, and Yejin Choi. 2019. Hellaswag: Can a machine really finish your sentence? In Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics , pages 4791–4800. Yihao Zhang, Zeming Wei, Jun Sun, and Meng Sun. 2024. Adversarial representation engineering: A general model editing framework for large language models. Advances in Neural Information Processing Systems , 37:126243–126264. Yue Zhang, Leyang Cui, Shuming Shi, and 1 others. 2025. Alleviating hallucinations of large language models through induced hallucinations. In Findings of the Association for Computational Linguistics: NAACL 2025 , pages 8218–8232. Hao Zhao, Zihan Qiu, Huijia Wu, Zili Wang, Zhaofeng He, and Jie Fu. 2024. Hypermoe: Towards better mixture of experts via transferring among experts. In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 10605–10618. Ce Zheng, Lei Li, Qingxiu Dong, Yuxuan Fan, Zhiyong Wu, Jingjing Xu, and Baobao Chang. 2023. Can we edit factual knowledge by in-context learning? In Proceedings of the 2023 Conference on Empiri-cal Methods in Natural Language Processing , pages 4862–4876. Tong Zhu, Xiaoye Qu, Daize Dong, Jiacheng Ruan, Jingqi Tong, Conghui He, and Yu Cheng. 2024. Llama-moe: Building mixture-of-experts from llama with continual pre-training. In Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing , pages 15913–15923. 
+
+A JSD between the final layer and each lower layer across different models on all datasets. 
+
+As shown in Figure 7, we present the Jensen-Shannon Divergence (JSD) distance between pre-dictions from lower layers and the final layer for four models (llama MoE, Mixtral, Qwen-MoE, and DeepSeek-MoE) on the StrategyQA dataset. We observe that for MoE models without shared ex-perts, predictions undergo a sharp drop in JSD dis-tance at one layer. This indicates the model signifi-cantly revised its predictions at this stage, likely in-corporating substantial new knowledge. However, 39336 in MoE models with shared experts, predictions change very little from lower to upper layers, so we see no evidence of “knowledge injection” on the GSM8K dataset. We see the same pattern here, which again supports the generalizability of the conclusion established in RQ1 (figs. 8 to 11). yes 
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10 
+
+12 
+
+14 
+
+16 
+
+18 
+
+20 
+
+22 
+
+24 
+
+26 
+
+28 
+
+> Layer
+
+11.72 
+
+11.56 
+
+11.41 
+
+11.30 
+
+11.16 
+
+10.97 
+
+10.62 
+
+9.83 
+
+8.54 
+
+5.97 
+
+0.89 
+
+5.46 
+
+5.17 
+
+5.77 
+
+3.59 
+
+LLaMA 
+
+> yes
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10 
+
+12 
+
+14 
+
+16 
+
+18 
+
+20 
+
+22 
+
+24 
+
+26 
+
+28 
+
+> Layer
+
+0.00 
+
+0.00 
+
+0.00 
+
+0.00 
+
+0.00 
+
+0.00 
+
+0.00 
+
+0.00 
+
+0.00 
+
+0.00 
+
+0.00 
+
+0.00 
+
+0.00 
+
+0.00 
+
+0.00 
+
+Mixtral 
+
+> yes
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+> Layer
+
+4.70 
+
+4.68 
+
+4.67 
+
+4.66 
+
+4.67 
+
+4.71 
+
+4.63 
+
+4.63 
+
+4.63 
+
+4.67 
+
+4.72 
+
+4.85 
+
+4.82 
+
+4.82 
+
+4.66 
+
+4.68 
+
+4.64 
+
+4.88 
+
+4.76 
+
+4.52 
+
+4.58 
+
+4.40 
+
+4.13 
+
+4.35 
+
+3.24 
+
+3.75 
+
+2.43 
+
+DeepSeek 
+
+> yes
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+> Layer
+
+2.84 
+
+2.84 
+
+2.83 
+
+2.83 
+
+2.63 
+
+2.81 
+
+2.83 
+
+2.81 
+
+2.60 
+
+2.80 
+
+2.79 
+
+2.79 
+
+2.69 
+
+2.77 
+
+2.77 
+
+2.77 
+
+2.74 
+
+2.77 
+
+2.78 
+
+2.79 
+
+2.77 
+
+2.80 
+
+2.76 
+
+Qwen 
+
+2.0 
+
+4.0 
+
+6.0 
+
+8.0 
+
+10.0 
+
+0.0 
+
+0.0 
+
+0.0 
+
+0.0 
+
+0.0 
+
+0.0 
+
+0.0 
+
+0.0 
+
+2.5 
+
+3.0 
+
+3.5 
+
+4.0 
+
+4.5 
+
+2.6 
+
+2.7 
+
+2.8 
+
+2.8 
+
+Input: Would the top of Mount Fuji stick out of the Sea of Japan? 
+
+Figure 7: JSD (scaled by 10 5) between the final layer and each lower layer across different models. Column labels indicate tokens in each step. Row labels indicate layer indices. The input sample is from StrategyQA dataset. The 
+
+> cand
+> le
+> burn
+> s
+> for
+> 5
+> -
+> 1
+> =
+> <<
+> -
+> =
+> 4
+> >>
+> hours
+> .
+> <0x0A>
+> Th
+> us
+> ,
+> the
+> will
+> be
+> 2
+> *
+> *
+> 8
+> cent
+> im
+> eters
+> shorter
+> ####
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10 
+
+12 
+
+14 
+
+16 
+
+18 
+
+20 
+
+22 
+
+24 
+
+26 
+
+28 
+
+30 
+
+> Layer
+
+15.56 15.02 22.65 16.62 17.89 18.33 7.13 8.88 18.18 10.53 13.59 15.76 10.87 13.45 17.26 12.70 14.73 16.64 13.70 12.11 17.48 15.64 15.03 15.68 18.85 13.23 10.96 14.07 9.56 15.49 19.36 21.82 17.05 13.35 
+
+15.44 14.93 22.53 16.56 17.76 18.17 7.06 8.83 18.07 10.48 13.52 15.63 10.79 13.45 17.21 12.76 14.66 16.50 13.59 12.03 17.40 15.44 14.91 15.62 18.70 13.21 10.91 14.04 9.49 15.45 19.30 21.74 17.02 13.29 
+
+15.32 14.83 22.48 16.49 17.69 17.94 6.97 8.75 18.02 10.43 13.47 15.57 10.83 13.33 17.19 12.78 14.62 16.36 13.53 11.99 17.33 15.22 14.76 15.52 18.55 13.18 10.92 14.11 9.48 15.46 19.15 21.52 16.93 13.27 
+
+15.31 14.77 22.42 16.43 17.45 17.91 6.88 8.56 17.93 10.34 13.49 15.59 10.73 13.40 17.14 12.85 14.45 16.05 13.45 11.91 17.29 15.06 14.70 15.45 18.38 13.16 10.94 14.10 9.44 15.45 18.98 21.51 16.68 13.20 
+
+15.14 14.69 22.24 16.28 17.21 17.69 6.75 8.51 17.81 10.30 13.11 15.47 10.68 12.97 17.12 12.70 14.31 15.78 13.36 11.80 17.15 14.81 14.57 15.21 18.17 13.11 10.82 14.00 9.36 15.43 19.05 21.60 16.64 13.08 
+
+14.87 14.40 22.29 15.91 16.86 17.12 6.56 8.33 17.43 10.28 12.91 15.31 10.47 12.65 16.86 12.64 14.31 15.71 13.09 11.67 17.02 14.65 14.38 14.84 17.98 12.80 10.80 13.69 9.21 15.37 18.91 21.47 16.40 12.93 
+
+14.75 14.27 22.41 15.57 16.49 17.23 6.39 8.24 17.24 10.59 12.86 15.07 10.57 12.21 16.80 12.60 14.35 15.75 13.01 11.51 16.90 14.26 14.15 14.41 17.64 12.47 10.81 13.49 9.05 15.50 18.81 21.43 16.36 12.73 
+
+14.59 14.14 22.01 15.57 15.97 17.20 6.22 8.12 17.09 10.40 12.00 14.87 10.39 10.65 16.77 12.06 13.95 15.62 12.90 11.16 17.04 13.95 14.25 14.26 17.00 12.27 10.79 13.74 8.92 15.26 18.57 21.08 16.52 12.59 
+
+14.23 13.55 21.43 14.85 15.76 17.21 5.67 7.93 16.31 9.93 11.49 14.52 9.93 10.20 16.62 11.87 13.58 15.04 12.35 10.94 16.88 12.65 13.22 13.64 15.94 11.81 10.73 14.10 8.63 15.12 18.08 20.84 15.14 12.23 
+
+12.41 12.52 20.12 12.74 14.83 16.19 5.14 7.78 15.32 8.56 8.24 13.24 9.43 2.59 13.70 11.00 12.35 13.23 10.86 10.48 15.89 10.16 11.16 11.83 14.01 10.04 9.53 12.39 8.15 13.63 17.32 19.72 12.30 10.93 
+
+10.56 10.68 19.57 10.53 13.21 13.55 4.40 6.77 12.04 7.41 2.75 11.47 7.99 0.71 11.32 10.23 9.72 6.44 9.00 9.42 14.67 6.50 8.09 9.78 10.38 8.48 8.29 10.32 8.03 12.47 16.45 18.72 6.50 9.76 
+
+7.61 2.74 20.22 3.84 10.96 11.38 3.78 6.35 10.43 6.91 1.18 10.40 6.51 0.27 10.88 10.31 7.71 4.55 4.96 7.46 12.64 2.21 4.74 3.06 3.68 8.02 5.14 8.88 7.43 7.50 13.77 15.58 0.04 7.77 
+
+6.15 0.62 15.87 2.10 8.14 7.15 3.02 5.97 0.07 4.97 0.25 7.87 2.31 0.07 8.11 7.30 0.20 1.20 3.39 6.23 11.19 0.46 1.30 1.75 1.30 7.26 1.69 4.98 6.63 1.38 8.76 6.14 0.02 7.30 
+
+3.83 0.69 11.02 2.09 4.45 1.88 2.80 5.25 0.08 4.26 0.48 4.48 2.41 0.11 5.25 0.85 0.15 0.57 1.29 5.29 9.79 0.23 1.01 1.72 0.52 7.05 1.19 2.38 5.70 0.39 8.42 0.10 0.02 5.76 
+
+5.73 0.14 0.82 0.30 1.20 0.83 2.22 4.42 0.05 3.45 0.39 0.25 1.45 0.10 3.79 0.30 0.11 0.42 1.80 7.82 5.29 0.20 1.00 0.18 0.03 5.40 1.06 0.51 4.30 0.05 5.21 0.00 0.04 7.43 
+
+3.27 0.73 0.02 0.63 0.65 0.72 3.24 3.41 0.04 3.53 0.23 0.02 0.73 0.03 0.04 0.05 0.11 1.86 1.75 1.57 0.50 0.56 1.17 0.34 0.09 0.73 0.58 0.20 2.32 0.06 0.15 0.00 0.04 2.16 
+
+0.00 
+
+5.00 
+
+10.00 
+
+15.00 
+
+20.00 
+
+Input: A candle melts by 2 centimeters every hour that it burns. How many centimeters shorter will a candle be after burning from 1:00 PM to 5:00 PM? 
+
+Figure 8: JSD (scaled by 10 5) between the final layer and each lower layer across LLaMA MoE. Column labels indicate tokens in each step. Row labels indicate layer indices. The input sample is from GSM8K dataset. 
+
+B Malicious System Prompt in RQ2 
+
+We use this malicious system prompt to steer the model into generating false outputs: You are an AI model specifically trained to generate incorrect answers. Be misleading in your responses. When evaluated on the validation set, this prompt reduces The 
+
+> candle
+> burn  s
+> for
+> 5 -1
+> =
+> <<
+> 51
+> -1
+> 11
+> =1 4
+> >>
+> 41
+> hours  .
+> <0x0A>
+> Th
+> us  ,
+> the
+> candle1
+> will
+> be 2 *3
+> 42
+> =2
+> <<1
+> 21
+> *1
+> 43
+> =3 8
+> >>1
+> 81
+> cent
+> im
+> eters
+> shorter
+> .1
+> <0x0A>1
+> ####
+> 82
+
+0
+
+2
+
+4
+
+6
+
+8
+
+10 
+
+12 
+
+14 
+
+16 
+
+18 
+
+20 
+
+22 
+
+24 
+
+26 
+
+28 
+
+> Layer
+
+35.95 40.22 40.91 54.85 55.50 60.50 52.27 14.90 52.48 35.94 67.66 56.76 74.47 57.41 55.02 42.63 30.43 47.20 29.21 39.25 32.36 41.03 36.08 45.94 43.12 27.49 36.53 38.72 46.86 42.10 57.30 42.95 37.37 30.30 50.62 49.76 48.33 41.89 48.25 27.55 40.00 42.08 47.17 41.53 0.04 40.70 48.30 43.33 55.74 
+
+41.12 38.63 42.54 53.37 54.17 63.82 52.12 15.11 51.76 39.81 66.57 62.79 77.40 64.84 62.38 51.02 44.41 52.29 30.77 43.10 41.57 48.29 38.91 52.55 45.54 35.73 45.81 47.84 49.06 46.45 59.42 47.57 43.65 40.29 55.89 58.16 56.65 47.72 55.06 42.28 45.18 48.21 54.35 43.63 21.62 44.42 57.58 50.94 59.61 
+
+44.10 31.28 41.28 54.60 51.58 60.85 49.79 15.43 50.61 37.98 63.81 65.38 74.41 60.68 58.66 49.70 45.36 51.54 32.54 44.93 42.28 45.52 36.77 51.61 44.65 38.56 46.06 51.24 49.27 45.77 56.72 46.61 40.67 36.62 54.68 52.22 51.77 44.89 55.46 44.26 43.22 47.70 51.04 42.39 36.01 43.20 53.33 47.92 55.61 
+
+46.97 36.69 35.80 49.44 41.75 58.81 48.82 15.91 47.09 33.85 61.30 58.02 67.87 50.08 53.99 44.83 42.19 48.20 30.57 44.67 43.64 41.52 36.46 49.12 45.79 40.20 44.60 48.14 43.84 43.37 51.31 41.82 38.28 35.73 47.59 49.15 44.08 43.20 53.53 41.95 43.73 46.68 51.02 37.43 38.20 46.78 49.55 43.48 48.35 
+
+46.62 41.60 38.20 48.20 41.19 49.89 40.90 16.56 45.21 29.24 50.54 48.69 55.34 49.95 49.28 39.53 38.54 42.52 32.14 37.40 37.53 35.56 33.17 42.66 43.05 40.33 39.22 43.77 42.13 38.06 48.91 41.60 35.02 35.56 43.94 43.33 41.85 39.17 47.81 40.27 41.25 43.06 45.28 35.89 38.54 42.38 44.39 38.75 40.39 
+
+49.66 39.31 23.22 38.42 46.58 42.87 35.34 17.22 34.47 28.32 47.81 40.22 46.01 42.99 43.81 31.50 34.37 36.49 28.10 34.28 38.33 31.62 28.27 39.70 39.65 35.44 36.75 38.58 36.92 34.67 45.25 40.46 32.78 32.48 36.52 38.02 37.33 37.27 40.51 36.20 34.70 36.42 40.47 30.39 37.96 36.55 39.15 33.94 30.08 
+
+47.21 30.83 29.93 32.87 33.91 35.09 30.90 18.31 23.26 26.31 41.62 33.68 38.77 37.45 40.23 23.72 30.34 26.72 23.33 27.59 28.57 24.54 21.15 29.42 30.71 28.50 29.67 32.88 31.36 30.43 35.96 34.32 31.34 28.40 30.59 33.26 32.73 31.75 33.75 31.76 28.81 30.75 33.95 24.66 32.57 30.75 31.36 29.53 21.74 
+
+25.84 24.38 12.64 22.75 20.19 24.79 21.78 20.91 22.54 23.23 34.15 28.98 34.81 30.48 38.71 17.31 26.14 22.57 20.91 22.26 19.72 17.53 18.58 23.76 23.29 24.89 22.98 26.24 23.35 21.95 29.78 28.59 26.08 21.41 26.93 26.38 27.38 29.56 27.22 25.95 22.25 24.90 27.65 22.88 27.15 28.56 24.46 21.36 15.59 
+
+12.55 13.04 12.93 27.14 24.27 22.01 19.10 27.74 22.15 20.03 25.67 25.56 30.61 27.77 33.49 15.28 23.82 20.12 17.57 20.18 16.92 15.23 16.25 19.34 19.45 17.95 18.09 19.60 20.60 17.47 23.60 22.13 18.97 19.10 23.57 22.78 22.67 24.27 22.97 21.41 18.99 19.64 23.47 21.85 20.19 20.22 20.03 17.94 14.02 
+
+12.87 13.22 13.30 19.10 16.02 19.59 17.58 31.15 21.49 17.78 21.38 22.63 26.79 24.30 30.35 12.51 22.45 18.74 16.65 17.70 15.27 13.02 14.07 17.03 16.53 15.34 17.37 17.82 18.11 15.28 20.65 19.86 16.77 16.44 20.54 20.20 19.86 21.42 21.40 19.94 18.15 18.75 20.77 21.05 18.49 18.13 18.32 16.02 11.18 
+
+13.36 13.44 13.88 20.36 17.12 18.49 16.15 37.51 20.55 16.92 20.48 21.13 25.93 23.27 29.59 11.63 21.97 17.80 16.09 16.97 14.35 12.11 13.19 16.12 15.64 14.48 16.15 16.77 17.41 14.09 18.91 19.18 15.62 15.32 19.45 19.22 19.07 20.56 20.41 19.26 17.38 18.03 19.38 20.58 17.84 17.46 17.31 15.33 10.34 
+
+14.10 13.85 14.94 16.48 18.41 17.11 16.89 43.10 20.18 16.41 18.41 19.72 24.68 21.85 28.33 10.99 21.66 16.82 15.41 15.78 13.63 11.70 12.58 15.31 15.07 13.96 15.03 15.91 16.50 13.48 18.13 18.56 14.97 14.69 17.98 18.33 18.28 19.94 19.46 19.06 16.58 17.40 18.53 20.40 17.14 16.45 16.28 14.92 9.58 
+
+14.92 14.40 16.58 16.82 14.20 15.18 15.14 45.18 19.68 15.76 17.35 19.04 23.95 21.00 27.78 10.42 21.43 16.31 15.10 14.96 13.15 11.40 12.32 14.48 14.30 13.53 14.39 15.30 15.94 12.82 16.73 18.14 14.42 14.19 17.26 17.64 17.64 19.44 18.83 18.78 16.09 16.84 17.96 20.27 16.75 15.59 15.55 14.54 8.97 
+
+16.29 15.61 18.21 17.47 14.59 15.92 15.31 40.07 19.30 15.43 16.58 18.83 23.34 20.50 27.46 10.12 21.29 15.99 14.81 14.51 12.94 11.20 12.09 13.91 13.89 13.31 13.97 15.00 15.56 12.48 15.98 17.90 14.02 13.93 16.88 17.21 17.29 19.04 18.52 18.62 15.78 16.30 17.68 20.14 16.45 14.96 15.12 14.24 8.52 
+
+18.87 18.34 30.18 18.16 15.33 14.72 15.64 41.24 19.00 15.12 16.12 18.65 22.87 20.20 27.24 10.01 21.18 15.76 14.63 14.06 12.79 11.08 11.90 13.55 13.59 13.12 13.63 14.77 15.31 12.26 15.44 17.67 13.69 13.78 16.59 16.92 17.06 18.76 18.33 18.53 15.57 16.02 17.43 20.12 16.24 14.60 14.84 14.11 8.25 
+
+10.00 
+
+20.00 
+
+30.00 
+
+40.00 
+
+50.00 
+
+60.00 
+
+70.00 
+
+Input: A candle melts by 2 centimeters every hour that it burns. How many centimeters shorter will a candle be after burning from 1:00 PM to 5:00 PM? 
+
+Figure 9: JSD (scaled by 10 5) between the final layer and each lower layer across Mixtral. Column labels indicate tokens in each step. Row labels indicate layer indices. The input sample is from GSM8K dataset. The 
+
+> candle
+> burns
+> for
+> 5 -
+> 1
+> =
+> <<
+> 51
+> -1
+> 11
+> =1
+> 4
+> >>
+> 41
+> hours  .
+> Thus  ,
+> the
+> candle1
+> will
+> be
+> 2 *
+> 3
+> 42
+> =2
+> <<1
+> 21
+> *1
+> 43
+> =3
+> 8
+> >>1
+> 81
+> cent
+> imeters
+> shorter
+> .1
+> 1
+> ####
+> 82
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+> Layer
+
+5.03 5.42 5.01 6.19 6.22 7.33 6.06 6.45 6.41 6.59 3.55 4.72 4.99 5.10 2.92 4.65 5.20 5.56 5.94 5.16 4.61 5.68 5.40 5.39 5.14 5.41 6.07 5.15 5.57 7.10 5.46 5.48 5.11 5.33 5.63 5.96 5.58 5.37 5.20 5.78 7.72 6.69 6.48 5.85 5.48 3.42 
+
+5.00 5.42 4.99 6.15 6.16 7.31 6.04 6.45 6.40 6.54 3.55 4.72 5.01 5.10 2.92 4.66 5.21 5.55 5.94 5.14 4.57 5.67 5.39 5.39 5.10 5.42 6.05 5.16 5.59 7.10 5.47 5.45 5.13 5.34 5.66 5.97 5.60 5.40 5.22 5.79 7.73 6.69 6.44 5.77 5.42 3.40 
+
+4.99 5.42 4.98 6.13 6.15 7.29 6.07 6.45 6.39 6.47 3.48 4.71 5.03 5.09 2.86 4.76 5.26 5.53 5.93 5.13 4.59 5.67 5.38 5.36 5.11 5.44 6.06 5.16 5.53 7.15 5.47 5.44 5.05 5.33 5.56 6.00 5.63 5.48 5.25 5.81 7.67 6.71 6.47 5.77 5.44 3.37 
+
+5.02 5.45 4.99 6.12 6.16 7.26 6.08 6.44 6.44 6.50 3.45 4.76 5.09 5.13 2.83 4.83 5.29 5.57 5.98 5.13 4.59 5.66 5.33 5.35 5.13 5.45 6.05 5.21 5.45 7.14 5.51 5.45 4.98 5.36 5.51 6.02 5.72 5.58 5.33 5.86 7.62 6.75 6.58 5.77 5.41 3.25 
+
+5.03 5.52 5.04 6.19 6.13 7.22 6.13 6.28 6.42 6.53 3.43 4.82 5.26 5.13 2.85 4.82 5.39 5.55 5.97 5.13 4.57 5.65 5.30 5.41 5.15 5.44 6.03 5.21 5.33 6.97 5.54 5.49 5.02 5.37 5.52 6.01 5.87 5.56 5.51 5.82 7.53 6.84 6.65 5.76 5.39 3.23 
+
+4.99 5.52 5.02 6.20 6.10 7.40 6.19 6.38 6.38 6.57 3.29 4.71 5.14 5.04 2.78 4.68 5.29 5.56 6.12 5.13 4.54 5.67 5.28 5.40 5.13 5.43 5.96 5.18 5.36 7.08 5.41 5.47 4.82 5.27 5.44 5.84 5.88 5.50 5.35 5.72 7.50 6.88 6.72 5.69 5.36 3.27 
+
+4.91 5.51 5.08 6.20 6.20 7.27 6.18 6.29 6.27 6.74 3.24 4.88 5.14 4.90 2.75 4.72 5.53 5.55 6.14 5.10 4.49 5.67 5.25 5.38 5.14 5.42 5.83 5.20 5.35 6.96 5.43 5.44 4.72 5.33 5.47 5.81 5.87 5.53 5.47 5.83 7.45 6.99 6.64 5.68 5.32 3.19 
+
+4.94 5.56 5.02 6.15 6.23 7.14 6.26 6.31 6.22 6.70 3.33 4.86 5.26 4.89 2.68 4.88 5.51 5.60 5.89 5.05 4.52 5.75 5.29 5.51 5.09 5.41 5.85 5.20 5.36 7.01 5.35 5.41 4.85 5.27 5.52 5.79 5.89 5.61 5.76 5.93 7.44 7.04 6.56 5.76 5.32 3.37 
+
+4.92 5.51 5.03 6.07 6.16 6.88 6.28 6.28 6.31 6.64 3.17 4.79 5.26 4.88 2.66 4.91 5.50 5.60 5.84 5.05 4.55 5.73 5.40 5.45 5.12 5.45 5.69 5.15 5.11 6.89 5.46 5.45 4.60 5.04 5.50 5.82 5.80 5.59 5.50 5.87 7.52 6.96 6.35 5.83 5.42 3.64 
+
+4.93 5.59 5.05 6.16 6.32 7.13 6.26 6.38 6.28 6.65 3.19 4.92 5.58 4.97 2.68 4.74 5.38 5.66 5.97 5.22 4.66 5.84 5.33 5.48 5.15 5.49 5.66 5.17 5.13 6.88 5.40 5.36 4.53 5.13 5.43 5.69 5.96 5.52 5.49 5.89 7.55 6.95 6.38 5.99 5.47 3.52 
+
+5.06 5.58 5.05 6.25 6.33 7.05 6.21 6.72 6.40 6.53 3.39 5.03 5.81 4.87 2.72 4.74 5.22 5.77 5.98 5.22 4.65 5.82 5.40 5.42 5.10 5.47 5.47 5.14 5.20 6.85 5.44 5.23 4.58 5.14 5.54 5.68 5.82 5.47 5.65 5.88 7.55 6.89 6.20 6.02 5.52 3.60 
+
+5.07 5.59 5.07 6.12 6.35 7.08 6.18 6.46 6.59 6.91 3.07 4.96 6.08 4.93 2.73 4.99 5.25 5.72 6.12 5.35 4.89 5.84 5.38 5.48 5.11 5.44 5.68 5.05 5.26 6.74 5.40 5.51 3.53 5.03 5.41 5.53 5.94 5.56 5.42 5.81 7.38 6.83 6.40 6.26 5.72 3.86 
+
+4.97 5.52 5.19 6.15 6.23 6.18 5.97 6.12 6.60 7.24 3.19 4.88 5.91 4.94 2.71 4.93 5.41 5.81 6.20 5.36 4.93 5.95 5.45 5.51 5.21 5.48 5.33 5.22 5.16 6.27 5.42 5.59 3.81 5.01 5.23 5.69 6.03 5.66 5.75 5.98 7.14 6.94 6.35 5.87 5.57 3.52 
+
+4.92 5.50 5.12 6.18 6.20 6.81 6.13 6.84 6.79 6.99 3.49 4.88 6.01 4.77 2.19 4.97 5.50 6.08 6.37 5.34 4.91 6.09 5.34 5.52 5.19 5.45 5.02 5.29 5.47 6.31 5.53 5.47 3.29 4.79 5.06 5.14 6.14 5.50 5.67 6.01 7.16 6.83 6.43 5.81 5.64 3.59 
+
+4.79 5.47 5.05 6.02 5.97 5.89 6.31 7.57 6.20 7.15 3.39 4.98 5.63 4.66 2.15 4.81 5.35 6.15 6.23 5.20 4.77 6.18 5.40 5.58 5.17 5.52 4.82 5.33 5.63 6.72 5.27 5.75 3.62 4.74 5.01 4.94 6.19 5.41 5.56 6.28 7.02 6.91 6.46 5.85 5.75 3.67 
+
+4.59 5.54 5.14 6.23 6.70 6.33 6.57 7.15 6.39 7.62 3.22 5.29 5.44 4.76 2.25 4.77 5.26 6.40 6.29 5.33 4.70 6.00 5.30 5.64 5.23 5.53 4.99 5.61 5.98 6.87 5.04 5.75 3.53 5.09 5.29 4.90 5.95 5.19 5.67 6.38 6.85 7.20 6.65 5.94 5.76 3.90 
+
+4.58 5.51 5.25 6.04 6.12 4.71 6.50 6.81 6.18 7.44 3.10 5.04 5.04 4.64 1.98 4.65 5.16 5.96 6.26 5.40 4.78 5.96 5.36 5.70 5.32 5.55 5.44 5.95 6.23 6.77 5.03 5.79 2.73 5.02 4.71 4.53 5.60 5.03 6.00 6.44 6.35 7.41 6.89 6.13 5.46 3.92 
+
+4.71 5.29 5.28 6.01 6.38 4.95 6.35 6.77 4.49 7.19 2.74 4.85 4.39 4.24 2.06 4.14 4.85 5.67 5.92 5.35 4.69 5.86 5.03 5.53 5.33 5.59 4.74 5.54 5.77 6.54 4.37 5.30 1.75 3.68 3.97 3.97 4.71 4.53 5.21 5.83 6.26 7.14 6.95 6.21 5.26 3.77 
+
+4.76 5.47 5.33 6.15 5.97 3.22 6.20 6.64 4.59 7.13 2.55 4.58 4.02 4.54 2.24 4.27 4.18 5.33 6.82 5.39 4.20 6.09 5.02 5.46 5.22 5.48 4.07 5.64 5.53 5.75 4.11 5.24 2.57 4.13 3.41 3.90 4.77 4.60 4.64 5.71 4.47 7.16 7.40 6.03 5.38 3.82 
+
+4.49 4.83 5.29 5.52 6.27 5.71 5.72 6.09 4.66 6.59 2.25 3.72 3.72 3.77 1.75 3.11 4.04 5.28 6.62 5.07 4.05 6.03 5.15 4.94 5.13 5.34 4.05 5.20 4.97 6.35 4.35 3.76 2.03 3.95 3.25 3.50 3.62 3.20 4.26 6.76 5.09 6.54 7.01 6.01 5.17 3.52 
+
+4.66 5.13 5.16 4.15 5.89 4.94 5.84 6.01 3.45 4.92 2.19 3.54 3.90 2.93 1.68 0.27 3.17 5.53 6.35 4.43 4.02 5.97 4.88 5.14 5.15 5.14 2.54 5.29 5.28 6.04 4.45 4.27 1.84 4.34 2.67 2.93 3.49 3.05 4.09 5.52 4.46 6.60 5.65 6.01 5.15 3.81 
+
+4.68 4.39 5.07 3.22 5.79 0.42 5.84 5.95 3.11 3.04 2.50 2.26 3.80 2.50 1.88 0.49 2.52 4.96 5.97 3.99 3.76 6.34 4.96 4.39 4.86 4.82 1.43 4.54 4.43 5.56 0.92 2.69 1.65 2.93 2.49 2.99 4.16 3.01 3.46 5.86 3.38 4.97 5.47 5.16 4.55 3.97 
+
+4.89 4.91 5.16 3.03 4.47 0.11 5.19 5.46 3.08 2.36 2.94 2.19 3.72 2.47 2.18 0.48 2.47 5.06 5.51 4.08 3.36 6.10 5.09 4.64 3.86 4.46 0.17 4.78 3.55 4.68 0.80 2.48 1.02 2.76 1.07 2.91 2.90 3.01 1.59 5.90 3.04 3.02 5.57 5.28 4.10 3.99 
+
+5.23 3.05 5.48 2.44 3.17 0.76 4.88 4.96 3.05 2.38 2.65 2.91 3.61 2.46 2.60 0.97 2.43 3.74 5.75 4.10 2.99 6.97 5.65 2.11 4.49 4.58 0.62 4.42 1.84 3.84 0.49 2.99 1.02 2.98 0.21 2.38 1.26 2.01 1.29 4.29 2.04 2.40 5.88 5.12 3.49 4.04 
+
+5.01 4.01 5.53 3.06 2.80 2.22 3.80 5.05 3.15 2.03 2.97 2.62 3.51 2.27 3.06 0.35 2.45 3.90 5.69 4.37 2.97 6.43 5.67 2.72 5.20 5.14 2.49 3.70 1.81 4.52 2.41 2.96 1.03 1.91 0.16 2.98 1.59 2.01 1.26 3.26 3.04 1.39 5.72 5.07 3.97 4.66 
+
+5.28 4.27 5.85 2.71 2.12 4.39 1.68 0.30 3.10 0.49 2.51 2.01 2.81 1.96 3.11 0.17 2.48 3.14 5.48 4.23 1.95 5.98 5.61 3.14 4.98 4.67 1.32 2.62 1.57 3.81 1.78 2.67 1.03 1.66 0.00 1.64 1.02 2.01 1.19 3.25 2.04 2.04 5.64 5.30 3.01 4.84 
+
+3.78 5.10 3.24 1.28 0.21 0.35 1.17 4.33 3.04 0.00 2.56 2.09 2.61 1.65 2.66 0.11 2.30 2.81 4.96 2.99 1.41 3.89 2.88 3.30 3.09 1.39 3.75 1.70 1.06 2.38 0.80 2.06 1.04 1.32 0.00 1.69 2.37 2.01 1.12 3.30 1.47 1.11 4.47 3.33 0.99 4.88 
+
+0.00 
+
+1.00 
+
+2.00 
+
+3.00 
+
+4.00 
+
+5.00 
+
+6.00 
+
+7.00 
+
+Input: A candle melts by 2 centimeters every hour that it burns. How many centimeters shorter will a candle be after burning from 1:00 PM to 5:00 PM? 
+
+Figure 10: JSD (scaled by 10 5) between the final layer and each lower layer across DeepSeek MoE. Column labels indicate tokens in each step. Row labels indicate layer indices. The input sample is from GSM8K dataset. 39337 The 
+
+> candle
+> burns
+> for
+> 5 -
+> 1
+> =
+> <<
+> 51
+> -1
+> 11
+> =1
+> 4
+> >>
+> 41
+> hours
+> .
+> Thus  ,
+> the
+> candle1
+> will
+> be
+> 2 *
+> 3
+> 42
+> =2
+> <<1
+> 21
+> *1
+> 43
+> =3
+> 8
+> >>1
+> 81
+> cent
+> imeters
+> shorter
+> . 1
+> ####
+> 82
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+> Layer
+
+2.53 3.43 2.93 3.48 3.89 4.35 3.89 5.94 4.73 3.97 4.36 4.55 5.38 4.31 3.23 3.95 5.51 4.94 3.73 3.27 4.46 4.12 3.48 2.92 3.40 4.95 3.80 4.60 5.23 4.54 3.37 4.84 5.22 5.63 4.54 5.31 3.98 5.23 4.42 4.64 4.86 3.66 3.27 4.27 
+
+2.52 3.42 2.93 3.47 3.87 4.35 3.89 5.92 4.72 3.96 4.36 4.54 5.37 4.30 3.22 3.95 5.50 4.93 3.73 3.27 4.45 4.11 3.47 2.92 3.39 4.94 3.80 4.59 5.23 4.54 3.37 4.83 5.21 5.61 4.53 5.30 3.98 5.22 4.42 4.64 4.85 3.66 3.27 4.27 
+
+2.52 3.42 2.92 3.47 3.88 4.35 3.89 5.92 4.72 3.96 4.36 4.54 5.36 4.30 3.22 3.95 5.51 4.94 3.73 3.26 4.45 4.11 3.47 2.91 3.39 4.94 3.80 4.58 5.22 4.54 3.36 4.84 5.21 5.61 4.53 5.30 3.98 5.23 4.42 4.63 4.85 3.66 3.27 4.26 
+
+2.52 3.42 2.92 3.47 3.89 4.35 3.89 5.92 4.73 3.96 4.36 4.54 5.36 4.30 3.21 3.95 5.51 4.94 3.72 3.26 4.45 4.11 3.47 2.91 3.39 4.93 3.80 4.58 5.22 4.54 3.36 4.84 5.21 5.60 4.53 5.30 3.98 5.23 4.42 4.63 4.85 3.67 3.27 4.26 
+
+2.52 3.42 2.93 3.48 3.89 4.34 3.89 5.92 4.73 3.98 4.36 4.54 5.36 4.30 3.22 3.95 5.51 4.93 3.73 3.25 4.44 4.11 3.46 2.92 3.39 4.92 3.80 4.58 5.22 4.54 3.36 4.84 5.21 5.60 4.53 5.30 3.98 5.23 4.42 4.63 4.85 3.67 3.25 4.26 
+
+2.50 3.41 2.92 3.47 3.88 4.34 3.88 5.91 4.73 3.96 4.36 4.54 5.36 4.30 3.20 3.94 5.51 4.93 3.71 3.25 4.43 4.10 3.47 2.91 3.37 4.92 3.79 4.57 5.22 4.53 3.36 4.83 5.21 5.59 4.53 5.30 3.97 5.23 4.42 4.63 4.84 3.66 3.25 4.26 
+
+2.50 3.41 2.93 3.48 3.89 4.33 3.87 5.91 4.72 3.96 4.37 4.53 5.35 4.30 3.19 3.93 5.51 4.92 3.72 3.25 4.44 4.10 3.47 2.91 3.37 4.92 3.79 4.58 5.22 4.52 3.36 4.84 5.21 5.61 4.52 5.30 3.97 5.23 4.42 4.63 4.85 3.67 3.25 4.26 
+
+2.49 3.40 2.91 3.49 3.90 4.33 3.87 5.91 4.72 3.96 4.36 4.53 5.34 4.30 3.21 3.93 5.49 4.92 3.70 3.25 4.44 4.10 3.46 2.90 3.37 4.92 3.78 4.55 5.21 4.52 3.36 4.83 5.20 5.59 4.51 5.29 3.97 5.21 4.41 4.63 4.84 3.65 3.25 4.24 
+
+2.49 3.41 2.91 3.48 3.89 4.32 3.87 5.91 4.72 3.95 4.36 4.54 5.35 4.30 3.22 3.93 5.51 4.92 3.70 3.25 4.45 4.10 3.46 2.90 3.37 4.91 3.78 4.55 5.22 4.52 3.35 4.83 5.21 5.60 4.51 5.29 3.97 5.23 4.41 4.63 4.84 3.65 3.25 4.24 
+
+2.47 3.40 2.90 3.47 3.90 4.32 3.87 5.91 4.72 3.95 4.36 4.52 5.35 4.29 3.21 3.93 5.50 4.91 3.67 3.24 4.45 4.10 3.46 2.88 3.36 4.91 3.78 4.57 5.22 4.52 3.34 4.82 5.20 5.60 4.51 5.29 3.96 5.22 4.42 4.62 4.84 3.62 3.25 4.23 
+
+2.46 3.40 2.90 3.48 3.87 4.30 3.86 5.90 4.71 3.96 4.36 4.52 5.35 4.30 3.22 3.93 5.51 4.92 3.68 3.23 4.40 4.08 3.45 2.89 3.36 4.91 3.78 4.56 5.21 4.52 3.34 4.82 5.19 5.60 4.51 5.29 3.96 5.22 4.42 4.61 4.84 3.64 3.24 4.22 
+
+2.46 3.41 2.90 3.47 3.86 4.32 3.86 5.89 4.70 3.98 4.36 4.51 5.34 4.28 3.21 3.93 5.50 4.92 3.67 3.22 4.39 4.08 3.46 2.88 3.36 4.91 3.77 4.54 5.20 4.51 3.33 4.79 5.17 5.58 4.50 5.27 3.96 5.19 4.41 4.61 4.83 3.61 3.22 4.21 
+
+2.44 3.41 2.90 3.45 3.86 4.32 3.85 5.90 4.70 3.99 4.39 4.52 5.38 4.29 3.17 3.93 5.54 4.92 3.65 3.22 4.42 4.07 3.46 2.87 3.36 4.91 3.74 4.54 5.21 4.51 3.33 4.83 5.18 5.63 4.52 5.29 3.96 5.22 4.41 4.61 4.82 3.59 3.22 4.24 
+
+2.42 3.40 2.88 3.44 3.84 4.32 3.83 5.91 4.72 3.99 4.38 4.51 5.36 4.27 3.17 3.93 5.54 4.91 3.65 3.19 4.38 4.05 3.46 2.87 3.37 4.89 3.75 4.55 5.22 4.50 3.31 4.83 5.20 5.61 4.51 5.29 3.96 5.22 4.41 4.60 4.80 3.59 3.22 4.22 
+
+2.43 3.37 2.90 3.46 3.86 4.32 3.82 5.90 4.71 3.97 4.38 4.48 5.35 4.24 3.15 3.93 5.57 4.90 3.70 3.21 4.43 4.06 3.45 2.88 3.38 4.85 3.75 4.54 5.20 4.49 3.30 4.85 5.17 5.61 4.47 5.28 3.97 5.21 4.41 4.60 4.82 3.60 3.24 4.21 
+
+2.41 3.37 2.90 3.45 3.80 4.30 3.79 5.92 4.71 3.96 4.35 4.49 5.38 4.26 3.13 3.93 5.56 4.87 3.67 3.18 4.39 4.03 3.45 2.88 3.36 4.82 3.74 4.57 5.20 4.45 3.28 4.85 5.17 5.60 4.46 5.28 3.97 5.15 4.41 4.59 4.81 3.59 3.22 4.17 
+
+2.37 3.37 2.86 3.40 3.74 4.27 3.74 5.92 4.65 3.93 4.32 4.48 5.33 4.19 3.08 3.89 5.48 4.84 3.64 3.15 4.32 4.01 3.46 2.86 3.36 4.78 3.73 4.56 5.17 4.41 3.29 4.83 5.19 5.53 4.42 5.25 3.93 5.13 4.37 4.55 4.81 3.58 3.22 4.12 
+
+2.33 3.36 2.87 3.39 3.72 4.21 3.76 5.90 4.60 3.90 4.27 4.48 5.27 4.16 2.96 3.83 5.41 4.83 3.59 3.11 4.29 4.02 3.43 2.85 3.27 4.85 3.77 4.53 5.15 4.37 3.22 4.83 5.15 5.48 4.39 5.23 3.86 5.08 4.32 4.52 4.68 3.58 3.18 4.09 
+
+2.29 3.32 2.86 3.34 3.62 4.08 3.68 5.90 4.60 3.90 4.12 4.40 5.16 4.10 2.72 3.83 5.22 4.74 3.70 3.08 4.30 4.02 3.36 2.87 3.22 4.79 3.74 4.60 5.10 4.31 3.12 4.64 5.08 5.40 4.32 5.14 3.81 4.95 4.24 4.46 4.55 3.50 3.08 3.99 
+
+2.21 3.23 2.81 3.34 3.57 4.04 3.62 5.89 4.52 3.84 4.00 4.34 5.08 4.10 2.56 3.78 5.11 4.72 3.62 3.02 4.18 3.93 3.25 2.84 3.15 4.70 3.68 4.66 5.11 4.28 3.10 4.64 4.94 5.34 4.30 5.14 3.78 4.86 4.20 4.40 4.29 3.39 3.00 3.98 
+
+2.13 3.10 2.78 3.28 3.56 3.96 3.55 5.75 4.43 3.83 3.91 4.12 4.86 3.97 2.37 3.70 4.95 4.65 3.42 2.88 4.05 3.54 3.12 2.81 3.04 4.49 3.65 4.41 4.97 4.17 3.05 4.45 4.77 5.11 4.09 4.89 3.73 4.65 4.10 4.22 4.21 3.27 2.88 3.73 
+
+2.01 3.06 2.69 3.04 3.39 3.81 3.52 5.65 4.43 3.77 3.78 4.13 4.74 3.91 2.23 3.48 4.86 4.61 3.48 2.81 3.95 3.54 3.08 2.78 2.90 4.49 3.58 4.35 4.81 4.14 2.90 4.43 4.57 4.99 4.11 4.80 3.48 4.61 4.03 4.19 4.16 3.14 2.77 3.62 
+
+1.95 2.77 2.50 2.94 3.22 3.76 3.39 5.47 4.32 3.74 3.68 3.98 4.54 3.78 2.01 3.48 4.74 4.46 3.30 2.77 3.84 3.52 2.86 2.61 2.79 4.43 3.49 4.21 4.73 4.02 2.87 4.36 4.46 4.89 3.95 4.75 3.47 4.57 3.87 4.05 3.94 3.11 2.71 3.54 
+
+2.00 
+
+2.50 
+
+3.00 
+
+3.50 
+
+4.00 
+
+4.50 
+
+5.00 
+
+5.50 
+
+Input: A candle melts by 2 centimeters every hour that it burns. How many centimeters shorter will a candle be after burning from 1:00 PM to 5:00 PM? Figure 11: JSD (scaled by 10 5) between the final layer and each lower layer across Qwen MoE. Column labels indicate tokens in each step. Row labels indicate layer indices. The input sample is from GSM8K dataset. 
+
+the model’s accuracy from 40.6% to 11.3%, demon-strating its effectiveness in inducing hallucinated outputs. 
+
+C Expert activation patterns across layers in different MoE during factual and non-factual generation on All Datasets 
+
+We show the expert activation patterns of each MoE model when generating truthful and untruthful re-sponses on the GSM8K (figs. 12 to 16) and Strate-gyQA (figs. 17 to 21) datasets. 0
+
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 8
+> 9
+> 10
+> 11
+> 12
+> 13
+> 14
+> 15
+> 16
+> 17
+> 18
+> 19
+> 20
+> 21
+> 22
+> 23
+> 24
+> 25
+> 26
+> 27
+> 28
+> 29
+> 30
+> 31
+> 32
+> 33
+> 34
+> 35
+> 36
+> 37
+> 38
+> 39
+> 40
+> 41
+> 42
+> 43
+> 44
+> 45
+> 46
+> 47
+> 48
+> 49
+> 50
+> 51
+> 52
+> 53
+> 54
+> 55
+> 56
+> 57
+> 58
+> 59
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+> Layer
+
+0.01 0.01 0.01 0.01 0.01 0.23 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.05 0.01 0.05 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.03 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.95 0.01 0.01 0.61 0.55 0.01 0.01 0.01 0.05 0.01 0.42 0.01 0.01 0.08 0.01 0.01 
+
+0.97 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.02 0.01 0.01 0.08 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.52 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.02 0.99 0.01 0.01 0.01 0.01 0.98 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.44 
+
+0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.28 0.01 0.57 0.01 0.01 0.02 0.93 0.01 0.01 0.01 0.01 0.02 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.19 0.01 0.00 0.00 0.01 0.01 0.01 0.02 0.01 0.01 0.99 0.01 0.02 0.01 0.01 
+
+0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.92 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.02 0.01 0.01 0.00 0.01 0.99 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.00 0.98 0.09 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 
+
+0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.17 0.01 0.50 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.97 0.99 0.02 0.01 0.01 0.01 0.99 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.36 0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 
+
+0.01 0.00 0.02 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.00 0.97 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.99 0.79 0.22 0.01 0.02 0.02 
+
+0.01 0.00 0.42 0.01 0.01 0.00 0.01 0.02 0.01 0.01 0.01 0.18 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.06 0.00 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.80 0.01 0.01 0.01 0.99 0.01 0.17 0.01 0.01 0.01 0.99 0.40 0.00 0.01 0.01 0.00 0.01 0.00 0.01 
+
+0.01 0.01 0.01 0.01 0.01 1.00 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.01 1.00 0.01 0.01 0.01 0.02 0.01 0.01 0.00 0.01 0.00 0.01 0.01 0.00 0.00 0.01 0.01 1.00 0.01 0.00 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.99 
+
+0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.00 0.99 0.01 0.00 0.01 0.00 0.01 0.01 0.09 0.99 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.00 0.02 0.01 0.00 0.01 0.01 0.91 0.01 0.02 0.02 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.99 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 
+
+0.99 0.00 0.01 0.01 0.01 0.03 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.96 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.00 0.01 0.00 0.01 0.02 0.00 0.01 0.01 0.01 0.01 0.99 0.01 0.01 
+
+0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.00 0.00 0.01 0.01 0.02 0.02 0.01 0.00 0.01 0.01 0.01 0.99 0.00 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.03 0.02 0.00 0.99 0.01 0.01 1.00 0.00 0.02 0.01 0.01 0.01 0.01 0.01 0.98 0.01 0.00 0.02 
+
+0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.38 0.01 0.01 0.01 0.99 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.00 0.01 0.00 0.01 0.01 0.01 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.02 0.60 0.01 0.01 0.00 0.01 0.03 0.01 0.00 0.01 0.01 0.99 0.01 0.97 0.03 0.01 0.00 0.01 0.01 0.01 0.01 
+
+0.03 0.01 0.00 0.01 0.01 0.00 0.01 0.98 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.02 0.02 0.01 0.00 0.01 0.00 0.01 0.01 0.02 0.00 0.01 0.99 0.01 1.00 0.01 0.00 0.23 0.01 0.01 0.00 0.01 0.00 0.00 0.01 0.01 0.01 0.00 0.01 0.00 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.77 0.02 0.01 0.00 0.02 0.01 0.01 0.01 0.01 
+
+0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.99 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.00 0.01 0.01 0.00 0.94 0.99 0.00 0.04 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.24 0.00 0.01 0.00 0.00 0.00 0.01 0.01 0.77 0.00 0.02 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 
+
+0.12 0.03 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.86 0.01 0.00 1.00 0.02 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.01 0.01 
+
+0.79 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.00 0.04 0.01 0.01 0.01 0.90 0.01 0.00 0.20 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.00 0.01 0.99 0.01 0.01 0.01 0.01 0.00 0.04 0.05 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 
+
+0.93 0.00 0.01 0.01 0.00 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 1.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.17 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.99 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.02 0.00 0.01 0.02 0.90 0.01 
+
+0.00 0.21 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.06 0.00 0.01 0.00 0.01 0.76 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.78 0.01 0.01 0.99 0.93 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.28 0.01 0.01 0.01 0.02 
+
+0.00 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.06 0.01 0.00 0.00 0.99 0.02 0.99 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.02 0.02 0.01 0.02 0.00 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.95 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.97 0.01 
+
+0.01 0.01 0.01 0.00 0.01 0.60 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.07 0.00 0.01 0.02 0.01 0.93 0.00 0.01 0.35 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.06 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.00 0.02 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 1.00 0.01 0.01 0.01 
+
+0.01 0.01 0.01 0.01 0.01 0.01 0.01 1.00 0.00 0.01 0.01 0.00 0.01 0.01 0.05 0.01 0.01 0.01 0.01 0.01 0.01 0.08 1.00 0.01 0.01 0.99 0.08 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.00 0.05 0.01 0.01 0.01 0.01 0.01 0.01 0.78 0.01 0.01 0.01 0.01 
+
+0.00 0.01 0.01 0.00 0.01 0.00 0.00 0.01 0.01 0.00 0.37 0.31 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.03 0.01 0.02 0.01 0.01 0.02 0.60 0.01 0.02 0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.72 0.01 0.01 0.00 0.01 0.01 1.00 0.02 0.00 1.00 0.01 0.01 0.02 0.01 0.01 
+
+0.01 0.01 0.01 0.04 0.01 0.01 0.01 0.01 0.01 0.72 0.01 0.01 0.02 0.02 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.98 0.00 0.00 0.01 0.99 0.01 0.00 0.00 0.01 0.00 0.00 0.02 0.00 0.00 0.99 0.01 0.01 0.02 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.02 0.00 0.28 0.00 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.01 
+
+0.01 0.01 0.00 0.01 0.01 0.99 0.01 0.02 0.00 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.02 0.01 0.01 0.01 0.16 0.01 0.01 0.01 0.01 0.99 0.02 0.83 0.02 0.01 0.99 0.00 0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.02 0.01 0.01 0.01 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 
+
+Figure 12: Expert activation patterns across layers in Qwen MoE architectures during factual generation on the GSM8k. Column labels indicate the expert indices. 
+
+D Societal Impacts 
+
+We discuss the societal impact of our work as fol-lows. EAACD mitigates hallucinations by leverag-ing expert activation differences, improving the fac-tual reliability and trustworthiness of AI-generated 0
+
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 8
+> 9
+> 10
+> 11
+> 12
+> 13
+> 14
+> 15
+> 16
+> 17
+> 18
+> 19
+> 20
+> 21
+> 22
+> 23
+> 24
+> 25
+> 26
+> 27
+> 28
+> 29
+> 30
+> 31
+> 32
+> 33
+> 34
+> 35
+> 36
+> 37
+> 38
+> 39
+> 40
+> 41
+> 42
+> 43
+> 44
+> 45
+> 46
+> 47
+> 48
+> 49
+> 50
+> 51
+> 52
+> 53
+> 54
+> 55
+> 56
+> 57
+> 58
+> 59
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+> Layer
+
+0.01 0.01 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.04 0.02 0.07 0.01 0.01 0.01 0.01 0.01 0.01 0.03 0.02 0.01 0.01 0.06 0.01 0.01 0.01 0.01 0.01 0.98 0.01 0.02 0.01 0.01 0.01 0.02 0.02 0.01 0.01 0.01 1.00 0.01 0.01 0.52 0.70 0.01 0.01 0.01 0.08 0.01 0.47 0.02 0.01 0.08 0.02 0.02 
+
+0.91 0.01 0.02 0.02 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.03 0.01 0.01 0.11 0.01 0.02 0.03 0.01 0.01 0.01 0.01 0.01 0.48 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.02 0.01 0.02 0.01 0.97 0.02 0.01 0.02 0.01 0.01 0.01 0.02 0.02 0.01 0.01 0.48 
+
+0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.03 0.01 0.04 0.01 0.78 0.01 0.01 0.02 0.94 0.01 0.01 0.01 0.01 0.02 0.01 0.99 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.21 0.01 0.00 0.01 0.01 0.02 0.01 0.02 0.02 0.01 1.00 0.01 0.02 0.01 0.01 
+
+0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.02 0.01 0.02 0.01 0.01 0.02 0.02 0.01 0.02 0.02 0.01 0.02 0.01 0.89 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.99 0.01 0.02 0.00 0.01 0.01 0.01 0.01 0.00 0.97 0.13 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 
+
+0.01 0.02 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.01 0.01 0.04 0.01 0.72 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.01 0.01 0.01 0.01 0.98 0.98 0.02 0.01 0.01 0.01 0.98 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.27 0.01 0.01 0.00 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 
+
+0.01 0.00 0.03 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.02 0.00 0.02 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.02 0.02 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.02 0.01 0.92 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.99 0.67 0.34 0.01 0.06 0.02 
+
+0.01 0.01 0.05 0.00 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.15 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.07 0.00 0.01 0.01 0.02 0.02 0.03 0.01 0.01 0.01 0.01 0.00 0.00 0.02 0.01 0.02 0.02 0.02 0.01 0.01 0.02 0.90 0.02 0.01 0.01 0.99 0.01 0.40 0.01 0.01 0.01 0.99 0.47 0.00 0.01 0.01 0.00 0.01 0.02 0.01 
+
+0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.01 0.02 0.99 0.01 0.01 0.03 0.01 0.03 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.98 
+
+0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.02 0.00 0.02 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.02 0.02 0.00 0.02 0.00 0.01 0.01 0.01 0.99 0.01 0.03 0.02 0.02 0.01 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.02 0.02 0.02 
+
+0.99 0.01 0.02 0.01 0.01 0.05 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.93 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.02 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.01 0.03 0.02 0.02 0.01 0.01 0.02 0.01 0.01 0.02 0.98 0.01 0.01 0.01 0.01 0.02 0.02 0.02 0.01 0.01 0.01 0.99 0.02 0.01 
+
+0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.02 0.03 0.01 0.02 0.01 0.01 0.01 0.97 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.00 0.02 0.01 0.01 0.02 0.02 0.03 0.01 0.01 0.06 0.03 0.01 0.99 0.02 0.01 0.98 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.98 0.01 0.01 0.02 
+
+0.01 0.01 0.02 0.01 0.01 0.02 0.02 0.01 0.01 0.34 0.01 0.01 0.01 0.99 0.01 0.01 0.02 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.00 0.01 0.00 0.01 0.01 0.01 0.02 0.03 0.02 0.01 0.01 0.02 0.01 0.02 0.02 0.61 0.01 0.01 0.00 0.02 0.04 0.01 0.01 0.02 0.01 0.99 0.02 0.96 0.04 0.01 0.00 0.02 0.01 0.02 0.01 
+
+0.06 0.01 0.01 0.01 0.02 0.01 0.01 0.97 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.03 0.02 0.01 0.02 0.01 0.01 0.01 0.02 0.02 0.01 0.01 0.99 0.02 0.99 0.01 0.01 0.26 0.01 0.01 0.01 0.01 0.00 0.00 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.72 0.02 0.01 0.00 0.02 0.01 0.02 0.01 0.02 
+
+0.00 0.01 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.02 0.01 0.03 0.03 0.01 0.01 0.01 0.01 0.01 0.94 0.98 0.01 0.06 0.02 0.02 0.02 0.01 0.00 0.01 0.01 0.01 0.56 0.00 0.01 0.01 0.01 0.01 0.01 0.02 0.44 0.01 0.02 0.01 0.01 0.01 0.00 0.02 0.01 0.02 0.01 0.01 
+
+0.34 0.04 0.00 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.03 0.01 0.01 0.01 0.01 0.00 0.02 0.01 0.64 0.01 0.01 1.00 0.02 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.98 0.02 0.01 0.02 0.00 0.01 0.02 0.00 0.01 0.01 0.01 0.01 
+
+0.60 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.02 0.99 0.01 0.01 0.01 0.01 0.00 0.07 0.01 0.01 0.01 0.80 0.02 0.01 0.30 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.03 0.02 0.01 0.01 0.01 0.99 0.02 0.01 0.01 0.01 0.00 0.08 0.17 0.01 0.02 0.02 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.02 0.01 0.01 
+
+0.93 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.01 0.00 0.02 0.01 0.01 0.01 0.01 0.01 1.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.17 0.01 0.01 0.01 0.01 0.01 0.01 0.03 0.97 0.01 0.01 0.00 0.02 0.02 0.01 0.02 0.02 0.01 0.01 0.02 0.92 0.02 
+
+0.00 0.45 0.02 0.01 0.02 0.02 0.02 0.02 0.00 0.01 0.01 0.01 0.01 0.04 0.01 0.01 0.01 0.01 0.51 0.01 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.49 0.02 0.01 0.99 0.97 0.01 0.00 0.01 0.01 0.01 0.02 0.01 0.02 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.57 0.01 0.01 0.02 0.02 
+
+0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.02 0.01 0.15 0.02 0.01 0.00 0.99 0.02 0.99 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.03 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.97 0.01 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.86 0.01 
+
+0.01 0.02 0.01 0.00 0.01 0.50 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.02 0.04 0.07 0.00 0.01 0.03 0.01 0.84 0.01 0.02 0.59 0.02 0.01 0.01 0.01 0.01 0.01 0.02 0.00 0.02 0.01 0.02 0.01 0.00 0.02 0.01 0.01 0.00 0.02 0.01 0.02 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.98 0.02 0.01 0.01 
+
+0.01 0.01 0.02 0.00 0.01 0.02 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.02 0.01 0.01 0.01 0.01 0.01 0.02 0.99 0.01 0.01 0.96 0.13 0.01 0.01 0.01 0.01 0.01 0.00 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.02 0.02 0.01 0.02 0.01 0.02 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.90 0.01 0.01 0.02 0.01 
+
+0.00 0.01 0.01 0.00 0.01 0.00 0.00 0.01 0.02 0.00 0.35 0.26 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.00 0.01 0.02 0.01 0.03 0.01 0.01 0.02 0.70 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.02 0.01 0.01 0.72 0.02 0.01 0.00 0.01 0.02 1.00 0.03 0.00 0.99 0.01 0.02 0.02 0.01 0.02 
+
+0.01 0.01 0.02 0.13 0.02 0.02 0.01 0.01 0.01 0.64 0.01 0.01 0.02 0.02 0.02 0.02 0.01 0.02 0.01 0.01 0.01 0.89 0.01 0.00 0.01 0.99 0.01 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.01 0.94 0.01 0.01 0.02 0.01 0.01 0.02 0.02 0.01 0.01 0.01 0.02 0.01 0.40 0.00 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 
+
+0.01 0.01 0.00 0.01 0.01 0.98 0.01 0.02 0.01 0.01 0.02 0.02 0.01 0.02 0.00 0.01 0.01 0.02 0.01 0.01 0.01 0.38 0.02 0.01 0.01 0.02 0.98 0.02 0.61 0.02 0.01 0.99 0.01 0.01 0.01 0.00 0.01 0.02 0.02 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.02 0.03 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.00 0.02 0.01 0.01 0.02 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 
+
+Figure 13: Expert activation patterns across layers in Qwen MoE architectures during non-factual generation on the GSM8k. Column labels indicate the expert in-dices. 0
+
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 8
+> 9
+> 10
+> 11
+> 12
+> 13
+> 14
+> 15
+> 16
+> 17
+> 18
+> 19
+> 20
+> 21
+> 22
+> 23
+> 24
+> 25
+> 26
+> 27
+> 28
+> 29
+> 30
+> 31
+> 32
+> 33
+> 34
+> 35
+> 36
+> 37
+> 38
+> 39
+> 40
+> 41
+> 42
+> 43
+> 44
+> 45
+> 46
+> 47
+> 48
+> 49
+> 50
+> 51
+> 52
+> 53
+> 54
+> 55
+> 56
+> 57
+> 58
+> 59
+> 60
+> 61
+> 62
+> 63
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+> Layer
+
+0.02 0.01 0.02 0.01 0.98 0.98 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.00 0.02 0.01 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.98 0.01 0.01 0.98 0.01 0.01 0.01 0.01 0.98 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 
+
+0.02 0.01 0.97 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.03 0.01 0.02 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.98 0.01 0.02 0.00 0.01 0.01 0.01 0.01 0.01 0.03 0.02 0.01 0.98 0.01 0.01 0.01 0.98 0.01 0.02 0.01 0.01 0.02 0.00 0.03 0.01 0.97 0.01 0.01 0.01 0.01 0.02 0.03 0.01 0.98 
+
+0.01 0.97 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.02 0.01 0.04 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.02 0.98 0.01 0.00 0.02 0.02 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.98 0.02 0.02 0.01 0.01 0.98 0.01 0.01 0.01 0.89 0.01 0.01 0.02 0.01 0.01 0.01 0.11 0.01 0.01 0.01 0.01 0.98 0.01 
+
+0.98 0.01 0.01 0.02 0.98 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.98 0.02 0.00 0.01 0.02 0.01 0.98 0.01 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.02 0.04 0.01 0.01 0.97 0.01 0.01 0.02 0.00 0.02 0.01 0.01 0.03 0.01 0.03 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 1.00 0.01 
+
+0.04 0.02 0.00 0.01 0.01 0.00 0.01 0.98 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.96 0.01 0.01 0.01 0.03 0.01 0.29 0.01 0.97 0.01 0.02 0.02 0.02 0.01 0.01 0.97 0.97 0.01 0.00 0.71 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.04 
+
+0.02 0.01 0.03 0.00 0.02 0.02 0.01 0.02 0.01 0.97 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.02 0.00 0.01 0.01 0.01 0.03 0.01 0.00 0.01 0.97 0.02 0.97 0.02 0.01 0.03 0.01 0.00 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.00 0.98 0.01 0.01 0.01 0.01 0.02 0.01 0.02 0.02 0.01 0.07 0.00 0.01 0.97 0.00 0.01 0.00 0.97 0.02 
+
+0.00 0.01 0.01 0.01 0.04 0.01 0.01 0.01 0.01 0.01 0.02 0.98 0.02 0.00 0.01 0.01 0.01 0.97 0.01 0.02 0.03 0.03 0.00 0.98 0.02 0.00 0.02 0.97 0.03 0.03 0.01 0.02 0.01 0.00 0.01 0.97 0.01 0.00 0.01 0.02 0.01 0.01 0.02 0.01 0.01 0.02 0.03 0.02 0.00 0.01 0.01 0.02 0.01 0.97 0.01 0.01 0.01 0.00 0.02 0.01 0.01 0.01 0.03 0.01 
+
+0.97 0.01 0.01 0.00 0.01 0.01 0.04 0.00 0.01 0.02 0.01 0.01 0.01 0.00 0.01 0.01 0.02 0.00 0.01 0.02 0.02 0.01 0.00 0.01 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.00 0.01 0.98 0.02 0.01 0.04 0.00 0.01 0.97 0.01 0.97 0.01 0.03 0.01 0.03 0.01 0.97 0.01 0.00 0.01 0.02 0.01 0.00 0.01 0.01 0.00 0.01 0.02 0.98 0.02 0.01 
+
+0.00 0.01 0.02 0.01 0.98 0.01 0.00 0.00 0.01 0.02 0.97 0.00 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.03 0.01 0.01 0.02 0.81 0.02 0.02 0.00 0.01 0.03 0.02 0.02 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.05 0.02 0.97 0.01 0.00 0.00 0.01 0.00 0.19 0.01 0.97 0.01 0.01 0.01 0.00 0.01 0.02 0.07 0.02 0.01 0.97 0.01 0.00 
+
+0.97 0.03 0.06 0.01 0.02 0.02 0.01 0.00 0.97 0.02 0.01 0.01 0.03 0.01 0.00 0.01 0.02 0.01 0.01 0.01 0.02 0.01 0.00 0.01 0.97 0.01 0.02 0.00 0.01 0.01 0.02 0.01 0.00 0.98 0.01 0.01 0.02 0.02 0.01 0.01 0.00 0.00 0.97 0.03 0.00 0.01 0.00 0.00 0.00 0.01 0.00 0.01 0.01 0.01 0.02 0.02 0.00 0.00 0.01 0.07 0.01 0.01 0.02 0.98 
+
+0.02 0.02 0.97 0.02 0.00 0.01 0.01 0.00 0.02 0.00 0.01 0.97 0.02 0.02 0.02 0.01 0.01 0.02 0.01 0.01 0.02 0.01 0.01 0.02 0.97 0.01 0.02 0.01 0.01 0.01 0.01 0.03 0.01 0.02 0.02 0.01 0.02 0.98 0.00 0.02 0.01 0.00 0.01 0.02 0.01 0.04 0.00 0.98 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.97 0.03 0.01 0.00 0.05 0.01 0.00 0.01 
+
+0.00 0.04 0.02 0.00 0.00 0.02 0.02 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.02 0.00 0.98 0.97 0.34 0.01 0.01 0.00 0.03 0.00 0.97 0.02 0.05 0.02 0.01 0.64 0.01 0.02 0.01 0.01 0.01 0.98 0.01 0.03 0.01 0.01 0.01 0.01 0.03 0.01 0.01 0.01 0.00 0.02 0.02 0.98 0.01 0.02 0.00 0.02 0.02 0.01 0.01 0.01 0.02 0.01 0.02 0.02 0.00 
+
+0.00 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.00 0.01 0.01 0.97 0.01 0.00 0.01 0.00 0.02 0.97 0.02 0.00 0.02 0.01 0.98 0.01 0.01 0.01 0.01 0.97 0.00 0.01 0.01 0.01 0.00 0.06 0.08 0.01 0.01 0.01 0.02 0.97 0.01 0.02 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.00 0.04 0.01 0.01 0.01 0.01 0.01 0.97 0.02 0.01 
+
+0.01 0.01 0.02 0.98 0.03 0.98 0.01 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.97 0.02 0.03 0.01 0.02 0.01 0.02 0.00 0.01 0.01 0.01 0.01 0.98 0.01 0.01 0.02 0.01 0.00 0.00 0.01 0.02 0.01 0.01 0.97 0.01 0.00 0.01 0.01 0.02 0.01 0.03 0.05 0.97 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 
+
+0.01 0.02 0.01 0.98 0.01 0.01 0.01 0.97 0.01 0.01 0.01 0.97 0.01 0.01 0.01 0.03 0.01 0.01 0.01 0.04 0.01 0.02 0.02 0.00 0.98 0.01 0.01 0.03 0.07 0.01 0.97 0.01 0.02 0.01 0.01 0.01 0.01 0.00 0.03 0.00 0.01 0.00 0.01 0.01 0.01 0.00 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.00 0.01 0.01 0.02 0.01 0.04 0.01 0.01 0.98 0.00 
+
+0.01 0.98 0.01 0.98 0.03 0.01 0.01 0.01 0.01 0.98 0.02 0.02 0.01 0.01 0.97 0.02 0.00 0.02 0.02 0.03 0.01 0.01 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.97 0.02 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.00 0.04 0.00 0.03 0.00 0.02 0.01 0.98 0.00 0.01 0.04 0.00 0.01 0.01 0.01 0.00 0.01 0.00 0.01 0.02 0.01 0.02 0.02 0.01 0.01 
+
+0.02 0.01 0.01 0.01 0.01 0.02 0.11 0.02 0.00 0.01 0.05 0.02 0.00 0.08 0.01 0.97 0.02 0.01 0.01 0.01 0.01 0.00 0.98 0.01 0.80 0.02 0.01 0.01 0.02 0.02 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.01 0.97 0.01 0.00 0.98 0.05 0.00 0.98 0.01 0.02 0.00 0.02 0.01 0.00 0.03 0.01 0.03 0.01 0.02 0.02 0.02 0.01 0.01 0.01 0.01 0.01 0.02 
+
+0.01 0.01 0.98 0.01 0.01 0.03 0.01 0.01 0.01 0.01 0.02 0.04 0.01 0.00 0.01 0.16 0.01 0.01 0.82 0.01 0.02 0.01 0.02 0.01 0.03 0.01 0.00 0.98 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.98 0.01 0.01 0.01 0.01 0.02 0.98 0.01 0.01 0.01 0.01 0.01 0.01 0.04 0.01 0.97 0.01 0.02 0.01 0.03 
+
+0.01 0.01 0.01 0.00 0.02 0.02 0.01 0.02 0.01 0.98 0.03 0.02 0.02 0.02 0.02 0.02 0.97 0.01 0.01 0.00 0.97 0.02 0.01 0.02 0.02 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.02 0.01 0.00 0.02 0.07 0.98 0.01 0.02 0.01 0.00 0.02 0.00 0.98 0.01 0.01 0.01 0.04 0.00 0.94 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.00 0.03 0.01 0.00 
+
+0.04 0.00 0.00 0.03 0.01 0.02 0.01 0.01 0.01 0.00 0.02 0.97 0.01 0.01 0.01 0.99 0.00 0.01 0.02 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.02 0.02 0.02 0.01 0.98 0.01 0.01 0.01 0.01 0.02 0.01 0.97 0.03 0.01 0.01 0.00 0.02 0.18 0.02 0.01 0.01 0.97 0.02 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.84 0.01 0.02 0.01 0.01 
+
+0.01 0.01 0.01 0.01 0.97 0.03 0.01 0.01 0.01 0.01 0.02 0.01 0.02 0.02 0.01 0.01 0.98 0.02 0.01 0.01 0.98 0.00 0.01 0.01 0.01 0.00 0.02 0.00 0.03 0.01 0.02 0.98 0.01 0.02 0.01 0.97 0.01 0.04 0.01 0.00 0.01 0.01 0.02 0.99 0.01 0.01 0.01 0.01 0.01 0.01 0.04 0.01 0.01 0.00 0.01 0.02 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 
+
+0.00 0.00 0.01 0.02 0.98 0.02 0.01 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.03 0.02 0.97 0.00 0.01 0.06 0.01 0.01 0.02 0.98 0.02 0.01 0.01 0.01 0.01 0.02 0.00 0.01 0.01 0.97 0.01 0.01 0.01 0.00 0.98 0.03 0.01 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.02 0.01 0.98 0.01 0.01 0.01 0.01 
+
+0.02 0.02 0.03 0.02 0.01 0.02 0.02 0.02 0.01 0.02 0.98 0.02 0.01 0.01 0.00 0.02 0.02 0.01 0.98 0.01 0.02 0.02 0.01 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.02 0.98 0.01 0.02 0.01 0.97 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.98 0.01 0.02 0.01 0.01 0.02 0.03 0.98 0.01 0.01 0.01 0.01 0.02 0.01 
+
+0.01 0.02 0.01 0.01 0.03 0.02 0.02 0.00 0.01 0.02 0.01 0.98 0.00 0.01 0.02 0.02 0.01 0.02 0.98 0.00 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.00 0.01 0.00 0.02 1.00 0.01 0.01 0.02 0.02 0.01 0.01 0.01 0.97 0.01 0.00 0.01 0.98 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.98 0.01 0.01 0.02 0.02 
+
+0.01 0.01 0.01 0.01 0.01 0.03 0.01 0.97 0.50 0.02 0.01 0.02 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.02 0.01 0.01 0.03 0.01 0.03 0.02 0.00 0.98 0.01 0.02 0.00 0.01 0.01 0.01 0.01 0.01 0.02 0.29 0.98 0.01 0.00 0.01 0.01 0.01 0.02 0.02 0.45 0.02 0.02 0.01 0.01 0.01 0.01 0.02 0.02 0.02 0.01 0.73 0.02 0.01 0.98 
+
+0.02 0.04 0.02 0.00 0.04 0.01 0.01 0.01 0.01 0.00 0.02 0.01 0.01 0.02 0.02 0.01 0.01 0.00 0.01 0.01 0.02 0.01 0.01 0.97 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.98 0.01 0.97 0.00 0.01 0.01 0.01 0.01 0.02 0.98 0.01 0.01 0.02 0.01 0.95 0.01 0.02 0.01 0.01 0.00 0.01 0.02 0.02 0.03 0.00 0.02 0.99 0.00 0.01 0.00 0.03 0.01 0.02 
+
+0.03 0.01 0.01 0.02 0.01 0.01 0.98 0.01 0.01 0.02 0.01 0.01 0.01 0.02 0.14 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.00 0.85 0.97 0.02 0.01 0.01 0.01 0.02 0.02 0.97 0.01 0.02 0.01 0.01 0.01 0.84 0.01 0.01 0.01 0.01 0.13 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.04 0.01 0.01 0.01 0.01 0.01 0.99 0.02 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 
+
+Figure 14: Expert activation patterns across layers in Deepseek MoE architectures during factual generation on the GSM8k. Column labels indicate the expert in-dices. 0
+
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 8
+> 9
+> 10
+> 11
+> 12
+> 13
+> 14
+> 15
+> 16
+> 17
+> 18
+> 19
+> 20
+> 21
+> 22
+> 23
+> 24
+> 25
+> 26
+> 27
+> 28
+> 29
+> 30
+> 31
+> 32
+> 33
+> 34
+> 35
+> 36
+> 37
+> 38
+> 39
+> 40
+> 41
+> 42
+> 43
+> 44
+> 45
+> 46
+> 47
+> 48
+> 49
+> 50
+> 51
+> 52
+> 53
+> 54
+> 55
+> 56
+> 57
+> 58
+> 59
+> 60
+> 61
+> 62
+> 63
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+> Layer
+
+0.03 0.01 0.03 0.01 0.98 0.98 0.01 0.01 0.02 0.01 0.01 0.01 0.02 0.02 0.99 0.01 0.01 0.01 0.02 0.02 0.01 0.02 0.01 0.02 0.01 0.01 0.02 0.01 0.01 0.02 0.02 0.01 0.01 0.03 0.02 0.02 0.02 0.02 0.02 0.01 0.03 0.01 0.02 0.98 0.02 0.02 0.98 0.02 0.01 0.01 0.02 0.97 0.02 0.02 0.01 0.01 0.02 0.01 0.02 0.01 0.03 0.02 0.01 0.02 
+
+0.02 0.01 0.97 0.02 0.02 0.01 0.02 0.02 0.02 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.02 0.01 0.01 0.04 0.01 0.02 0.02 0.01 0.02 0.01 0.01 0.01 0.02 0.98 0.02 0.02 0.01 0.01 0.01 0.02 0.02 0.02 0.03 0.03 0.01 0.98 0.01 0.02 0.02 0.98 0.02 0.02 0.01 0.01 0.02 0.02 0.04 0.01 0.97 0.02 0.01 0.01 0.01 0.02 0.04 0.02 0.98 
+
+0.02 0.97 0.02 0.01 0.02 0.01 0.02 0.01 0.02 0.03 0.01 0.04 0.02 0.02 0.01 0.02 0.02 0.01 0.02 0.02 0.02 0.02 0.98 0.01 0.02 0.02 0.02 0.02 0.02 0.02 0.01 0.02 0.02 0.01 0.02 0.02 0.01 0.02 0.02 0.01 0.01 0.99 0.02 0.01 0.01 0.02 0.98 0.02 0.01 0.01 0.76 0.01 0.01 0.02 0.02 0.02 0.01 0.25 0.02 0.01 0.01 0.01 0.98 0.02 
+
+0.97 0.01 0.01 0.03 0.98 0.02 0.02 0.03 0.01 0.01 0.01 0.02 0.97 0.03 0.01 0.01 0.02 0.01 0.98 0.01 0.01 0.02 0.02 0.01 0.00 0.01 0.01 0.02 0.03 0.05 0.01 0.01 0.97 0.02 0.02 0.02 0.01 0.02 0.01 0.01 0.04 0.02 0.04 0.02 0.01 0.01 0.01 0.01 0.02 0.02 0.02 0.01 0.03 0.02 0.01 0.02 0.01 0.01 0.02 0.01 0.02 0.02 1.00 0.02 
+
+0.05 0.02 0.01 0.01 0.01 0.01 0.01 0.97 0.01 0.01 0.02 0.02 0.01 0.01 0.03 0.02 0.94 0.01 0.02 0.02 0.03 0.01 0.61 0.01 0.97 0.02 0.02 0.03 0.02 0.02 0.02 0.97 0.97 0.02 0.00 0.40 0.02 0.02 0.03 0.02 0.01 0.02 0.02 0.01 0.02 0.01 0.02 0.02 0.02 0.00 0.01 0.03 0.02 0.01 0.02 0.01 0.01 0.01 0.03 0.02 0.01 0.01 0.02 0.05 
+
+0.02 0.03 0.03 0.01 0.02 0.03 0.02 0.02 0.02 0.97 0.02 0.02 0.01 0.01 0.02 0.02 0.01 0.01 0.02 0.01 0.01 0.02 0.01 0.03 0.02 0.02 0.01 0.97 0.02 0.97 0.02 0.01 0.05 0.01 0.02 0.02 0.00 0.01 0.02 0.01 0.02 0.02 0.01 0.01 0.01 0.97 0.01 0.01 0.02 0.02 0.02 0.01 0.03 0.02 0.01 0.08 0.00 0.01 0.97 0.00 0.01 0.00 0.97 0.03 
+
+0.01 0.02 0.01 0.02 0.04 0.01 0.01 0.01 0.01 0.03 0.02 0.97 0.02 0.00 0.01 0.02 0.01 0.97 0.01 0.02 0.04 0.04 0.00 0.98 0.02 0.02 0.02 0.97 0.03 0.03 0.03 0.03 0.02 0.01 0.01 0.98 0.01 0.01 0.01 0.03 0.02 0.02 0.02 0.01 0.01 0.02 0.03 0.02 0.00 0.01 0.01 0.02 0.01 0.97 0.02 0.01 0.02 0.02 0.03 0.01 0.01 0.01 0.03 0.02 
+
+0.97 0.02 0.02 0.01 0.01 0.02 0.05 0.02 0.02 0.03 0.01 0.01 0.01 0.00 0.02 0.01 0.03 0.00 0.01 0.02 0.02 0.01 0.02 0.02 0.04 0.01 0.01 0.03 0.02 0.02 0.02 0.02 0.01 0.02 0.02 0.98 0.02 0.01 0.05 0.01 0.01 0.97 0.01 0.97 0.01 0.03 0.02 0.03 0.01 0.97 0.02 0.01 0.02 0.02 0.01 0.00 0.02 0.02 0.00 0.01 0.02 0.97 0.03 0.01 
+
+0.01 0.02 0.04 0.02 0.97 0.01 0.02 0.02 0.04 0.02 0.97 0.00 0.01 0.02 0.02 0.02 0.01 0.02 0.01 0.03 0.01 0.01 0.02 0.99 0.02 0.02 0.00 0.01 0.03 0.02 0.03 0.02 0.02 0.02 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.05 0.02 0.98 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.97 0.02 0.02 0.01 0.00 0.01 0.02 0.07 0.02 0.01 0.97 0.02 0.00 
+
+0.97 0.05 0.06 0.02 0.01 0.02 0.02 0.00 0.97 0.02 0.01 0.01 0.04 0.02 0.01 0.01 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.97 0.02 0.02 0.01 0.02 0.02 0.02 0.02 0.02 0.98 0.02 0.02 0.02 0.02 0.01 0.01 0.00 0.01 0.97 0.03 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.01 0.01 0.02 0.02 0.03 0.01 0.00 0.01 0.07 0.02 0.01 0.03 0.98 
+
+0.02 0.04 0.97 0.02 0.01 0.01 0.02 0.02 0.02 0.01 0.01 0.97 0.02 0.02 0.02 0.01 0.01 0.03 0.01 0.02 0.03 0.01 0.01 0.05 0.97 0.01 0.02 0.01 0.04 0.02 0.00 0.03 0.03 0.02 0.02 0.01 0.03 0.97 0.00 0.01 0.03 0.00 0.01 0.02 0.00 0.04 0.01 0.97 0.02 0.01 0.01 0.02 0.02 0.01 0.01 0.02 0.98 0.03 0.01 0.03 0.05 0.01 0.01 0.02 
+
+0.01 0.04 0.02 0.03 0.01 0.02 0.03 0.03 0.01 0.01 0.01 0.02 0.02 0.01 0.02 0.02 0.00 0.98 0.98 0.62 0.01 0.01 0.00 0.03 0.00 0.97 0.02 0.04 0.02 0.02 0.36 0.01 0.02 0.01 0.01 0.01 0.98 0.01 0.03 0.01 0.01 0.02 0.01 0.04 0.00 0.01 0.03 0.00 0.02 0.02 0.98 0.03 0.01 0.00 0.03 0.02 0.01 0.01 0.01 0.02 0.03 0.02 0.02 0.00 
+
+0.02 0.01 0.03 0.01 0.02 0.01 0.02 0.01 0.00 0.01 0.01 0.95 0.01 0.00 0.01 0.02 0.02 0.97 0.02 0.00 0.02 0.04 0.98 0.02 0.01 0.01 0.01 0.97 0.01 0.01 0.01 0.02 0.00 0.07 0.09 0.02 0.01 0.02 0.05 0.98 0.01 0.02 0.03 0.02 0.02 0.02 0.01 0.01 0.01 0.00 0.02 0.01 0.02 0.02 0.00 0.04 0.01 0.02 0.02 0.00 0.01 0.97 0.03 0.01 
+
+0.02 0.02 0.02 0.98 0.03 0.98 0.01 0.03 0.02 0.01 0.00 0.02 0.02 0.01 0.97 0.02 0.03 0.02 0.02 0.01 0.02 0.00 0.01 0.02 0.02 0.01 0.98 0.01 0.02 0.03 0.02 0.00 0.02 0.01 0.02 0.01 0.01 0.98 0.01 0.00 0.01 0.01 0.03 0.01 0.04 0.05 0.98 0.01 0.02 0.01 0.02 0.02 0.03 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.02 0.02 
+
+0.01 0.02 0.01 0.98 0.02 0.01 0.02 0.97 0.01 0.01 0.01 0.98 0.01 0.02 0.01 0.03 0.02 0.02 0.01 0.04 0.00 0.02 0.02 0.00 0.98 0.02 0.00 0.03 0.09 0.01 0.97 0.02 0.03 0.02 0.01 0.01 0.02 0.02 0.03 0.01 0.02 0.01 0.01 0.02 0.01 0.00 0.03 0.01 0.01 0.02 0.01 0.01 0.01 0.02 0.00 0.01 0.02 0.03 0.02 0.04 0.01 0.02 0.98 0.01 
+
+0.01 0.98 0.01 0.97 0.03 0.01 0.01 0.01 0.01 0.98 0.02 0.02 0.02 0.01 0.98 0.02 0.00 0.02 0.03 0.03 0.01 0.02 0.03 0.01 0.01 0.01 0.02 0.01 0.01 0.97 0.03 0.03 0.01 0.01 0.02 0.02 0.01 0.01 0.02 0.01 0.04 0.01 0.03 0.01 0.02 0.01 0.97 0.01 0.01 0.04 0.01 0.01 0.02 0.02 0.01 0.02 0.00 0.01 0.02 0.02 0.03 0.02 0.02 0.01 
+
+0.02 0.03 0.01 0.03 0.01 0.03 0.19 0.02 0.01 0.04 0.05 0.02 0.01 0.19 0.02 0.97 0.03 0.01 0.01 0.02 0.01 0.00 0.98 0.01 0.63 0.03 0.01 0.01 0.04 0.03 0.01 0.02 0.01 0.00 0.01 0.01 0.02 0.01 0.97 0.01 0.00 0.98 0.05 0.00 0.98 0.01 0.02 0.00 0.02 0.01 0.00 0.02 0.01 0.03 0.01 0.02 0.03 0.02 0.01 0.01 0.01 0.01 0.01 0.02 
+
+0.02 0.02 0.99 0.01 0.02 0.04 0.02 0.02 0.01 0.01 0.02 0.04 0.01 0.01 0.02 0.29 0.01 0.00 0.71 0.02 0.03 0.01 0.02 0.01 0.03 0.01 0.00 0.97 0.02 0.02 0.01 0.02 0.01 0.03 0.02 0.02 0.01 0.01 0.02 0.02 0.01 0.01 0.01 0.00 0.98 0.02 0.02 0.02 0.02 0.02 0.98 0.01 0.01 0.02 0.01 0.02 0.01 0.04 0.01 0.97 0.01 0.03 0.01 0.03 
+
+0.01 0.01 0.01 0.00 0.03 0.03 0.02 0.01 0.01 0.98 0.04 0.02 0.02 0.02 0.02 0.03 0.97 0.01 0.02 0.00 0.97 0.02 0.01 0.02 0.03 0.02 0.01 0.02 0.02 0.00 0.02 0.01 0.02 0.03 0.01 0.00 0.02 0.08 0.98 0.01 0.02 0.01 0.00 0.03 0.00 0.98 0.02 0.01 0.02 0.12 0.01 0.87 0.01 0.01 0.02 0.02 0.02 0.03 0.01 0.01 0.00 0.03 0.01 0.01 
+
+0.04 0.02 0.00 0.03 0.00 0.02 0.01 0.02 0.02 0.01 0.02 0.98 0.02 0.01 0.01 0.99 0.00 0.02 0.02 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.03 0.04 0.02 0.02 0.98 0.01 0.02 0.02 0.01 0.03 0.01 0.97 0.02 0.01 0.02 0.00 0.03 0.42 0.02 0.01 0.01 0.97 0.02 0.01 0.02 0.02 0.02 0.01 0.01 0.03 0.01 0.01 0.02 0.61 0.01 0.02 0.02 0.01 
+
+0.01 0.01 0.01 0.03 0.98 0.05 0.01 0.01 0.02 0.01 0.03 0.01 0.03 0.02 0.01 0.01 0.97 0.03 0.02 0.03 0.98 0.01 0.01 0.02 0.01 0.01 0.02 0.01 0.03 0.02 0.02 0.98 0.02 0.03 0.01 0.97 0.01 0.04 0.02 0.01 0.02 0.02 0.03 0.99 0.01 0.01 0.02 0.00 0.01 0.01 0.05 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.03 0.01 0.01 0.01 0.02 0.01 
+
+0.01 0.01 0.01 0.02 0.99 0.02 0.01 0.03 0.01 0.01 0.03 0.03 0.02 0.02 0.03 0.03 0.98 0.01 0.01 0.06 0.01 0.02 0.03 0.98 0.02 0.01 0.01 0.02 0.01 0.02 0.02 0.01 0.02 0.97 0.01 0.01 0.01 0.00 0.98 0.03 0.00 0.03 0.01 0.01 0.01 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.04 0.02 0.98 0.01 0.01 0.01 0.01 
+
+0.02 0.02 0.03 0.02 0.01 0.02 0.03 0.03 0.02 0.03 0.98 0.05 0.01 0.01 0.00 0.02 0.03 0.01 0.98 0.01 0.03 0.02 0.02 0.01 0.01 0.02 0.02 0.00 0.02 0.01 0.02 0.02 0.02 0.98 0.02 0.02 0.01 0.97 0.02 0.01 0.02 0.00 0.01 0.03 0.01 0.02 0.01 0.01 0.01 0.02 0.98 0.01 0.02 0.00 0.01 0.02 0.03 0.98 0.01 0.02 0.02 0.01 0.01 0.01 
+
+0.01 0.03 0.01 0.02 0.03 0.03 0.02 0.01 0.01 0.02 0.01 0.99 0.01 0.01 0.02 0.03 0.01 0.02 0.98 0.00 0.01 0.01 0.03 0.01 0.02 0.01 0.02 0.02 0.02 0.00 0.01 0.01 0.02 0.01 0.01 0.01 0.02 1.00 0.01 0.01 0.03 0.03 0.01 0.01 0.01 0.98 0.01 0.01 0.02 0.99 0.01 0.01 0.03 0.02 0.01 0.02 0.01 0.02 0.04 0.99 0.01 0.01 0.03 0.03 
+
+0.01 0.01 0.02 0.02 0.01 0.04 0.01 0.97 0.70 0.02 0.01 0.03 0.02 0.01 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.04 0.01 0.03 0.02 0.01 0.98 0.01 0.03 0.01 0.01 0.01 0.01 0.02 0.01 0.03 0.04 0.98 0.01 0.00 0.02 0.01 0.01 0.02 0.02 0.27 0.02 0.02 0.02 0.02 0.01 0.01 0.02 0.03 0.03 0.02 0.97 0.02 0.03 0.97 
+
+0.03 0.04 0.03 0.01 0.02 0.01 0.01 0.02 0.01 0.01 0.04 0.01 0.02 0.02 0.01 0.02 0.01 0.00 0.01 0.01 0.03 0.02 0.01 0.97 0.01 0.01 0.02 0.04 0.02 0.01 0.01 0.98 0.01 0.98 0.01 0.01 0.02 0.02 0.02 0.03 0.98 0.01 0.02 0.02 0.01 0.99 0.01 0.01 0.01 0.02 0.01 0.02 0.03 0.03 0.03 0.01 0.03 0.99 0.02 0.01 0.00 0.03 0.01 0.02 
+
+0.03 0.02 0.02 0.02 0.02 0.01 0.98 0.02 0.02 0.02 0.01 0.02 0.01 0.02 0.28 0.02 0.02 0.01 0.02 0.02 0.03 0.01 0.01 0.01 0.01 0.02 0.01 0.71 0.96 0.03 0.02 0.01 0.02 0.03 0.02 0.98 0.01 0.03 0.02 0.02 0.02 0.91 0.02 0.01 0.01 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.02 0.03 0.01 0.01 0.08 0.01 0.02 0.02 0.00 0.02 0.99 0.03 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 
+
+Figure 15: Expert activation patterns across layers in Deepseek MoE architectures during non-factual genera-tion on the GSM8k. Column labels indicate the expert indices. 39338 0
+
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 012345678910 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+> Layer
+
+0.03 0.98 0.04 0.03 0.98 0.04 0.03 0.03 
+
+0.03 0.03 0.03 0.99 0.03 0.98 0.05 0.02 
+
+0.04 0.03 0.98 0.03 0.06 0.99 0.03 0.02 
+
+0.05 0.02 0.03 0.03 0.37 0.98 0.28 0.41 
+
+0.05 0.95 0.03 0.05 0.04 0.04 0.97 0.04 
+
+0.37 0.04 0.27 0.03 0.36 0.04 0.09 0.97 
+
+0.05 0.95 0.04 0.03 0.04 0.03 0.99 0.03 
+
+1.00 0.04 0.03 0.03 0.03 0.03 0.02 1.00 
+
+0.04 0.93 0.96 0.05 0.03 0.03 0.04 0.09 
+
+0.04 0.03 0.98 0.03 0.03 0.04 0.03 0.99 
+
+0.04 0.05 0.04 0.04 0.98 0.03 0.95 0.03 
+
+0.06 0.04 0.06 0.20 0.98 0.12 0.67 0.04 
+
+0.04 0.44 0.04 0.98 0.55 0.05 0.02 0.05 
+
+0.04 0.59 0.10 0.90 0.03 0.45 0.03 0.04 
+
+0.03 0.03 0.24 0.04 0.09 0.03 0.81 0.90 
+
+0.06 0.06 0.10 0.20 0.91 0.75 0.04 0.04 
+
+0.10 0.25 0.98 0.04 0.46 0.02 0.12 0.21 
+
+0.05 0.04 0.05 0.58 0.03 0.04 0.43 0.96 
+
+0.34 0.03 0.04 0.04 0.04 0.56 0.33 0.80 
+
+0.03 0.97 0.03 0.57 0.12 0.06 0.28 0.11 
+
+0.13 0.67 0.61 0.34 0.04 0.27 0.03 0.09 
+
+0.27 0.42 0.41 0.04 0.06 0.29 0.12 0.57 
+
+0.08 0.05 0.05 0.04 0.96 0.58 0.09 0.32 
+
+0.06 0.06 0.98 0.53 0.06 0.02 0.42 0.05 
+
+0.16 0.05 0.03 0.97 0.03 0.85 0.03 0.04 
+
+0.89 0.02 0.04 0.29 0.06 0.27 0.19 0.42 
+
+0.08 0.04 0.06 0.79 0.23 0.66 0.24 0.07 
+
+0.79 0.05 0.08 0.49 0.09 0.09 0.03 0.56 
+
+0.17 0.07 0.06 0.76 0.06 0.05 0.22 0.79 
+
+0.04 0.51 0.77 0.03 0.05 0.03 0.69 0.05 
+
+0.04 0.03 0.04 0.95 0.06 0.96 0.04 0.06 
+
+0.11 0.71 0.12 0.26 0.05 0.81 0.05 0.06 
+
+Factual 
+
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 012345678910 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+> Layer
+
+0.04 0.97 0.05 0.05 0.98 0.05 0.04 0.04 
+
+0.04 0.04 0.04 1.00 0.04 0.98 0.06 0.03 
+
+0.05 0.05 0.97 0.03 0.08 0.98 0.04 0.03 
+
+0.07 0.03 0.04 0.05 0.21 0.97 0.63 0.23 
+
+0.14 0.85 0.04 0.07 0.05 0.06 0.97 0.05 
+
+0.06 0.07 0.27 0.04 0.69 0.06 0.08 0.95 
+
+0.15 0.84 0.05 0.06 0.05 0.05 0.98 0.04 
+
+0.99 0.04 0.06 0.03 0.05 0.03 0.03 0.99 
+
+0.05 0.86 0.95 0.08 0.04 0.04 0.04 0.16 
+
+0.05 0.04 0.99 0.05 0.03 0.05 0.05 0.97 
+
+0.04 0.06 0.04 0.05 0.99 0.04 0.95 0.05 
+
+0.04 0.06 0.07 0.46 0.98 0.33 0.25 0.04 
+
+0.05 0.09 0.05 0.97 0.92 0.04 0.04 0.05 
+
+0.05 0.97 0.22 0.75 0.04 0.09 0.05 0.05 
+
+0.04 0.04 0.13 0.05 0.20 0.03 0.98 0.76 
+
+0.17 0.10 0.09 0.17 0.77 0.79 0.06 0.06 
+
+0.15 0.60 0.97 0.06 0.29 0.03 0.10 0.05 
+
+0.05 0.05 0.06 0.65 0.05 0.05 0.39 0.92 
+
+0.06 0.04 0.05 0.06 0.04 0.74 0.26 0.97 
+
+0.05 0.96 0.04 0.88 0.04 0.08 0.07 0.10 
+
+0.13 0.89 0.84 0.12 0.06 0.07 0.04 0.08 
+
+0.04 0.19 0.22 0.06 0.13 0.64 0.08 0.86 
+
+0.06 0.08 0.07 0.04 0.96 0.22 0.04 0.76 
+
+0.08 0.08 0.96 0.13 0.05 0.04 0.81 0.07 
+
+0.33 0.09 0.04 0.95 0.06 0.67 0.04 0.05 
+
+0.85 0.03 0.07 0.33 0.06 0.16 0.13 0.58 
+
+0.11 0.04 0.08 0.92 0.18 0.66 0.19 0.04 
+
+0.94 0.10 0.09 0.65 0.12 0.13 0.05 0.14 
+
+0.10 0.06 0.11 0.65 0.08 0.10 0.31 0.82 
+
+0.08 0.78 0.47 0.04 0.06 0.03 0.67 0.09 
+
+0.04 0.05 0.05 0.94 0.07 0.92 0.04 0.11 
+
+0.11 0.62 0.10 0.55 0.04 0.68 0.07 0.05 
+
+Non-Factual 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 Figure 16: Expert activation patterns across layers in Mixtral architectures during factual and non-factual gen-eration on the GSM8k. Column labels indicate the ex-pert indices. 0
+
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 8
+> 9
+> 10
+> 11
+> 12
+> 13
+> 14
+> 15
+> 16
+> 17
+> 18
+> 19
+> 20
+> 21
+> 22
+> 23
+> 24
+> 25
+> 26
+> 27
+> 28
+> 29
+> 30
+> 31
+> 32
+> 33
+> 34
+> 35
+> 36
+> 37
+> 38
+> 39
+> 40
+> 41
+> 42
+> 43
+> 44
+> 45
+> 46
+> 47
+> 48
+> 49
+> 50
+> 51
+> 52
+> 53
+> 54
+> 55
+> 56
+> 57
+> 58
+> 59
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+> Layer
+
+0.01 0.03 0.01 0.02 0.00 0.01 0.01 0.00 0.00 0.02 0.00 0.00 0.01 0.01 0.00 0.01 0.02 0.00 0.02 0.01 0.01 0.00 0.01 0.00 0.00 0.01 0.00 0.18 0.00 0.00 0.00 0.01 0.01 0.99 0.01 0.01 0.02 0.01 0.01 0.02 0.01 0.01 0.01 0.02 0.98 0.01 0.02 0.77 0.78 0.01 0.01 0.01 0.01 0.00 0.24 0.00 0.01 0.01 0.01 0.01 
+
+0.98 0.00 0.01 0.01 0.01 0.00 0.01 0.00 0.01 0.02 0.02 0.02 0.01 0.02 0.01 0.00 0.00 0.01 0.08 0.02 0.08 0.01 0.01 0.38 0.01 0.01 0.00 0.00 0.01 0.08 0.01 0.00 0.01 0.00 0.01 0.00 0.00 0.00 0.01 0.01 0.00 0.01 0.01 0.99 0.01 0.00 0.00 0.01 0.99 0.01 0.01 0.03 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.39 
+
+0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.00 0.00 0.01 0.02 0.01 0.73 0.01 0.00 0.01 0.98 0.01 0.00 0.01 0.01 0.01 0.01 1.00 0.01 0.01 0.01 0.02 0.02 0.00 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.02 0.02 0.00 0.25 0.00 0.00 0.00 0.00 0.00 0.01 0.03 0.00 0.02 0.99 0.01 0.01 0.01 0.01 
+
+0.01 0.00 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.01 0.02 0.00 0.00 0.01 0.01 0.01 0.01 0.02 0.02 0.02 0.01 0.01 0.00 0.97 0.00 0.01 0.01 0.00 0.00 0.01 0.99 0.01 0.00 0.02 0.00 0.01 0.01 0.00 0.99 0.00 0.01 0.02 0.00 0.01 0.00 0.01 0.01 0.05 0.98 0.00 0.01 0.00 0.01 0.02 0.00 0.01 0.01 0.01 0.01 0.00 
+
+0.01 0.01 0.01 0.00 0.03 0.02 0.01 0.00 0.01 0.00 0.01 0.00 0.00 0.00 0.01 0.01 0.01 0.02 0.01 0.56 0.00 0.01 0.01 0.01 0.00 0.02 0.02 0.01 0.01 0.01 0.01 0.99 0.99 0.00 0.00 0.00 0.04 0.99 0.01 0.02 0.00 0.01 0.00 0.01 0.01 0.01 0.01 0.42 0.00 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 
+
+0.01 0.01 0.01 0.02 0.00 0.01 0.02 0.00 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.03 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.00 0.00 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.98 0.01 0.01 0.01 0.01 0.99 0.01 0.01 0.02 0.00 0.00 0.00 0.01 0.01 0.01 0.98 0.99 0.01 0.00 0.02 0.00 
+
+0.01 0.00 0.01 0.01 0.04 0.00 0.01 0.00 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.03 0.01 0.01 0.01 0.01 0.01 0.00 0.02 0.01 0.00 0.01 0.01 0.02 0.00 0.01 0.01 0.00 0.03 0.98 0.01 0.01 0.00 0.98 0.01 0.64 0.01 0.00 0.01 0.98 0.35 0.01 0.00 0.01 0.00 0.00 0.01 0.01 
+
+0.01 0.00 0.38 0.01 0.00 0.99 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.03 0.01 0.01 0.00 0.00 0.00 0.01 0.00 0.00 0.00 0.01 0.02 0.62 0.02 0.01 0.00 0.00 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.98 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.02 0.00 0.02 0.01 0.00 0.02 0.01 0.01 0.01 0.00 1.00 
+
+0.01 0.01 0.00 0.01 0.02 0.00 0.01 0.01 0.98 0.01 0.01 0.01 0.01 0.00 0.01 0.02 0.98 0.01 0.01 0.00 0.02 0.02 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.01 0.98 0.00 0.00 0.01 0.03 0.01 0.00 0.00 0.00 0.01 0.01 0.01 0.00 0.98 0.01 0.00 0.02 0.00 0.00 0.01 0.00 0.00 0.00 0.02 0.00 0.00 0.01 
+
+0.98 0.01 0.00 0.00 0.00 0.98 0.01 0.01 0.00 0.00 0.00 0.00 0.00 0.02 0.01 0.01 0.01 0.02 0.00 0.01 0.00 0.00 0.00 0.01 0.02 0.01 0.00 0.01 0.01 0.00 0.01 0.02 0.00 0.03 0.03 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.03 0.01 0.01 0.01 1.00 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.98 0.01 0.01 
+
+0.02 0.01 0.01 0.00 0.01 0.00 0.00 0.02 0.01 0.00 0.01 0.00 0.01 0.00 0.00 0.01 0.00 0.02 0.99 0.01 0.02 0.00 0.02 0.00 0.00 0.01 0.01 0.01 0.01 0.00 0.02 0.01 0.01 0.00 0.02 0.00 0.02 0.01 0.01 0.00 0.01 0.01 0.24 0.01 0.01 0.98 0.01 0.00 0.75 0.00 0.02 0.00 0.01 0.03 0.00 0.01 0.98 0.00 0.00 0.01 
+
+0.01 0.01 0.01 0.02 0.01 0.00 0.00 0.01 0.01 0.02 0.00 0.01 0.01 0.98 0.01 0.00 0.02 0.00 0.00 0.00 0.02 0.00 0.01 0.01 0.00 0.00 0.00 0.00 0.00 0.02 0.01 0.02 0.01 0.00 0.03 0.01 0.00 0.01 0.01 0.02 0.99 0.01 0.01 0.02 0.00 0.00 0.01 0.01 0.00 0.00 0.99 0.01 0.98 0.02 0.00 0.01 0.02 0.00 0.01 0.02 
+
+0.02 0.01 0.01 0.01 0.01 0.03 0.00 0.98 0.00 0.00 0.00 0.00 0.01 0.02 0.01 0.01 0.02 0.00 0.00 0.01 0.02 0.02 0.00 0.00 0.01 0.01 0.98 0.02 0.98 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.01 0.01 0.00 0.00 0.00 0.01 0.01 0.01 0.98 0.01 0.00 0.00 0.01 0.02 0.01 0.00 0.01 
+
+0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.00 0.02 0.99 0.00 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.00 0.01 1.00 1.00 0.02 0.00 0.01 0.02 0.01 0.02 0.00 0.00 0.01 0.02 0.98 0.01 0.00 0.01 0.00 0.01 0.00 0.01 0.00 0.00 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.01 
+
+0.01 0.00 0.02 0.00 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.98 0.00 0.01 0.00 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.01 0.00 0.01 0.98 0.01 0.01 0.98 0.01 0.00 0.00 0.02 0.02 0.01 0.03 0.01 0.01 0.01 0.00 0.00 0.00 0.03 0.03 0.00 0.98 0.01 0.01 0.01 0.02 0.00 0.00 0.00 0.01 0.02 0.00 0.00 
+
+0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.98 0.01 0.01 0.00 0.00 0.01 0.00 0.01 0.00 0.01 0.98 0.01 0.02 0.98 0.01 0.00 0.01 0.01 0.01 0.00 0.03 0.01 0.01 0.00 0.01 0.01 0.01 0.99 0.00 0.02 0.01 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.00 0.00 0.00 0.00 0.01 0.00 0.01 0.02 0.03 
+
+0.99 0.02 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.00 0.02 0.01 0.01 0.01 0.01 0.00 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.00 0.98 0.01 0.00 0.01 0.00 0.01 0.02 0.00 0.00 0.02 0.00 0.01 0.01 0.01 0.00 0.00 0.01 0.00 0.03 0.99 0.02 0.00 0.01 0.01 0.00 0.00 0.01 0.02 0.01 0.01 0.03 0.98 0.01 
+
+0.00 0.02 0.01 0.03 0.00 0.02 0.01 0.00 0.00 0.01 0.01 0.01 0.00 0.02 0.01 0.01 0.01 0.01 0.98 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.00 0.00 0.97 0.00 0.01 0.98 0.98 0.01 0.00 0.02 0.02 0.00 0.02 0.01 0.01 0.00 0.00 0.00 0.00 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.01 0.00 0.01 0.01 0.00 0.01 0.02 0.02 
+
+0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.02 0.01 0.08 0.00 0.00 0.00 0.99 0.02 0.99 0.00 0.01 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.00 0.01 0.00 0.00 0.01 0.01 0.01 0.00 0.01 0.00 0.02 0.01 0.01 0.01 0.00 0.02 0.01 0.01 0.01 0.01 0.00 0.00 0.01 0.01 0.97 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.93 0.00 
+
+0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.00 0.01 0.02 0.00 0.00 0.00 0.00 0.01 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.00 0.98 0.01 0.01 0.98 0.00 0.01 0.01 0.00 0.00 0.00 0.02 0.00 0.01 0.01 0.01 0.01 0.00 0.02 0.01 0.02 0.00 0.02 0.01 0.00 0.00 0.01 0.02 0.98 0.01 0.02 0.01 0.99 0.00 0.03 0.01 
+
+0.01 0.02 0.01 0.01 0.01 0.01 0.00 0.98 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.00 0.01 0.01 0.00 0.01 0.00 0.01 0.98 0.01 0.00 0.98 0.02 0.01 0.00 0.01 0.02 0.01 0.01 0.00 0.01 0.02 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.00 0.01 0.02 0.00 0.02 0.00 0.98 0.01 0.00 0.01 0.01 
+
+0.00 0.00 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.00 0.98 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.02 0.00 0.02 0.01 0.00 0.02 0.00 0.02 0.00 0.00 0.00 0.03 0.02 0.02 0.01 0.01 0.01 0.00 0.01 0.00 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.98 0.01 0.01 0.00 0.00 0.01 0.99 0.01 0.00 0.99 0.01 0.01 0.01 0.01 0.01 
+
+0.01 0.02 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.98 0.00 0.02 0.00 0.01 0.01 0.00 0.01 0.03 0.00 0.00 0.00 0.98 0.00 0.00 0.00 1.00 0.01 0.01 0.00 0.01 0.00 0.00 0.01 0.01 0.01 0.98 0.01 0.01 0.03 0.02 0.01 0.01 0.00 0.00 0.00 0.00 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.01 0.00 0.02 
+
+0.00 0.01 0.00 0.00 0.01 0.99 0.02 0.01 0.00 0.01 0.00 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.00 0.00 0.01 0.01 0.02 0.02 0.00 0.00 0.98 0.01 0.98 0.02 0.01 0.99 0.01 0.02 0.00 0.00 0.00 0.01 0.02 0.01 0.02 0.01 0.02 0.00 0.01 0.01 0.01 0.01 0.00 0.00 0.00 0.01 0.01 0.00 0.01 0.00 0.01 0.00 0.04 0.00 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 
+
+Figure 17: Expert activation patterns across layers in Qwen MoE architectures during factual generation on the StrategyQA. Column labels indicate the expert in-dices. 0
+
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 8
+> 9
+> 10
+> 11
+> 12
+> 13
+> 14
+> 15
+> 16
+> 17
+> 18
+> 19
+> 20
+> 21
+> 22
+> 23
+> 24
+> 25
+> 26
+> 27
+> 28
+> 29
+> 30
+> 31
+> 32
+> 33
+> 34
+> 35
+> 36
+> 37
+> 38
+> 39
+> 40
+> 41
+> 42
+> 43
+> 44
+> 45
+> 46
+> 47
+> 48
+> 49
+> 50
+> 51
+> 52
+> 53
+> 54
+> 55
+> 56
+> 57
+> 58
+> 59
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+> Layer
+
+0.01 0.03 0.02 0.02 0.01 0.00 0.02 0.00 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.03 0.00 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.31 0.01 0.00 0.01 0.00 0.01 0.98 0.01 0.02 0.02 0.01 0.01 0.03 0.01 0.01 0.01 0.02 0.99 0.01 0.02 0.49 0.93 0.01 0.02 0.01 0.02 0.00 0.22 0.01 0.02 0.03 0.01 0.01 
+
+0.99 0.01 0.01 0.02 0.02 0.00 0.01 0.01 0.01 0.09 0.02 0.02 0.01 0.02 0.01 0.00 0.00 0.02 0.01 0.02 0.03 0.01 0.01 0.69 0.01 0.02 0.01 0.00 0.01 0.10 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.99 0.01 0.00 0.01 0.01 0.99 0.01 0.01 0.03 0.01 0.02 0.01 0.02 0.02 0.01 0.01 0.12 
+
+0.01 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.02 0.44 0.01 0.00 0.00 0.99 0.01 0.01 0.01 0.00 0.01 0.01 1.00 0.09 0.01 0.01 0.02 0.03 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.00 0.43 0.01 0.00 0.00 0.01 0.01 0.01 0.04 0.00 0.02 1.00 0.01 0.02 0.01 0.02 
+
+0.01 0.01 0.01 0.01 0.02 0.02 0.00 0.01 0.00 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.03 0.02 0.01 0.01 0.00 0.93 0.01 0.01 0.00 0.01 0.00 0.01 0.98 0.02 0.01 0.03 0.00 0.01 0.01 0.01 0.99 0.00 0.02 0.02 0.01 0.02 0.01 0.01 0.01 0.09 0.98 0.00 0.02 0.00 0.01 0.02 0.00 0.01 0.01 0.01 0.01 0.00 
+
+0.01 0.02 0.01 0.01 0.03 0.02 0.01 0.02 0.01 0.01 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.93 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.01 0.01 0.02 0.99 0.99 0.00 0.00 0.00 0.04 0.98 0.01 0.02 0.01 0.01 0.00 0.01 0.00 0.01 0.01 0.06 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 
+
+0.01 0.01 0.02 0.02 0.00 0.01 0.02 0.00 0.01 0.01 0.02 0.01 0.01 0.01 0.03 0.01 0.03 0.00 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.02 0.00 0.98 0.01 0.01 0.02 0.01 0.98 0.01 0.01 0.02 0.00 0.00 0.01 0.01 0.01 0.01 0.98 0.95 0.06 0.01 0.02 0.01 
+
+0.01 0.00 0.02 0.01 0.04 0.00 0.01 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.02 0.01 0.01 0.03 0.02 0.02 0.01 0.01 0.02 0.00 0.03 0.01 0.00 0.01 0.01 0.02 0.01 0.01 0.01 0.00 0.03 0.98 0.02 0.01 0.00 0.98 0.01 0.98 0.02 0.00 0.01 0.98 0.02 0.01 0.00 0.01 0.00 0.00 0.02 0.01 
+
+0.01 0.01 0.22 0.01 0.00 0.98 0.01 0.02 0.02 0.01 0.02 0.01 0.02 0.03 0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.77 0.02 0.01 0.00 0.00 0.01 0.00 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.00 0.98 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.03 0.02 0.02 0.01 0.01 0.99 
+
+0.00 0.01 0.01 0.01 0.02 0.00 0.02 0.01 0.98 0.01 0.01 0.02 0.02 0.00 0.01 0.02 0.98 0.02 0.01 0.01 0.02 0.02 0.01 0.01 0.03 0.02 0.01 0.01 0.01 0.00 0.02 0.01 0.01 0.98 0.00 0.00 0.01 0.04 0.01 0.01 0.00 0.00 0.02 0.01 0.01 0.01 0.98 0.01 0.01 0.02 0.00 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.01 0.02 
+
+0.98 0.01 0.01 0.01 0.00 0.98 0.02 0.02 0.00 0.01 0.00 0.00 0.01 0.02 0.02 0.01 0.01 0.02 0.00 0.01 0.01 0.00 0.00 0.01 0.02 0.01 0.00 0.02 0.01 0.00 0.00 0.02 0.00 0.03 0.03 0.00 0.01 0.00 0.01 0.01 0.01 0.01 0.04 0.02 0.01 0.02 0.99 0.01 0.01 0.02 0.01 0.01 0.02 0.01 0.01 0.01 0.00 0.98 0.02 0.01 
+
+0.02 0.01 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.00 0.02 0.00 0.02 0.00 0.02 0.01 0.01 0.02 0.99 0.02 0.02 0.00 0.02 0.01 0.00 0.02 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.00 0.02 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.90 0.02 0.02 0.97 0.01 0.00 0.10 0.01 0.02 0.01 0.01 0.03 0.01 0.02 0.98 0.00 0.00 0.01 
+
+0.01 0.01 0.02 0.02 0.02 0.01 0.01 0.02 0.01 0.03 0.00 0.01 0.01 0.98 0.02 0.00 0.02 0.01 0.01 0.00 0.03 0.01 0.01 0.01 0.01 0.00 0.00 0.00 0.01 0.02 0.01 0.02 0.01 0.00 0.04 0.01 0.01 0.01 0.01 0.02 0.98 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.01 0.99 0.02 0.98 0.01 0.00 0.01 0.02 0.01 0.02 0.02 
+
+0.01 0.01 0.02 0.02 0.02 0.03 0.00 0.98 0.01 0.00 0.01 0.01 0.01 0.03 0.01 0.21 0.03 0.01 0.01 0.01 0.02 0.02 0.00 0.00 0.01 0.01 0.79 0.02 0.98 0.01 0.02 0.01 0.00 0.00 0.02 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.00 0.00 0.00 0.01 0.01 0.97 0.02 0.01 0.00 0.01 0.03 0.02 0.01 0.01 
+
+0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.02 0.99 0.01 0.02 0.00 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.00 0.02 0.99 0.99 0.02 0.00 0.01 0.02 0.01 0.02 0.00 0.01 0.01 0.03 0.98 0.01 0.00 0.01 0.00 0.02 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.01 0.01 0.01 0.00 0.02 
+
+0.01 0.00 0.02 0.01 0.01 0.03 0.02 0.01 0.02 0.01 0.01 0.02 0.98 0.01 0.01 0.01 0.01 0.29 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.69 0.02 0.01 0.98 0.01 0.01 0.01 0.02 0.01 0.01 0.03 0.02 0.01 0.01 0.00 0.00 0.00 0.03 0.03 0.01 0.98 0.01 0.01 0.01 0.03 0.01 0.00 0.01 0.01 0.02 0.00 0.00 
+
+0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.00 0.01 0.98 0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.98 0.02 0.02 0.98 0.01 0.01 0.01 0.01 0.01 0.00 0.03 0.01 0.02 0.01 0.01 0.02 0.01 0.99 0.00 0.02 0.01 0.02 0.01 0.01 0.02 0.01 0.02 0.01 0.02 0.02 0.01 0.01 0.00 0.00 0.01 0.01 0.01 0.00 0.01 0.02 0.03 
+
+0.95 0.02 0.01 0.00 0.02 0.01 0.02 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.00 0.01 0.00 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.00 0.98 0.02 0.00 0.02 0.01 0.01 0.03 0.01 0.00 0.01 0.01 0.05 0.01 0.01 0.01 0.00 0.01 0.00 0.03 0.99 0.02 0.01 0.01 0.01 0.01 0.00 0.01 0.02 0.02 0.01 0.02 0.98 0.02 
+
+0.00 0.98 0.01 0.03 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.02 0.02 0.02 0.01 0.01 0.97 0.01 0.00 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.02 0.01 0.01 0.98 0.98 0.01 0.00 0.02 0.02 0.01 0.03 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.03 0.02 0.01 0.02 0.00 0.01 0.02 0.00 0.01 0.02 0.02 
+
+0.01 0.01 0.01 0.02 0.02 0.02 0.02 0.02 0.02 0.96 0.01 0.01 0.00 0.98 0.01 0.99 0.01 0.01 0.01 0.01 0.03 0.01 0.00 0.01 0.02 0.00 0.01 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.03 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.98 0.01 0.02 0.02 0.01 0.00 0.01 0.01 0.01 0.04 0.01 
+
+0.01 0.01 0.01 0.00 0.01 0.03 0.01 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.12 0.88 0.02 0.03 0.98 0.01 0.02 0.01 0.01 0.02 0.00 0.02 0.01 0.02 0.01 0.01 0.00 0.00 0.02 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.02 0.98 0.00 0.02 0.01 0.98 0.01 0.02 0.02 
+
+0.01 0.01 0.01 0.00 0.01 0.02 0.00 0.98 0.00 0.01 0.02 0.00 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.00 0.00 0.01 0.98 0.01 0.01 0.98 0.03 0.01 0.01 0.01 0.03 0.01 0.01 0.01 0.02 0.03 0.00 0.01 0.03 0.01 0.01 0.03 0.01 0.01 0.01 0.01 0.02 0.00 0.00 0.00 0.01 0.02 0.01 0.02 0.00 0.99 0.01 0.00 0.02 0.01 
+
+0.00 0.00 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.98 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.00 0.02 0.01 0.01 0.02 0.00 0.03 0.01 0.00 0.00 0.03 0.02 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.02 0.02 0.01 0.00 0.01 0.98 0.02 0.01 0.01 0.00 0.01 0.98 0.02 0.00 0.99 0.01 0.01 0.01 0.01 0.01 
+
+0.00 0.03 0.01 0.00 0.00 0.02 0.02 0.01 0.01 0.98 0.00 0.02 0.01 0.02 0.02 0.01 0.01 0.03 0.01 0.00 0.00 0.98 0.01 0.00 0.00 1.00 0.01 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.99 0.01 0.01 0.03 0.02 0.01 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.01 0.00 0.02 0.01 0.01 0.01 0.02 0.02 0.02 0.02 0.01 0.01 
+
+0.00 0.02 0.00 0.01 0.01 0.98 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.02 0.00 0.00 0.01 0.01 0.01 0.01 0.01 0.00 0.03 0.01 0.00 0.01 0.98 0.01 0.98 0.02 0.01 1.00 0.01 0.03 0.00 0.00 0.00 0.01 0.03 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.00 0.02 0.02 0.00 0.02 0.00 0.02 0.00 0.03 0.01 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 
+
+Figure 18: Expert activation patterns across layers in Qwen MoE architectures during non-factual generation on the StrategyQA. Column labels indicate the expert indices. 0
+
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 8
+> 9
+> 10
+> 11
+> 12
+> 13
+> 14
+> 15
+> 16
+> 17
+> 18
+> 19
+> 20
+> 21
+> 22
+> 23
+> 24
+> 25
+> 26
+> 27
+> 28
+> 29
+> 30
+> 31
+> 32
+> 33
+> 34
+> 35
+> 36
+> 37
+> 38
+> 39
+> 40
+> 41
+> 42
+> 43
+> 44
+> 45
+> 46
+> 47
+> 48
+> 49
+> 50
+> 51
+> 52
+> 53
+> 54
+> 55
+> 56
+> 57
+> 58
+> 59
+> 60
+> 61
+> 62
+> 63
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+> Layer
+
+0.00 0.03 0.03 0.02 0.98 0.98 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.99 0.02 0.01 0.01 0.00 0.01 0.02 0.02 0.00 0.01 0.02 0.00 0.01 0.01 0.00 0.00 0.01 0.00 0.01 0.03 0.02 0.02 0.01 0.02 0.01 0.00 0.02 0.01 0.04 0.98 0.02 0.02 0.98 0.02 0.00 0.01 0.01 0.96 0.01 0.01 0.00 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.00 
+
+0.01 0.02 0.97 0.03 0.01 0.00 0.02 0.01 0.00 0.01 0.00 0.02 0.03 0.01 0.00 0.01 0.00 0.04 0.01 0.01 0.02 0.01 0.02 0.02 0.01 0.01 0.00 0.00 0.01 0.00 0.97 0.01 0.02 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.02 0.05 0.96 0.03 0.01 0.02 0.99 0.02 0.02 0.01 0.04 0.02 0.01 0.01 0.00 0.96 0.00 0.00 0.00 0.01 0.00 0.04 0.01 0.96 
+
+0.02 0.97 0.01 0.01 0.01 0.02 0.02 0.01 0.01 0.01 0.01 0.00 0.00 0.02 0.02 0.01 0.01 0.01 0.01 0.03 0.01 0.01 0.99 0.00 0.01 0.03 0.01 0.02 0.01 0.01 0.00 0.05 0.01 0.02 0.02 0.01 0.01 0.00 0.01 0.01 0.02 0.96 0.01 0.06 0.00 0.01 0.97 0.01 0.01 0.01 0.96 0.01 0.01 0.01 0.01 0.01 0.03 0.00 0.01 0.01 0.02 0.01 0.96 0.00 
+
+0.97 0.01 0.03 0.01 0.96 0.02 0.02 0.00 0.01 0.00 0.01 0.02 0.97 0.01 0.01 0.02 0.01 0.01 0.98 0.05 0.01 0.01 0.01 0.02 0.00 0.00 0.02 0.02 0.02 0.00 0.01 0.01 0.97 0.00 0.00 0.01 0.01 0.01 0.03 0.03 0.01 0.01 0.01 0.05 0.01 0.00 0.00 0.00 0.01 0.02 0.01 0.00 0.01 0.00 0.01 0.01 0.02 0.01 0.01 0.03 0.02 0.01 0.97 0.03 
+
+0.01 0.01 0.02 0.02 0.00 0.01 0.04 0.97 0.01 0.01 0.01 0.00 0.01 0.02 0.01 0.01 0.96 0.01 0.01 0.01 0.00 0.02 0.41 0.01 0.96 0.00 0.04 0.01 0.00 0.01 0.01 0.96 0.97 0.03 0.02 0.56 0.02 0.04 0.01 0.01 0.00 0.01 0.04 0.01 0.02 0.01 0.01 0.01 0.01 0.06 0.01 0.01 0.02 0.05 0.01 0.00 0.01 0.00 0.01 0.00 0.01 0.02 0.02 0.01 
+
+0.02 0.03 0.00 0.01 0.02 0.00 0.00 0.02 0.02 0.96 0.01 0.02 0.00 0.01 0.01 0.00 0.03 0.02 0.01 0.03 0.04 0.01 0.01 0.01 0.01 0.01 0.01 0.98 0.01 0.97 0.03 0.00 0.01 0.00 0.01 0.01 0.02 0.01 0.01 0.02 0.00 0.03 0.00 0.01 0.00 0.96 0.03 0.00 0.01 0.01 0.01 0.00 0.02 0.01 0.02 0.00 0.02 0.01 0.97 0.01 0.05 0.01 0.96 0.01 
+
+0.01 0.01 0.03 0.01 0.00 0.01 0.01 0.00 0.01 0.03 0.02 0.98 0.02 0.02 0.02 0.01 0.01 0.96 0.00 0.01 0.01 0.00 0.00 0.97 0.01 0.00 0.01 0.96 0.01 0.00 0.01 0.01 0.04 0.00 0.00 0.96 0.02 0.04 0.06 0.02 0.01 0.03 0.00 0.02 0.03 0.01 0.02 0.05 0.00 0.00 0.02 0.01 0.00 0.96 0.01 0.03 0.02 0.01 0.00 0.01 0.01 0.00 0.01 0.01 
+
+0.98 0.01 0.02 0.01 0.01 0.06 0.01 0.01 0.02 0.01 0.00 0.05 0.00 0.01 0.01 0.00 0.02 0.01 0.00 0.01 0.03 0.02 0.01 0.00 0.00 0.01 0.03 0.02 0.01 0.01 0.02 0.01 0.01 0.02 0.01 0.97 0.00 0.00 0.01 0.00 0.03 0.97 0.03 0.96 0.00 0.00 0.01 0.01 0.02 0.97 0.01 0.00 0.01 0.02 0.02 0.02 0.03 0.00 0.00 0.02 0.00 0.97 0.00 0.02 
+
+0.03 0.01 0.05 0.00 0.96 0.00 0.01 0.02 0.01 0.04 0.98 0.03 0.02 0.02 0.04 0.03 0.00 0.00 0.01 0.01 0.02 0.06 0.01 0.96 0.01 0.01 0.01 0.00 0.00 0.00 0.02 0.02 0.01 0.01 0.01 0.01 0.01 0.03 0.00 0.02 0.00 0.00 0.00 0.97 0.00 0.01 0.00 0.00 0.01 0.01 0.01 0.98 0.01 0.02 0.00 0.02 0.01 0.01 0.00 0.01 0.00 0.96 0.04 0.00 
+
+0.99 0.07 0.00 0.00 0.02 0.00 0.01 0.01 0.98 0.00 0.04 0.00 0.02 0.01 0.02 0.00 0.01 0.00 0.00 0.00 0.00 0.03 0.01 0.02 0.97 0.01 0.01 0.01 0.01 0.02 0.00 0.01 0.02 0.97 0.01 0.01 0.01 0.03 0.00 0.01 0.01 0.01 0.97 0.03 0.00 0.01 0.03 0.00 0.00 0.02 0.01 0.00 0.01 0.02 0.00 0.02 0.00 0.01 0.03 0.01 0.03 0.00 0.02 0.97 
+
+0.01 0.06 0.96 0.00 0.00 0.00 0.01 0.01 0.01 0.02 0.00 0.96 0.01 0.02 0.05 0.01 0.00 0.02 0.00 0.02 0.02 0.03 0.01 0.01 0.97 0.00 0.00 0.00 0.02 0.02 0.03 0.00 0.01 0.02 0.03 0.02 0.01 0.98 0.00 0.00 0.01 0.01 0.00 0.02 0.04 0.00 0.00 0.96 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.04 0.97 0.00 0.03 0.02 0.01 0.01 0.01 0.00 
+
+0.01 0.00 0.01 0.01 0.02 0.00 0.02 0.01 0.00 0.03 0.02 0.00 0.00 0.00 0.01 0.04 0.00 0.96 0.97 0.23 0.01 0.06 0.01 0.01 0.00 0.97 0.00 0.00 0.03 0.01 0.75 0.01 0.01 0.03 0.02 0.02 0.98 0.03 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.00 0.05 0.00 0.01 0.01 0.96 0.00 0.03 0.01 0.03 0.02 0.00 0.00 0.00 0.04 0.02 0.00 0.00 0.00 
+
+0.00 0.02 0.01 0.00 0.01 0.00 0.00 0.01 0.00 0.00 0.03 0.96 0.03 0.00 0.04 0.01 0.00 0.97 0.06 0.00 0.00 0.02 0.97 0.02 0.00 0.01 0.01 0.97 0.00 0.05 0.02 0.01 0.01 0.00 0.01 0.01 0.01 0.00 0.04 0.97 0.00 0.02 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.03 0.01 0.02 0.01 0.02 0.01 0.03 0.01 0.01 0.02 0.00 0.97 0.02 0.00 
+
+0.01 0.04 0.00 0.97 0.00 0.97 0.01 0.01 0.02 0.03 0.02 0.01 0.01 0.02 0.97 0.00 0.01 0.01 0.00 0.02 0.01 0.01 0.01 0.00 0.01 0.01 0.97 0.01 0.02 0.02 0.01 0.00 0.01 0.03 0.02 0.00 0.02 0.97 0.01 0.00 0.00 0.01 0.00 0.00 0.01 0.01 0.97 0.03 0.02 0.00 0.02 0.00 0.02 0.02 0.00 0.02 0.05 0.04 0.01 0.00 0.03 0.00 0.01 0.00 
+
+0.01 0.01 0.04 0.97 0.00 0.00 0.02 0.97 0.02 0.04 0.03 0.96 0.02 0.02 0.01 0.02 0.01 0.05 0.01 0.01 0.02 0.02 0.01 0.01 0.97 0.03 0.01 0.01 0.02 0.01 0.97 0.01 0.01 0.02 0.01 0.01 0.04 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.02 0.01 0.00 0.01 0.01 0.01 0.00 0.02 0.02 0.97 0.00 
+
+0.01 0.97 0.01 0.97 0.00 0.03 0.00 0.03 0.02 0.99 0.01 0.02 0.01 0.00 0.98 0.01 0.01 0.01 0.02 0.01 0.04 0.01 0.01 0.01 0.01 0.00 0.01 0.02 0.00 0.97 0.01 0.01 0.01 0.00 0.02 0.01 0.03 0.01 0.00 0.00 0.01 0.00 0.01 0.00 0.02 0.01 0.96 0.01 0.01 0.02 0.02 0.02 0.04 0.01 0.03 0.02 0.01 0.00 0.02 0.01 0.02 0.03 0.00 0.01 
+
+0.02 0.01 0.02 0.01 0.03 0.01 0.07 0.00 0.01 0.01 0.01 0.01 0.02 0.02 0.01 0.96 0.01 0.04 0.01 0.02 0.04 0.01 0.97 0.00 0.90 0.01 0.04 0.01 0.00 0.00 0.01 0.01 0.03 0.02 0.04 0.01 0.01 0.02 0.97 0.01 0.01 0.98 0.01 0.01 0.97 0.01 0.01 0.00 0.03 0.01 0.00 0.00 0.00 0.00 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.00 
+
+0.01 0.01 0.98 0.00 0.02 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.04 0.02 0.00 0.02 0.97 0.00 0.01 0.02 0.01 0.02 0.01 0.00 0.02 0.97 0.02 0.01 0.01 0.02 0.01 0.02 0.01 0.01 0.03 0.00 0.04 0.01 0.01 0.01 0.00 0.01 0.96 0.01 0.01 0.01 0.01 0.03 0.98 0.01 0.03 0.01 0.00 0.00 0.01 0.01 0.00 0.97 0.01 0.02 0.05 0.02 
+
+0.02 0.02 0.03 0.03 0.02 0.01 0.01 0.02 0.02 0.97 0.01 0.00 0.00 0.02 0.01 0.02 0.97 0.01 0.00 0.01 0.97 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.03 0.01 0.00 0.01 0.01 0.01 0.02 0.00 0.98 0.03 0.00 0.04 0.01 0.02 0.01 1.00 0.00 0.00 0.00 0.03 0.01 0.97 0.00 0.01 0.01 0.01 0.01 0.00 0.01 0.01 0.01 0.02 0.01 0.01 
+
+0.00 0.01 0.01 0.01 0.00 0.01 0.01 0.00 0.01 0.01 0.02 0.96 0.01 0.00 0.01 0.96 0.03 0.04 0.01 0.00 0.00 0.01 0.01 0.01 0.02 0.03 0.02 0.01 0.00 0.01 0.97 0.05 0.01 0.01 0.02 0.01 0.01 0.97 0.00 0.01 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.97 0.03 0.02 0.02 0.01 0.02 0.01 0.00 0.02 0.03 0.00 0.01 0.97 0.04 0.01 0.03 0.01 
+
+0.02 0.00 0.01 0.01 0.97 0.02 0.00 0.01 0.00 0.02 0.01 0.01 0.01 0.01 0.00 0.01 0.97 0.02 0.01 0.01 0.96 0.01 0.02 0.02 0.01 0.01 0.01 0.01 0.02 0.01 0.00 0.97 0.01 0.00 0.02 0.98 0.02 0.02 0.02 0.01 0.03 0.01 0.02 0.96 0.02 0.04 0.02 0.03 0.01 0.00 0.01 0.02 0.01 0.01 0.00 0.03 0.01 0.01 0.01 0.02 0.01 0.01 0.02 0.01 
+
+0.00 0.02 0.02 0.01 0.97 0.03 0.01 0.00 0.00 0.01 0.00 0.02 0.01 0.00 0.04 0.01 0.97 0.01 0.05 0.01 0.02 0.01 0.00 0.97 0.01 0.01 0.02 0.01 0.01 0.01 0.02 0.01 0.00 0.97 0.02 0.00 0.02 0.00 0.98 0.01 0.01 0.01 0.00 0.01 0.00 0.03 0.01 0.00 0.01 0.01 0.00 0.00 0.01 0.02 0.01 0.01 0.04 0.02 0.01 0.97 0.01 0.01 0.03 0.01 
+
+0.00 0.01 0.05 0.01 0.01 0.00 0.01 0.01 0.01 0.02 0.97 0.03 0.02 0.01 0.02 0.02 0.00 0.00 0.97 0.00 0.00 0.01 0.03 0.01 0.01 0.01 0.00 0.00 0.01 0.00 0.01 0.01 0.03 0.98 0.00 0.01 0.02 0.97 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.97 0.00 0.00 0.01 0.01 0.02 0.05 0.98 0.02 0.04 0.02 0.00 0.02 0.01 
+
+0.01 0.01 0.02 0.01 0.00 0.00 0.02 0.02 0.02 0.02 0.02 0.97 0.01 0.04 0.02 0.01 0.01 0.02 0.96 0.03 0.02 0.01 0.01 0.04 0.02 0.00 0.01 0.04 0.01 0.00 0.01 0.01 0.02 0.02 0.01 0.00 0.03 0.96 0.01 0.02 0.02 0.01 0.01 0.01 0.01 0.97 0.01 0.00 0.01 0.96 0.03 0.01 0.03 0.01 0.01 0.03 0.01 0.00 0.01 0.96 0.01 0.00 0.01 0.01 
+
+0.01 0.01 0.01 0.00 0.01 0.05 0.02 0.97 0.96 0.02 0.01 0.00 0.00 0.01 0.01 0.01 0.01 0.02 0.01 0.03 0.01 0.00 0.01 0.01 0.01 0.03 0.04 0.00 0.01 0.02 0.97 0.00 0.01 0.01 0.01 0.01 0.01 0.02 0.00 0.00 0.01 0.97 0.01 0.00 0.01 0.01 0.01 0.01 0.02 0.01 0.01 0.02 0.03 0.00 0.03 0.01 0.01 0.02 0.04 0.01 0.99 0.01 0.00 0.97 
+
+0.01 0.01 0.02 0.00 0.01 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.00 0.01 0.04 0.01 0.01 0.00 0.03 0.00 0.04 0.01 0.01 0.97 0.02 0.00 0.00 0.01 0.00 0.00 0.01 0.98 0.01 0.96 0.01 0.02 0.00 0.01 0.01 0.02 1.00 0.01 0.04 0.01 0.02 0.97 0.02 0.01 0.00 0.00 0.03 0.01 0.03 0.01 0.01 0.00 0.00 0.98 0.01 0.01 0.00 0.05 0.00 0.02 
+
+0.01 0.01 0.04 0.01 0.01 0.01 0.97 0.01 0.02 0.02 0.01 0.01 0.02 0.03 0.04 0.01 0.00 0.01 0.01 0.01 0.04 0.02 0.00 0.00 0.00 0.01 0.02 0.97 0.96 0.01 0.02 0.01 0.01 0.02 0.00 0.96 0.00 0.00 0.01 0.00 0.01 0.97 0.00 0.03 0.01 0.01 0.01 0.01 0.00 0.02 0.02 0.01 0.01 0.02 0.02 0.01 0.02 0.00 0.02 0.00 0.03 0.00 0.98 0.02 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 
+
+Figure 19: Expert activation patterns across layers in Deepseek MoE architectures during factual generation on the StrategyQA. Column labels indicate the expert indices. 0
+
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> 8
+> 9
+> 10
+> 11
+> 12
+> 13
+> 14
+> 15
+> 16
+> 17
+> 18
+> 19
+> 20
+> 21
+> 22
+> 23
+> 24
+> 25
+> 26
+> 27
+> 28
+> 29
+> 30
+> 31
+> 32
+> 33
+> 34
+> 35
+> 36
+> 37
+> 38
+> 39
+> 40
+> 41
+> 42
+> 43
+> 44
+> 45
+> 46
+> 47
+> 48
+> 49
+> 50
+> 51
+> 52
+> 53
+> 54
+> 55
+> 56
+> 57
+> 58
+> 59
+> 60
+> 61
+> 62
+> 63
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+> Layer
+
+0.00 0.02 0.03 0.02 0.97 0.97 0.02 0.02 0.02 0.02 0.01 0.01 0.02 0.01 1.00 0.02 0.01 0.01 0.01 0.03 0.02 0.02 0.00 0.02 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.04 0.03 0.02 0.02 0.03 0.02 0.01 0.03 0.01 0.05 0.98 0.02 0.02 0.97 0.02 0.01 0.01 0.01 0.96 0.02 0.01 0.01 0.02 0.01 0.02 0.02 0.01 0.01 0.02 0.01 0.01 
+
+0.01 0.02 0.96 0.03 0.01 0.00 0.02 0.02 0.01 0.01 0.00 0.02 0.03 0.01 0.01 0.01 0.01 0.04 0.01 0.01 0.03 0.01 0.02 0.03 0.01 0.01 0.00 0.00 0.02 0.01 0.97 0.01 0.02 0.02 0.02 0.01 0.01 0.02 0.01 0.02 0.02 0.04 0.96 0.03 0.02 0.02 0.99 0.02 0.02 0.01 0.05 0.02 0.02 0.01 0.00 0.97 0.01 0.01 0.01 0.02 0.00 0.05 0.03 0.96 
+
+0.03 0.96 0.01 0.02 0.01 0.02 0.02 0.01 0.01 0.02 0.01 0.00 0.02 0.02 0.02 0.02 0.02 0.01 0.01 0.04 0.01 0.01 0.99 0.00 0.02 0.03 0.01 0.02 0.01 0.01 0.01 0.06 0.01 0.02 0.02 0.02 0.01 0.01 0.02 0.01 0.02 0.98 0.01 0.06 0.01 0.03 0.97 0.01 0.01 0.02 0.94 0.02 0.01 0.02 0.01 0.02 0.03 0.02 0.01 0.01 0.02 0.01 0.96 0.02 
+
+0.96 0.01 0.03 0.02 0.96 0.03 0.03 0.02 0.01 0.00 0.01 0.02 0.97 0.02 0.01 0.03 0.02 0.01 0.99 0.05 0.01 0.02 0.01 0.01 0.00 0.01 0.02 0.02 0.04 0.01 0.01 0.01 0.97 0.02 0.01 0.01 0.02 0.02 0.04 0.03 0.02 0.01 0.02 0.05 0.01 0.01 0.00 0.00 0.01 0.02 0.02 0.01 0.02 0.00 0.01 0.01 0.02 0.01 0.03 0.03 0.03 0.01 0.97 0.03 
+
+0.01 0.01 0.03 0.02 0.01 0.01 0.04 0.97 0.01 0.01 0.02 0.01 0.01 0.02 0.01 0.02 0.96 0.01 0.02 0.02 0.00 0.01 0.96 0.01 0.96 0.01 0.05 0.01 0.01 0.02 0.01 0.96 0.97 0.03 0.03 0.01 0.02 0.05 0.02 0.02 0.00 0.01 0.04 0.01 0.02 0.02 0.03 0.02 0.02 0.06 0.02 0.02 0.02 0.05 0.01 0.00 0.01 0.00 0.02 0.00 0.01 0.02 0.02 0.02 
+
+0.01 0.05 0.01 0.02 0.02 0.01 0.01 0.02 0.03 0.95 0.01 0.03 0.00 0.02 0.01 0.00 0.03 0.02 0.01 0.03 0.04 0.03 0.01 0.01 0.01 0.02 0.01 0.98 0.01 0.97 0.04 0.00 0.03 0.00 0.02 0.02 0.02 0.01 0.01 0.03 0.01 0.03 0.00 0.02 0.02 0.96 0.03 0.01 0.02 0.01 0.02 0.01 0.02 0.01 0.03 0.00 0.02 0.01 0.97 0.01 0.05 0.01 0.96 0.02 
+
+0.01 0.02 0.03 0.02 0.00 0.01 0.02 0.00 0.01 0.05 0.02 0.98 0.02 0.02 0.02 0.02 0.02 0.96 0.01 0.01 0.01 0.00 0.00 0.97 0.01 0.02 0.02 0.97 0.01 0.01 0.02 0.03 0.04 0.01 0.00 0.96 0.02 0.04 0.06 0.02 0.01 0.04 0.00 0.02 0.02 0.01 0.03 0.05 0.01 0.01 0.02 0.02 0.00 0.96 0.00 0.04 0.02 0.03 0.02 0.02 0.02 0.00 0.00 0.02 
+
+0.97 0.02 0.03 0.02 0.02 0.06 0.01 0.03 0.02 0.01 0.01 0.05 0.01 0.01 0.02 0.01 0.03 0.00 0.01 0.01 0.04 0.02 0.02 0.01 0.01 0.01 0.03 0.04 0.02 0.01 0.04 0.01 0.01 0.03 0.02 0.96 0.00 0.00 0.01 0.01 0.03 0.96 0.03 0.96 0.01 0.00 0.03 0.01 0.02 0.96 0.02 0.00 0.02 0.03 0.02 0.02 0.04 0.01 0.00 0.01 0.00 0.96 0.01 0.02 
+
+0.03 0.01 0.07 0.00 0.96 0.00 0.04 0.03 0.04 0.05 0.97 0.02 0.02 0.03 0.04 0.04 0.00 0.01 0.02 0.01 0.02 0.06 0.01 0.96 0.01 0.01 0.00 0.01 0.00 0.01 0.02 0.03 0.01 0.01 0.01 0.02 0.02 0.03 0.01 0.03 0.00 0.00 0.00 0.97 0.01 0.02 0.00 0.00 0.02 0.01 0.01 0.98 0.01 0.03 0.01 0.02 0.01 0.02 0.00 0.01 0.00 0.96 0.05 0.01 
+
+0.99 0.08 0.00 0.01 0.02 0.00 0.03 0.01 0.98 0.00 0.04 0.00 0.02 0.03 0.03 0.01 0.01 0.00 0.01 0.01 0.01 0.02 0.01 0.02 0.96 0.02 0.01 0.01 0.03 0.02 0.00 0.01 0.04 0.97 0.02 0.02 0.01 0.03 0.01 0.01 0.02 0.02 0.97 0.03 0.01 0.01 0.04 0.01 0.02 0.02 0.01 0.00 0.01 0.03 0.00 0.03 0.01 0.01 0.03 0.01 0.03 0.01 0.02 0.97 
+
+0.01 0.08 0.96 0.00 0.01 0.01 0.02 0.02 0.01 0.02 0.01 0.96 0.01 0.02 0.04 0.01 0.00 0.02 0.00 0.03 0.03 0.03 0.01 0.03 0.96 0.00 0.00 0.00 0.04 0.02 0.04 0.00 0.02 0.02 0.03 0.02 0.01 0.97 0.00 0.00 0.03 0.00 0.00 0.03 0.01 0.00 0.01 0.95 0.02 0.00 0.01 0.01 0.03 0.01 0.03 0.05 0.96 0.00 0.03 0.05 0.02 0.01 0.01 0.02 
+
+0.01 0.01 0.01 0.03 0.04 0.01 0.02 0.02 0.00 0.03 0.02 0.00 0.01 0.00 0.02 0.05 0.00 0.96 0.97 0.96 0.01 0.05 0.02 0.01 0.00 0.97 0.00 0.00 0.03 0.02 0.01 0.01 0.01 0.04 0.02 0.03 0.99 0.04 0.00 0.01 0.02 0.02 0.01 0.02 0.01 0.00 0.04 0.00 0.01 0.02 0.96 0.02 0.03 0.01 0.04 0.03 0.00 0.00 0.00 0.05 0.05 0.00 0.01 0.00 
+
+0.02 0.02 0.02 0.01 0.02 0.00 0.01 0.02 0.00 0.01 0.04 0.95 0.03 0.00 0.05 0.02 0.00 0.96 0.06 0.00 0.00 0.03 0.96 0.03 0.01 0.01 0.01 0.96 0.01 0.05 0.02 0.01 0.01 0.00 0.00 0.02 0.01 0.01 0.09 0.97 0.00 0.02 0.01 0.04 0.01 0.05 0.01 0.01 0.01 0.01 0.05 0.01 0.02 0.02 0.01 0.01 0.02 0.02 0.02 0.01 0.01 0.97 0.02 0.01 
+
+0.02 0.04 0.00 0.97 0.00 0.97 0.01 0.01 0.02 0.03 0.02 0.03 0.02 0.03 0.96 0.00 0.00 0.03 0.00 0.01 0.01 0.02 0.01 0.02 0.02 0.01 0.96 0.01 0.04 0.03 0.01 0.00 0.02 0.02 0.02 0.01 0.02 0.96 0.02 0.00 0.01 0.02 0.01 0.01 0.01 0.01 0.97 0.02 0.04 0.00 0.03 0.01 0.03 0.03 0.00 0.03 0.05 0.04 0.01 0.00 0.03 0.01 0.01 0.01 
+
+0.02 0.02 0.02 0.98 0.03 0.00 0.03 0.97 0.03 0.05 0.02 0.97 0.02 0.01 0.01 0.02 0.02 0.06 0.01 0.01 0.02 0.03 0.01 0.00 0.96 0.03 0.01 0.02 0.04 0.01 0.97 0.01 0.02 0.04 0.01 0.01 0.04 0.03 0.00 0.01 0.02 0.01 0.01 0.01 0.02 0.01 0.01 0.01 0.01 0.02 0.00 0.01 0.01 0.03 0.01 0.01 0.02 0.02 0.01 0.01 0.02 0.02 0.96 0.00 
+
+0.01 0.98 0.01 0.96 0.01 0.03 0.00 0.03 0.01 0.99 0.01 0.03 0.02 0.00 0.97 0.01 0.01 0.01 0.03 0.01 0.04 0.02 0.02 0.02 0.01 0.01 0.02 0.03 0.00 0.97 0.02 0.01 0.01 0.00 0.03 0.03 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 0.96 0.02 0.01 0.03 0.01 0.02 0.04 0.01 0.04 0.02 0.00 0.00 0.04 0.02 0.02 0.04 0.02 0.01 
+
+0.02 0.03 0.03 0.03 0.03 0.03 0.96 0.00 0.01 0.04 0.01 0.01 0.02 0.02 0.01 0.95 0.02 0.05 0.01 0.03 0.05 0.01 0.97 0.01 0.02 0.02 0.04 0.02 0.03 0.01 0.01 0.01 0.04 0.03 0.04 0.01 0.02 0.02 0.97 0.02 0.01 0.97 0.01 0.01 0.96 0.01 0.01 0.00 0.03 0.00 0.01 0.00 0.00 0.00 0.01 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.02 0.01 
+
+0.02 0.01 1.00 0.00 0.03 0.03 0.02 0.03 0.01 0.01 0.01 0.01 0.01 0.02 0.04 0.10 0.00 0.00 0.89 0.01 0.02 0.02 0.01 0.02 0.02 0.00 0.02 0.97 0.02 0.02 0.01 0.02 0.01 0.02 0.02 0.02 0.03 0.00 0.04 0.02 0.02 0.01 0.00 0.04 0.96 0.01 0.02 0.02 0.01 0.02 0.96 0.00 0.03 0.02 0.00 0.00 0.01 0.01 0.01 0.96 0.02 0.03 0.05 0.02 
+
+0.02 0.02 0.02 0.02 0.03 0.02 0.02 0.03 0.01 0.97 0.01 0.00 0.00 0.03 0.02 0.04 0.97 0.01 0.02 0.02 0.96 0.03 0.01 0.02 0.03 0.02 0.01 0.01 0.01 0.00 0.03 0.01 0.00 0.01 0.01 0.01 0.02 0.01 0.98 0.03 0.01 0.03 0.00 0.03 0.01 1.00 0.02 0.00 0.02 0.04 0.02 0.97 0.02 0.01 0.01 0.02 0.02 0.02 0.01 0.01 0.01 0.03 0.01 0.02 
+
+0.01 0.02 0.00 0.01 0.00 0.02 0.02 0.01 0.01 0.01 0.02 0.96 0.02 0.01 0.01 0.96 0.02 0.04 0.01 0.01 0.01 0.01 0.01 0.02 0.03 0.03 0.03 0.03 0.01 0.02 0.97 0.04 0.02 0.02 0.03 0.01 0.01 0.97 0.01 0.01 0.04 0.01 0.03 0.32 0.01 0.01 0.01 0.96 0.04 0.02 0.03 0.03 0.02 0.00 0.01 0.03 0.03 0.00 0.01 0.66 0.04 0.01 0.04 0.01 
+
+0.01 0.02 0.02 0.03 0.97 0.04 0.01 0.00 0.01 0.01 0.02 0.01 0.02 0.02 0.01 0.01 0.96 0.02 0.02 0.02 0.96 0.02 0.02 0.02 0.01 0.01 0.01 0.03 0.03 0.01 0.00 0.97 0.02 0.01 0.02 0.97 0.03 0.02 0.02 0.01 0.03 0.01 0.05 0.96 0.02 0.04 0.03 0.02 0.01 0.00 0.00 0.02 0.01 0.02 0.00 0.03 0.01 0.00 0.02 0.02 0.02 0.02 0.03 0.02 
+
+0.00 0.02 0.01 0.02 0.98 0.02 0.01 0.01 0.00 0.01 0.02 0.03 0.02 0.01 0.05 0.02 0.97 0.01 0.05 0.01 0.02 0.02 0.02 0.97 0.01 0.01 0.04 0.01 0.01 0.01 0.04 0.01 0.01 0.97 0.03 0.01 0.01 0.01 0.97 0.02 0.01 0.02 0.01 0.00 0.00 0.05 0.01 0.00 0.01 0.03 0.01 0.01 0.01 0.01 0.01 0.01 0.04 0.03 0.02 0.97 0.01 0.02 0.03 0.02 
+
+0.00 0.01 0.05 0.01 0.01 0.00 0.02 0.02 0.03 0.03 0.97 0.05 0.02 0.01 0.02 0.03 0.02 0.01 0.97 0.01 0.01 0.01 0.03 0.02 0.02 0.01 0.02 0.00 0.01 0.00 0.01 0.02 0.03 0.98 0.02 0.01 0.02 0.97 0.01 0.02 0.02 0.02 0.01 0.02 0.01 0.01 0.01 0.01 0.01 0.01 0.97 0.01 0.01 0.00 0.01 0.02 0.04 0.98 0.02 0.04 0.04 0.01 0.01 0.01 
+
+0.01 0.02 0.02 0.02 0.00 0.02 0.02 0.02 0.02 0.01 0.03 0.98 0.02 0.01 0.02 0.01 0.00 0.02 0.96 0.03 0.01 0.00 0.03 0.04 0.02 0.01 0.02 0.04 0.02 0.00 0.01 0.01 0.06 0.02 0.01 0.01 0.03 0.95 0.01 0.02 0.02 0.02 0.02 0.01 0.01 0.97 0.01 0.01 0.00 0.97 0.03 0.02 0.05 0.02 0.01 0.02 0.01 0.01 0.03 0.96 0.01 0.00 0.02 0.02 
+
+0.01 0.01 0.01 0.01 0.02 0.06 0.03 0.97 0.95 0.02 0.01 0.01 0.01 0.01 0.02 0.00 0.01 0.03 0.01 0.03 0.01 0.01 0.01 0.00 0.01 0.04 0.04 0.00 0.02 0.02 0.97 0.00 0.02 0.01 0.02 0.01 0.01 0.02 0.00 0.01 0.02 0.97 0.01 0.00 0.01 0.01 0.00 0.01 0.02 0.02 0.02 0.01 0.03 0.01 0.03 0.01 0.01 0.04 0.04 0.02 0.98 0.02 0.02 0.97 
+
+0.02 0.00 0.03 0.00 0.02 0.02 0.01 0.01 0.01 0.02 0.03 0.01 0.01 0.02 0.01 0.01 0.01 0.00 0.03 0.00 0.03 0.01 0.02 0.97 0.01 0.00 0.01 0.04 0.02 0.01 0.02 0.98 0.02 0.96 0.01 0.03 0.01 0.01 0.01 0.02 1.00 0.01 0.05 0.01 0.03 0.97 0.02 0.01 0.00 0.01 0.03 0.01 0.03 0.02 0.02 0.01 0.02 0.98 0.02 0.01 0.00 0.05 0.00 0.02 
+
+0.01 0.02 0.04 0.02 0.02 0.02 0.97 0.02 0.02 0.02 0.02 0.01 0.01 0.04 0.32 0.02 0.00 0.01 0.00 0.02 0.05 0.03 0.01 0.00 0.00 0.01 0.02 0.70 0.96 0.02 0.02 0.02 0.01 0.03 0.01 0.96 0.00 0.01 0.02 0.02 0.02 0.97 0.01 0.03 0.02 0.02 0.01 0.02 0.00 0.02 0.01 0.00 0.02 0.04 0.02 0.01 0.02 0.01 0.02 0.01 0.02 0.01 0.98 0.02 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 
+
+Figure 20: Expert activation patterns across layers in Deepseek MoE architectures during non-factual gener-ation on the StrategyQA. Column labels indicate the expert indices. 0
+
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+27 
+
+28 
+
+29 
+
+30 
+
+31 
+
+> Layer
+
+0.02 0.98 0.04 0.03 0.97 0.06 0.05 0.02 
+
+0.06 0.04 0.07 0.97 0.02 0.98 0.02 0.02 
+
+0.04 0.04 0.96 0.04 0.04 0.97 0.05 0.04 
+
+0.05 0.06 0.02 0.04 0.29 0.96 0.04 0.72 
+
+0.05 0.98 0.03 0.05 0.05 0.02 0.96 0.04 
+
+0.60 0.02 0.04 0.05 0.42 0.03 0.05 0.97 
+
+0.04 0.95 0.04 0.07 0.02 0.05 0.97 0.03 
+
+0.97 0.06 0.06 0.03 0.04 0.05 0.03 0.95 
+
+0.05 0.96 0.98 0.05 0.02 0.07 0.03 0.02 
+
+0.05 0.01 0.97 0.02 0.03 0.07 0.08 0.96 
+
+0.05 0.05 0.01 0.04 0.98 0.01 0.98 0.06 
+
+0.02 0.05 0.09 0.05 0.98 0.05 0.92 0.02 
+
+0.05 0.96 0.03 0.98 0.05 0.04 0.02 0.06 
+
+0.05 0.45 0.02 0.98 0.04 0.56 0.05 0.04 
+
+0.04 0.02 0.60 0.04 0.03 0.04 0.45 0.96 
+
+0.04 0.06 0.39 0.04 0.96 0.59 0.04 0.04 
+
+0.08 0.13 0.95 0.13 0.36 0.04 0.43 0.06 
+
+0.03 0.03 0.04 0.10 0.02 0.02 0.93 1.00 
+
+0.59 0.05 0.03 0.03 0.04 0.42 0.04 0.98 
+
+0.04 0.97 0.06 0.07 0.03 0.03 0.64 0.34 
+
+0.12 0.41 0.91 0.57 0.01 0.05 0.05 0.05 
+
+0.56 0.09 0.28 0.04 0.05 0.20 0.03 0.93 
+
+0.03 0.04 0.04 0.03 0.98 0.76 0.05 0.24 
+
+0.07 0.03 0.97 0.36 0.03 0.03 0.65 0.04 
+
+0.38 0.03 0.04 0.97 0.03 0.66 0.03 0.04 
+
+0.96 0.07 0.04 0.21 0.02 0.09 0.76 0.03 
+
+0.04 0.03 0.07 0.97 0.04 0.98 0.03 0.03 
+
+0.48 0.06 0.05 0.89 0.03 0.02 0.05 0.60 
+
+0.06 0.04 0.03 0.99 0.03 0.04 0.03 0.97 
+
+0.04 0.98 0.96 0.03 0.04 0.05 0.04 0.05 
+
+0.06 0.02 0.04 0.99 0.05 0.98 0.03 0.03 
+
+0.05 0.25 0.18 0.16 0.02 0.97 0.02 0.54 
+
+Factual 
+
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+
+0
+
+1
+
+2
+
+3
+
+4
+
+5
+
+6
+
+7
+
+8
+
+9
+
+10 
+
+11 
+
+12 
+
+13 
+
+14 
+
+15 
+
+16 
+
+17 
+
+18 
+
+19 
+
+20 
+
+21 
+
+22 
+
+23 
+
+24 
+
+25 
+
+26 
+
+27 
+
+28 
+
+29 
+
+30 
+
+31 
+
+> Layer
+
+0.03 0.97 0.05 0.05 0.96 0.07 0.06 0.03 
+
+0.06 0.05 0.08 0.96 0.03 0.96 0.04 0.02 
+
+0.05 0.06 0.94 0.04 0.06 0.94 0.07 0.04 
+
+0.08 0.07 0.03 0.05 0.06 0.94 0.96 0.04 
+
+0.07 0.96 0.03 0.07 0.07 0.03 0.94 0.04 
+
+0.04 0.03 0.04 0.06 0.98 0.06 0.05 0.95 
+
+0.05 0.93 0.05 0.09 0.03 0.07 0.97 0.03 
+
+0.95 0.05 0.09 0.03 0.07 0.06 0.04 0.94 
+
+0.05 0.95 0.96 0.08 0.04 0.07 0.04 0.02 
+
+0.06 0.02 0.97 0.03 0.02 0.08 0.09 0.94 
+
+0.05 0.06 0.01 0.06 0.97 0.02 0.97 0.07 
+
+0.03 0.08 0.07 0.91 0.96 0.07 0.06 0.03 
+
+0.05 0.10 0.05 0.95 0.60 0.05 0.04 0.37 
+
+0.06 0.99 0.01 0.95 0.05 0.04 0.06 0.06 
+
+0.05 0.02 0.11 0.04 0.02 0.05 0.99 0.94 
+
+0.07 0.09 0.05 0.01 0.93 0.95 0.06 0.05 
+
+0.13 0.35 0.93 0.54 0.08 0.06 0.04 0.07 
+
+0.03 0.04 0.05 0.45 0.05 0.02 0.58 1.00 
+
+0.07 0.06 0.04 0.04 0.05 0.94 0.04 0.95 
+
+0.06 0.95 0.06 0.95 0.04 0.05 0.06 0.05 
+
+0.06 0.91 0.95 0.06 0.03 0.05 0.07 0.06 
+
+0.03 0.05 0.05 0.07 0.07 0.97 0.03 0.94 
+
+0.06 0.06 0.05 0.06 0.95 0.45 0.04 0.53 
+
+0.05 0.04 0.95 0.06 0.06 0.05 0.96 0.05 
+
+0.97 0.05 0.06 0.95 0.05 0.05 0.03 0.06 
+
+0.92 0.07 0.06 0.54 0.02 0.05 0.10 0.47 
+
+0.04 0.03 0.09 0.97 0.04 0.96 0.04 0.04 
+
+0.94 0.07 0.04 0.95 0.04 0.04 0.08 0.05 
+
+0.08 0.05 0.04 0.96 0.03 0.03 0.17 0.85 
+
+0.05 0.96 0.93 0.03 0.05 0.06 0.06 0.06 
+
+0.06 0.04 0.05 0.98 0.05 0.96 0.03 0.04 
+
+0.04 0.95 0.07 0.07 0.03 0.95 0.03 0.08 
+
+Non-Factual 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 
+
+0.2 
+
+0.4 
+
+0.6 
+
+0.8 
+
+1.0 
+
+Figure 21: Expert activation patterns across layers in Mixtral architectures during factual and non-factual gen-eration on the StrategyQA. Column labels indicate the expert indices. 39339 text. This enhancement benefits applications in knowledge-sensitive domains such as healthcare and law. Importantly, EAACD achieves these im-provements without relying on any external re-sources, making it particularly valuable for scenar-ios where access to knowledge bases or auxiliary models is limited. By enabling MoE models to gen-erate more accurate and reliable outputs even under resource-constrained conditions, EAACD broadens the practical applicability of LLMs and promotes the responsible deployment of AI in the real world (Fang et al., 2025b,a). Additionally, the hallucination amplification component in our method may introduce potential risks in real-world deployment if not properly con-trolled (Pan et al., 2026). To mitigate these risks, for practical applications, we plan to incorporate two protective measures. First, we will integrate an external knowledge base for post-hoc fact verifi-cation, enabling the system to identify and discard outputs that contain hallucinated content. Second, we will restrict the hallucination amplification mod-ule to offline evaluation or strictly sandboxed en-vironments, ensuring that amplified hallucinations are used solely for internal contrastive signals and never exposed to end users (Sun et al., 2025). These safeguards aim to preserve the safety and reliability of the system while retaining the effectiveness of the proposed approach. 
+
+E Significance Test of Experimental Results 
+
+To assess whether our method significantly im-proves performance over the baseline on four datasets, we compare our results to the baselines using a paired t-test. We find that for all base-lines, the significance tests between our method and theirs showed statistically significant differences (as shown in Tab. 3, all P < 0.05 ), demonstrating the effectiveness of our approach. Greedy CD DoLa SCMoE END Self-Endorsement LLaMA 0.0458 0.0277 0.0261 0.0207 0.0489 0.0407 Qwen 0.0497 0.0115 0.0069 0.0244 0.0397 0.0191 
+
+Table 3: Significance test results comparing different baselines with EAACD across all datasets. 
+
+F Latency and GPU Memory Overhead 
+
+To compare the latency and memory overhead, we record the cost for each model when generating 100 tokens from the same prompt under different decod-ing strategies. Specifically, we calculate the time difference before and after the model generates these 100 tokens as latency. For memory overhead, we compute the difference between the peak GPU memory used during forward passes and the GPU memory used before the first forward pass. For fair-ness in comparison, we compare our method with SCMoE: a contrastive decoding strategy specifi-cally designed for MoE. To our knowledge, it is also the only contrastive decoding strategy tailored for MoE models to date. We use GPU A100 for our experiments. All results are in Tab.4.                  
+
+> SCMoE EAACD
+> LLaMA Latency (s) 19.47 21.33 Latency Ratio 1.0x 1.10x Memory Overhead (MB) 4859.07 5529.95 Memory Ratio 1.0x 1.14x Qwen Latency (s) 60.40 76.06 Latency Ratio 1.0x 1.26x Memory Overhead (MB) 4337.01 4707.45 Memory Ratio 1.0x 1.09x
+
+Table 4: Latency and GPU memory overhead of SCMoE and EAACD on LLaMA-MoE and Qwen-MoE. Ratios indicate the multiplicative factors of EAACD relative to SCMoE. 
+
+G The Reasons for Applying Contrastive Decoding at the Final Layer 
+
+We choose to apply contrastive decoding at the final layer because it provides a favorable trade-off be-tween decoding reliability and inference efficiency. As shown in Sec. 3.3, higher-layer experts exhibit reliability differences across various MoE archi-tectures. If we apply contrastive decoding across all higher layers, the intermediate predictions have not yet converged, and the later layers will modify them again. This makes early contrastive decoding unstable and increases the latency overhead. In contrast, the final layer produces stable predictions. Partitioning experts and performing contrastive de-coding at this layer offers more reliable results with much lower overhead. 
+
+H A Case Study on Prediction Biases of Low-reliability and High-reliability Expert Groups 
+
+Here we use the question “What color is the sun when viewed from space?” as an illustrative ex-ample. After the model outputs “The sun is” , we analyze how higher-reliability and lower-reliability 39340 5 10 15 20 25 30            
+
+> Layer
+> 0.0
+> 2.5
+> 5.0
+> 7.5
+> 10.0
+> 12.5
+> 15.0
+> 17.5
+> 20.0
+> Mean JSD
+> TruthfulQA
+> 510 15 20 25 30
+> Layer
+> 0
+> 10
+> 20
+> 30
+> 40
+> 50
+> Mean JSD
+> GSM8K
+> 510 15 20 25 30
+> Layer
+> 0
+> 2
+> 4
+> 6
+> 8
+> 10
+> 12
+> 14
+> 16
+> Mean JSD
+> StrategyQA LLaMA
+> Qwen
+> DeepSeek
+> Mixtral
+
+Figure 22: Layer-wise average JSD across different datasets for various MoE models. 
+
+expert groups assign probabilities to the correct answer token “all” , the most misleading incorrect token “yellow” , and all other tokens in the vocabu-lary. The results are summarized in Table 5. Next token Higher-reliability Lower-reliability 
+
+all 0.62 0.37 
+
+yellow 0.34 0.54 
+
+other 0.04 0.09 
+
+Table 5: Next-token probability distribution assigned by higher-reliability and lower-reliability expert groups. 
+
+We observe that lower-reliability experts assign a substantially higher probability to the incorrect token “yellow” and a much lower probability to the correct token “all” . This behavior indicates that lower-reliability experts tend to favor the mis-leading token “yellow” over the correct token “all” 
+
+when predicting the next token. 
+
+I Analysis of the β Selection Strategy 
+
+We select a specific threshold β to balance two competing objectives: (1) amplifying hallucina-tion behaviors of lower-reliability experts, and (2) keeping the masked prompt semantically close to the original input. If β is too large, an excessive number of tokens are masked, rendering the modi-fied prompt unreadable or semantically meaning-less, which fails to amplify hallucinations related to the original prompt. Conversely, if β is too small, only a few tokens are masked, and most contex-tual information is preserved, making it difficult to effectively amplify hallucinations. We therefore determine the optimal β through validation experi-ments. To provide an intuitive illustration, we use the question “What color is the sun when viewed from space?” as an example. We analyze how lower-reliability experts adjust their next-token probabil-ity distributions before and after masking the token 
+
+“sun” in the prompt. Specifically, we compare the probabilities assigned to the correct answer token 
+
+“all” , the most misleading incorrect token “yellow” ,and all other tokens in the vocabulary. The results are reported in Table 6. Next token Before masking “sun” After masking “sun” all 0.37 0.01     
+
+> yellow 0.54 0.68
+> other 0.09 0.31
+
+Table 6: Next-token probabilities assigned by lower-reliability experts before and after masking the token 
+
+“sun” .
+
+We observe that after masking, the probability of the correct token “all” drops sharply from 0.37 to 0.01, while the probability of the incorrect to-ken “yellow” increases from 0.54 to 0.68. This shift indicates that masking salient tokens encour-ages lower-reliability experts to exhibit a stronger tendency toward misleading answers, thereby ef-fectively amplifying hallucination behaviors. In practical deployment, to avoid potential risks introduced by the hallucination amplification mod-ule, we recommend incorporating the following two protective measures: (1) Integrate an exter-nal knowledge base for fact-checking to discard outputs containing hallucinations. (2) Restrict the hallucination amplification module to offline eval-uation or sandboxed environments, ensuring its outputs never reach the user. 
+
+J Dataset-level Analysis of “Knowledge Injection” in MoE models 
+
+In Sec. 3.2, we present sample-level experimental results. In this section, we provide dataset-level statistical results in Figure 22 to further validate 39341 the findings observed in Sec. 3.2. Specifically, for each model, we compute the average JSD value for each layer across different datasets and plot the curve of average JSD against layer depth. From Fig. 22, we can observe that in MoE mod-els without shared experts (LLaMA, Mixtral), the JSD between the lower and final layers starts high but gradually decreases as the layer depth increases. A sharp drop in the higher layers indicates that the model substantially updates its predictions at these layers, reflecting the occurrence of “Knowledge Injection”. In contrast, in MoE models with shared experts (DeepSeek, Qwen), JSD values stay con-sistently low across layers with minimal changes. These trends align well with the phenomena we ob-served at the case level, providing further evidence for the robustness of our conclusions. 
+
+K Additional Observations of the “Knowledge Injection” Phenomenon in More MoE Models 
+
+In Sec. 3.2, we observe that the “knowledge injec-tion” does not exhibit in MoE with shared ex-perts . However, the models compared in Sec. 3.2 differ not only in expert-sharing mechanisms, but also in model size and depth. Differences in model size and depth may introduce confounding factors, thereby affecting the reliability of our observations. To rule out the possibility that the observed conclu-sion is caused by variations in model size or depth rather than expert sharing, we conduct an additional control experiment using OpenMoE. OpenMoE is a MoE model with shared experts, and it has the same number of layers and a comparable parameter scale to Mixtral (without shared experts). Similar to Sec. 3.2, for the two models, we compute the JSD values between the probability distribution at each layer and that of the final layer under the same inputs. The results are shown in Fig. 23 and Fig. 24: For OpenMoE, JSD values remain low across layers with minimal change. This indicates the “Knowledge Injection” does not exhibit in this model. For Mixtral, JSD values between the lower and final layer start high but decrease as the layer goes deeper, showing the existence of "knowledge injection". These results demonstrate that the ob-served differences cannot be attributed to model depth or parameter scale, which further supports the validity of our conclusion: The “knowledge injection” does not exhibit in MoE with shared The                                                                                                                 
+
+> sun
+> is
+> all
+> colors
+> mixed
+> together
+> .
+> 0
+> 4
+> 8
+> 12
+> 16
+> 20
+> 24
+> 28
+> Layer
+> 3.56 3.37 3.42 3.52 3.36 3.49 3.11 3.47
+> 3.36 3.43 3.20 3.76 4.01 3.45 3.01 3.14
+> 3.21 4.07 4.08 3.66 3.24 4.14 3.64 3.17
+> 3.78 3.48 3.76 4.27 3.43 3.75 3.68 3.63
+> 3.37 3.34 3.42 3.36 3.42 3.94 3.88 3.41
+> 3.51 4.43 3.64 4.86 4.06 4.48 3.78 3.23
+> 4.00 3.92 3.79 3.77 3.67 3.40 4.14 3.40
+> 3.27 3.27 2.64 2.86 2.66 2.94 0.00 3.21
+> 2.87 2.67 1.79 0.77 1.37 2.48 0.00 2.23
+> 2.17 2.47 0.00 0.37 0.17 0.00 0.00 1.40
+> 0.00 0.47 0.00 0.00 0.00 0.00 0.00 0.40
+> 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+> 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+> 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+> 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+> 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00
+
+Mixtral 
+
+> 0
+> 1
+> 2
+> 3
+> 4
+
+Figure 23: JSD (scaled by 10 5) between the final layer and each lower layer in Mixtral. Column labels indicate tokens in each step. Row labels indicate layer indices. The input sample is What color is the sun when viewed from space? The                                                                                                                 
+
+> sun
+> is
+> all
+> colors
+> mixed
+> together
+> .
+> 0
+> 4
+> 8
+> 12
+> 16
+> 20
+> 24
+> 28
+> Layer
+> 3.25 4.14 3.80 3.47 2.84 3.11 4.18 3.41
+> 3.25 4.12 3.82 3.44 2.84 3.09 4.21 3.37
+> 3.23 4.14 3.80 3.46 2.82 3.10 4.19 3.40
+> 3.25 4.11 3.81 3.45 2.84 3.06 4.20 3.38
+> 3.23 4.12 3.79 3.47 2.82 3.09 4.16 3.39
+> 3.22 4.10 3.81 3.43 2.83 3.06 4.20 3.37
+> 3.19 4.12 3.78 3.45 2.80 3.06 4.17 3.38
+> 3.19 4.10 3.75 3.46 2.79 3.05 4.13 3.37
+> 3.17 4.04 3.77 3.39 2.77 2.95 4.14 3.31
+> 3.13 4.05 3.72 3.40 2.74 2.96 4.07 3.29
+> 3.05 4.00 3.70 3.33 2.68 2.92 3.99 3.24
+> 3.00 3.96 3.66 3.24 2.64 2.82 3.96 3.20
+> 2.97 3.90 3.56 3.19 2.60 2.81 3.79 3.22
+> 2.84 3.74 3.55 3.09 2.49 2.75 3.58 3.15
+> 2.73 3.62 3.43 2.99 2.38 2.67 3.49 3.05
+> 2.34 2.92 2.70 2.43 2.15 2.40 3.24 2.74
+
+OpenMoE 
+
+> 2.25
+> 2.50
+> 2.75
+> 3.00
+> 3.25
+> 3.50
+> 3.75
+> 4.00
+
+Figure 24: JSD (scaled by 10 5) between the final layer and each lower layer in OpenMoE. Column labels in-dicate tokens in each step. Row labels indicate layer indices. The input sample is What color is the sun when viewed from space? 39342 experts. 
+
+L A Case Study on Model Predictions Before and After Calibration 
+
+To demonstrate how the model’s output changes before and after calibrating its original predictions using our method, we present a case (Tab. 7): Input Question What U.S. state produces the most peaches? Original Prediction Georgia produces the most peaches in the U.S. Calibrated Prediction California produces the most peaches in the U.S. 
+
+Table 7: An example illustrating model predictions be-fore and after calibration using contrastive decoding. 
+
+As shown in Tab. 7, given the input question 
+
+“What U.S. state produces the most peaches?” , the model’s original prediction: “Georgia produces the most peaches in the U.S.” is incorrect. After calibra-tion using our proposed decoding strategy EAACD, the model produces the correct answer: “Califor-nia produces the most peaches in the U.S.” .39343

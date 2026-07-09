@@ -1,0 +1,1760 @@
+Title: 2026.acl-long.259.pdf
+
+URL Source: https://aclanthology.org/2026.acl-long.259.pdf
+
+Published Time: Thu, 11 Jun 2026 01:09:33 GMT
+
+Number of Pages: 34
+
+Markdown Content:
+> Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 5726–5759 July 2-7, 2026 ©2026 Association for Computational Linguistics
+
+# Demystifying Uncertainty in LLMs: Active Calibration between Concepts and Human Evaluations 
+
+Pengqi Li Lizhong Ding * Zhehao Zhou Chunhui Zhang Jiarun Fu Hao Li Ye Yuan Guoren Wang 
+
+School of Computer Science and Technology, Beijing Institute of Technology 
+
+{pengqi.li, 1120232721, zhangch, jrfu, lihao_leo, yuan-ye}@bit.edu.cn lizhong.ding@outlook.com wanggrbit@126.com 
+
+Abstract 
+
+Hallucinations arise when large language mod-els (LLMs) guess rather than acknowledge their underlying uncertainty. Existing static strate-gies for mitigating hallucinations have been only partially successful, largely because they do not explicitly model the information gain from interacting with the external environment. Researchers need a general method to proac-tively steer users toward informative clarifi-cations, thereby unlocking the model’s effec-tive capacity under underspecified inputs. We model the uncertainty of LLMs in interactive settings and uncover the mechanism of active calibration between model concepts and hu-man evaluations, improving reliability. We show that calibration error in LLMs density estimation admits a non-vanishing lower bound under non-interactive learning, while interac-tion empirically reduces it. We further char-acterize that calibration error identifies infor-mative queries and that calibration can be ac-celerated by shifting query distributions from imbalanced to balanced regimes. Guided by these insights, we propose a calibration-driven Interactive Learning Strategy (ILS) that selects clarification queries by optimizing calibration error, providing both theoretical guarantees and empirical gains for reliability. Code and data are available at https://github.com/ zhouyeah215/Demystifying_Uncertainty .
+
+1 Introduction 
+
+Human interaction with the world is fundamen-tally guided by beliefs . To make effective deci-sions, these beliefs must align with appropriate “world models” (Ha and Schmidhuber, 2018; Le-Cun, 2022; Wong et al., 2023), which capture the latent structure of reality. Since our knowledge of the external world is rarely complete, such beliefs are probabilistic, encoding uncertainty about the en-vironment. As the world changes or new evidence 
+
+> *Corresponding Author
+
+emerges, these beliefs must be updated accordingly to remain consistent with reality. Recent advances in large language models (LLMs) (Brown et al., 2020; Li et al., 2023; Guo et al., 2025) invite a natural extension of this perspective: What forms of uncertainty underlie the interac-tion between LLMs and humans? LLMs have demonstrated remarkable capabili-ties across a variety of tasks, including text gen-eration, question answering (Ouyang, 2022; Wei et al., 2022; Havlík, 2025), code generation (Zhao et al., 2025), information retrieval (Dai et al., 2024), and tool use (Qin et al., 2023a; Wang et al., 2025). By analogy, LLMs interact with humans through outputs that implicitly encode beliefs about knowl-edge and reasoning. However, LLMs often hallu-cinate (Manakul et al., 2023; Ji et al., 2023), pro-ducing fluent but incorrect statements even in the latest models (OpenAI, 2025), limiting adoption in safety-critical domains. To mitigate these risks and encourage LLMs to acknowledge uncertainty rather than guess, uncertainty quantification (UQ) has been explored as a key strategy for assessing model reliability. Yet, existing UQ methods for LLMs communicate uncertainty primarily as a sin-gle scalar confidence (e.g., a probability shown next to the response (Kapoor et al., 2024; Zhang et al., 2024)) or its straightforward transformations, such as an “uncertain” flag or predefined verbal la-bels (Yona et al., 2024), thereby underutilizing the rich language space available to LLM agents for actively communicating uncertainty and eliciting clarification about its sources, even though such language-based articulation is often more intuitive for humans (Zimmer, 1983; Windschitl and Wells, 1996). Besides, some studies propose leveraging LLMs’ own ability to evaluate the uncertainty of its responses without relying on external knowledge (Kadavath et al., 2022; Miao et al., 2023). However, 
+
+5726 these approaches suffer from overconfidence issues due to the model’s inherent bias to trust its own outputs (Xiong et al., 2023; Li et al., 2024). These limitations highlight the need for new frameworks that model how LLMs represent and update un-certainty in interaction with humans .To this end, we decompose uncertainty into aleatoric and epistemic components (Section 2), and show that they are tightly entangled in LLMs rather than cleanly separable. We introduce cal-ibration error as a key indicator of this entangle-ment by measuring the model’s density-estimation mismatch. In particular, a larger calibration error suggests a greater discrepancy between these un-certainty components. This perspective motivates an interactive learning paradigm in which LLMs move beyond static numerical evaluation and in-stead adopt an active calibration framework, ac-tively querying humans to reduce calibration error and align their probabilistic concepts with human evaluations. Crucially, enabling LLMs to ask hu-mans—rather than merely answer them—captures an equally important dimension of intelligence, highlighting the model’s capacity to guide its own knowledge acquisition. In this work, we advance the theory of un-certainty in LLM–human interaction. We show that calibration error cannot vanish in the non-interactive setting (Theorem 1 in Section 3.1), ad-mitting a monofact-rate–controlled lower bound even under zero aleatoric uncertainty, and vali-date this relation via controlled n-gram simulations (Section 3.2). Empirically, multi-turn interaction consistently reduces calibration error (Section 4). We further show that calibration error pinpoints informative queries and that calibration can be ac-celerated by shifting the query distribution from imbalanced to balanced (Theorem 2 in Section 5.1). Guided by these insights, we propose ILS (Sec-tion 5.2, with a case study in Figure 1), which selects clarifications by maximizing calibration er-ror and adaptively reweights the query distribution, with theoretical guarantees and consistent gains over prompt-only baselines on free-form genera-tion benchmarks. 
+
+2 Backgrounds 
+
+We consider the LLM πθ that maps an input x ∈ X 
+
+to a distribution over sequences Y := VL, where V
+
+denotes the vocabulary of size V and L represents the max length of windows. Given the question 
+
+x, a concrete prediction y = [ y1, . . . , y L] ∈ Y is then sampled from this distribution. The sequential nature of language modeling requires an autore-gressive factorization: πθ(y | x) = ∏Ll=1 πθ(yl |
+
+x, y<l ), where y<l denotes the prefix of yl, which makes the analysis more complicated. To solve this problem, we can merge this factorization into the definition of the backbone hθ, similar to the for-mulation in Ren and Sutherland (2024). Letting χ
+
+denote the concatenation of x and y, the prediction of all tokens in y can then be written as: 
+
+z = hθ(χ), πθ(y | x) = Softmax_column (z).
+
+Here z is a V × L matrix where the l-th column cor-responds to the logits used to predict the l-th token. Our hθ, even though it receives the entire sequence 
+
+χ as input, will force the model not to refer to the future tokens y>l when making predictions on the 
+
+l-th token yl, which is typically implemented via “causal masking” (Vaswani et al., 2017). 
+
+Probability measure. Let (X , TX ) be a topo-logical space. We write M+(X ) for the set of all Borel probability measures on X . We assume that an input x is drawn from a query distribution 
+
+μ ∈ M +(X ). Formally, a parameterized LLM with parameters θ ∈ Θ assigns, for each input 
+
+x ∈ X , a probability distribution over the output space Y, which is denoted by πθ(· | x) ∈ M +(Y).Therefore, it can be equivalently viewed as an op-erator, i.e. a concept :
+
+πθ : X → M +(Y), x 7 → πθ(· | x).
+
+with a concrete prediction y ∼ πθ(· | x).The target distribution over the entire output space Y can be denoted as p(· | x) where each element p(y | x) represents the probability of a specific sequence y. A language model learns a parameterized distribution πθ to approximate 
+
+p, which is a classical density estimation prob-lem typically optimized via the auto-regressive loss L(x; θ) = Ey∼p[− ∑Ll=1 log πθ(yl | x, y<l )] 
+
+(Ding et al., 2020a). The entropy of the learned distribution πθ can be formulated as Hx(πθ) = 
+
+− ∑ 
+
+> y∈Y
+
+πθ(y | x) log( πθ(y | x)) . If the target dis-tribution p is known, the KL divergence between 
+
+πθ and p can also be computed as KL x(p | πθ) = ∑ 
+
+> y∈Y
+
+p(y | x) log[ p(y | x)/π θ(y | x)] .
+
+Aleatoric uncertainty. Intuitively, aleatoric un-certainty reflects the inherent randomness in the 5727 The 10th game minister of  
+
+> India was Jitendra Singh.
+> 0.998
+
+ILS          
+
+> User: Question 𝐀
+> Who is the present
+> game minister of india?
+> The current Minister of Culture in India is
+> Anurag Thakur.
+> Oracle Question
+> Who is the 10th minister
+> of Youth Affairs and
+> Sports in india?
+> The current Game Minister of India is not a
+> recognized position.
+> The current Minister of State for Culture,
+> Tourism, and Sports in India is Preeti Sudan.
+> The current Minister of Culture in India is
+> Anirban Das Gangopadhyay.
+> LLM: Answers 𝐀 𝐀 𝐀 (∙ | 𝐀 )
+> generate clarify
+> Did you mean to ask about a minister in
+> another country?
+> Is the game you're referring to a specific
+> video game or a general term?
+> Do you mean the minister of a particular
+> department related to games or sports?
+> Are you referring to someone in the gaming
+> industry or a government official?
+> Are you interested in a minister of a specific
+> state or the central government?
+> Are you asking about the current minister or
+> a past one?
+> LLM: Candidate Questions 𝐀 0Calibration Error Cal 𝐀 :𝐀 ∈𝐀 0
+> 0.458
+> 0.653
+> 0.189
+> 0.172
+> 0.088
+
+SelfSelect 
+
+Random                            
+
+> I’m asking about a past
+> game minister of India,
+> specifically the 10th one.
+> User: Response 𝐀 (⋅ | 𝐀 𝐀 )
+> underspecify
+> generate
+> The 10th game minister of India is Jitendra
+> Singh.
+> LLM: Answers 𝐀 𝐀 𝐀 (∙ | 𝐀 𝐀 )
+> There’s no official ‘game minister’ in India;
+> the closest is the Youth Affairs & Sports
+> minister—Anurag Thakur.
+> Ale 𝐀 =0.492 Epi 𝐀 =0.722 Cal 𝐀 =0.746
+> 𝐀 Rounds
+> generate
+> Ale 𝐀 =0.825 Epi 𝐀 =0.948 Cal 𝐀 =0.988
+> Ale 𝐀 =0.192 Epi 𝐀 =0.246 Cal 𝐀 =0.269
+
+: Underspecifi ed Question 
+
+: LLM with Parameter 𝐀 
+
+: Human Concept 
+
+: Aleatoric Uncertainty 
+
+: Epistemic Uncertainty 
+
+: Calibration Error 
+
+𝐀 
+
+𝐀 𝐀 
+
+𝐀 
+
+Ale 𝐀 
+
+Epi 𝐀 
+
+Cal 𝐀 
+
+Notations      
+
+> LLM: Answer 𝐀 ∼𝐀 𝐀 𝐀 (∙ | 𝐀 )
+> 𝐀 𝐀 ,𝐀 𝐀 +1,𝐀 𝐀 𝐀 +1
+
+Figure 1: Overview of Interactive Learning Strategy (ILS). Given an underspecified user query x, the LLM produces an initial answer distribution πθ0 (· | x) and we estimate Ale x, Epi x, and Cal x. ILS then generates a candidate clarification set C0 and selects the most informative query by maximizing the calibration error, contrasting prompt-only baselines (Random, SelfSelect). After T turns, ILS progressively enhances calibration. 
+
+data-generating process, arising from the true con-ditional distribution p(y | x), such that even an ideal model with unlimited capacity cannot elim-inate it. If a sample x admits a unique correct answer y∗, then p(y | x) is degenerate and the aleatoric uncertainty is zero. Conversely, if the task itself is intrinsically ambiguous (e.g., multi-ple valid translations or open-ended QA), p(y | x)
+
+has high entropy, yielding irreducible aleatoric uncertainty. In practice, since p(y | x) is inac-cessible, we approximate this quantity by com-bining ground-truth signals with the model’s out-put distribution obtained from sampling (Kada-vath et al., 2022). Inspired by Kalai et al. (2025), we partition answer space Y into valid answers 
+
+Ax = supp x(p) = {y ∈ Y | p(y | x) > 0} and er-rors Ex = Y \ A x that are inconsistent with p. The aleatoric uncertainty of the LLM πθ w.r.t. query x
+
+is denoted by: Ale x := πθ(Ex | x) = Pr 
+
+y∼πθ (·| x)[y ∈ E x].
+
+Moreover, the aleatoric uncertainty of πθ w.r.t. query distribution μ is given by Ale := Ex∼μAle x.Here, a single query inherently carries uncertainty, yet our analysis elevates this notion to the distri-butional level by modeling uncertainty over the query space with μ. In experiments we report the uncertainty of πθ by averaging across 100 queries. 
+
+Epistemic uncertainty. Unlike aleatoric uncer-tainty, which arises from irreducible randomness in the data distribution, epistemic uncertainty reflects the limitations of the model class in approximating the true preference distribution. Even when suffi-cient training signal is available, a model with re-stricted capacity may fail to capture the underlying structure. To formalize this, we define epistemic uncertainty w.r.t. query x as the entropy induced by the distribution πθ, i.e. Epi x := Hx(πθ) = − ∑
+
+y∈Y 
+
+πθ(y | x) log( πθ(y | x)) ,
+
+with further uncertainty estimation methods (e.g., confidence, margin score, perplexity, semantic en-tropy) detailed in Appendix B.2. Similarly, the epistemic uncertainty of πθ w.r.t. query distribu-tion μ is denoted by Epi := Ex∼μEpi x.
+
+Calibration Error. Calibration asks whether probabilities assigned by a language model match empirical frequencies. For example, in weather forecasting, if an LLM predicts a 70% chance of rain on a set of days, then approximately 70% of those days should indeed experience rain. More generally, an LLM is calibrated if, among re-sponses to which it assigns confidence near πθ(y |
+
+x), the empirical frequency of correctness is also 
+
+p(y | x). We define the calibration error as the 5728 distance between πθ and p, i.e. 
+
+Cal( πθ, p) := Ex∼μCal x(πθ, p)= Ex∼μd (πθ(· | x), p(· | x)) ,
+
+where d may be instantiated as total variation dis-tance or Jensen–Shannon divergence. We derive lower bounds for calibration error in the next sec-tion and show that the relation implied by Theo-rem 1 holds for both choices of d (Appendix B.1). 
+
+3 Calibration Error Cannot Vanish without Interaction 
+
+In this section, we show that calibration error ad-mits a non-vanishing lower bound: without inter-action, it cannot be eliminated, even under zero aleatoric uncertainty. The key is the monofact rate, inspired by Turing’s “missing-mass” estima-tor (Good, 1953; Kalai et al., 2025). n-gram ex-periments show that high monofact rate induces aleatoric uncertainty, epistemic uncertainty and hence calibration error. Combining theoretical anal-ysis and empirical validation, we highlight that ac-tively asking questions is essential for LLMs to close the calibration gap. 
+
+3.1 Why Calibration Error Persists 
+
+Our lower bound for calibration error is based on the fraction of facts appearing just once in the train-ing data: 
+
+Definition 1 (Monofact rate (Kalai et al., 2025)) .
+
+A query x ∈ X is a monofact if it appears exactly once in the N training data S =
+
+{(x1, y1), . . . , (xN , yN )} without abstention. For-mally, denote the training count by cN (x) := ∑Ni=1 1{xi = x}, and define the monofact set 
+
+S := {(x ∈ X : cN (x) = 1 }. Then, the monofact rate is denoted as the fraction of training mono-facts: 
+
+MFR := |S| 
+
+N .
+
+The monofact rate gauges the remaining prob-ability mass on unseen outcomes, exploiting the symmetry between zero and one occurrences. Fol-lowing Turing’s estimate, the probability of unseen events is approximated by the fraction of mono-facts, which thus serves as a proxy for the missing portion of the distribution. Now we establish the lower bound of calibration error. 
+
+Theorem 1 (Non-vanishing Lower Bound for Cali-bration Error) . With probability at least 1 − δ over the training samples, 
+
+Cal( πθ, p) ≥ MFR −Ale − 3e−m
+
+δ −
+
+√ 6 ln(6 /δ )
+
+N ,
+
+where m is a sparsity parameter. For realistic data size, the final two terms are negligible, leaving cali-bration error and uncertainty essentially governed by the monofact rate. 
+
+The complete proof of Theorem 1 is provided in Appendix C. The core idea is that generating out-puts with low aleatoric uncertainty—i.e., produc-ing responses consistent with p—is strictly harder than merely classifying whether an output belongs to p. Consider questions of the form “Is this a valid language model output?” Generation implic-itly requires answering this Yes/No query for every candidate response, so any failure to distinguish good from bad inevitably propagates to the gen-erative setting. Consequently, if a model cannot reliably perform the classification task, it cannot be expected to generate only valid outputs. This reduc-tion aligns our setting with computational learning theory (Kearns and Vazirani, 1994), providing a principled lens for analyzing error mechanisms in generative models. 
+
+Remark. Theorem 1 highlights a structural limi-tation of density estimation in LLMs: calibration error with respect to the target distribution p cannot vanish when portions of the distribution are absent from training data. Even with zero aleatoric uncer-tainty, the model inevitably hallucinates on facts outside the training support, since it approximates a distribution rather than memorizing ground truth . In pretraining, an LLM must approximate the entire language distribution, which inevitably includes arbitrary and patternless components that are hard to learn. Because the model cannot per-fectly classify the validity of such facts, the inequal-ity implies that generation necessarily incurs both uncertainty and calibration error. This further sug-gests that interactive mechanisms which reduce the monofact rate provide a principled means to lower uncertainty and calibration error in practice. 
+
+3.2 n-gram Study of MFR , Cal , Ale , and Epi 
+
+To validate the quantitative relationship among monofact rate, calibration error, aleatoric uncer-tainty, and epistemic uncertainty, we begin with classical n-gram models, which provide a con-trolled setting with full authority over data gen-eration, model architecture, training, and eval-5729 0.2 0.4 0.6 0.8       
+
+> Monofact Rate
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> Calibration Error
+> 0.2 0.4 0.6 0.8
+> Monofact Rate
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> Aleatoric Uncertainty
+> 0.2 0.4 0.6 0.8
+> Monofact Rate
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> Epistemic Uncertainty
+
+Figure 2: n-gram analysis of MFR , Cal , Ale , and Epi . Each dot corresponds to a sample of 5,000 facts, showing that Cal , Ale , and Epi all increase with the monofact rate. 
+
+uation. This allows us to test Theorem 1 be-fore moving to large-scale LLMs. Let T de-note the base fact set, consisting of unique, struc-tured, comma-separated six-tuples— ⟨Actor , Co-star , Movie , Director , Genre , Year ⟩—derived from the non-commercial IMDb corpus (IMDb, 2024). 
+
+Data Generating. Let p denote the distribution over six-tuples x = ( x1, . . . , x 6). For any pair of tokens (xi, x i+1 ), the bigram model learns 
+
+p(x1, x 2) = p(x1)p(x2 | x1), where p(x1) is the marginal over first tokens and p(x2 | x1) the con-ditional over second tokens. Generating a new six-tuple proceeds sequentially: 
+
+p(x) = p(x1)
+
+> 5
+
+∏
+
+> i=1
+
+p(xi+1 | xi).
+
+Concretely, we first draw x1 ∼ p(·) and then sam-ple xi+1 ∼ p(· | xi) for each position i = 1 : 5 .We use a schema-agnostic bigram generator that ap-plies the same transition mechanism to all adjacent positions, without conditioning on slot identity in the six-tuple. Let S denote the training sample set, obtained by sampling with replacement from T ac-cording to p. Each model is trained on |S| = 5 , 000 
+
+facts. Thus, S is a multiset that may contain dupli-cates, and empirical statistics such as the monofact rate are always computed with respect to S. Here, 
+
+Cal( πθ, p) is computed using the total variation distance. 
+
+MFR Controlling. To construct the target dis-tribution and vary the monofact rate, we replicate each fact in the base set T a random number of times, drawing counts from candidate distributions. Gaussian and Poisson choices concentrate mass near the mean and fail to produce diverse ranges of monofact rates. Instead, for each fact x ∈ T we sample a replication count: 
+
+r ∼ f (r; γ, r m) = γr γm
+
+rγ , r ≥ rm,
+
+according to a heavy-tailed Pareto distribution with shape γ and scale rm, where rm = 1 ensures every fact appears at least once. The replication count is rounded to an integer, giving multiplicities {ci}|T |
+
+> i=1
+
+.These multiplicities define a weighted multiset, which induces the normalized target distribution: 
+
+p(xi) = ci
+
+∑|T | 
+
+> j=1
+
+cj
+
+, i = 1 , . . . , |T |.
+
+We then sample with replacement from this ex-panded pool to form S, ensuring i.i.d. sampling. Adjusting γ thus directly tunes the empirical mono-fact rate MFR .
+
+Preliminary Insight. Our controlled simulations validate the relationships among MFR , Cal , Ale ,and Epi predicted by Theorem 1. As shown in Fig-ure 2, all three quantities increase with the mono-fact rate, suggesting that calibration error reflects misalignment in uncertainty decomposition and serves as a proxy for density-estimation mismatch in LLMs. Together, these results underscore the need for mechanisms that reduce the monofact rate. 
+
+Insight 1: Reducing the monofact rate provides an effective way to mitigate calibration error. 
+
+4 Active Calibration with Human 
+
+Given that calibration error admits a non-vanishing lower bound with respect to the monofact rate in the non-interactive setting, a natural question is whether interaction can eliminate this gap. 
+
+Benchmarks. To investigate, we employ AR-Bench (Zhou et al., 2025a), which simulates real-world information-seeking scenarios. We evaluate on Detective Cases (DC), simulating criminal in-vestigations that require commonsense reasoning, and Situation Puzzles (SP), or “lateral thinking puz-zles,” which probe logical and divergent reasoning 5730 5 10 15 20                          
+
+> Turn
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> Calibration Error  Calibration Error
+> 510 15 20
+> Turn
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> Epistemic Uncertainty
+> Epistemic Uncertainty
+> 510 15 20
+> Turn
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> Aleatoric Uncertainty
+> Aleatoric Uncertainty
+> Qwen2.5 7B Qwen2.5 14B Qwen2.5 32B LLaMA3-8B DeepSeek-R1 GPT-4o 510 15 20
+> Turn
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> Calibration Error  Calibration Error
+> 510 15 20
+> Turn
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> Epistemic Uncertainty
+> Epistemic Uncertainty
+> 510 15 20
+> Turn
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> Aleatoric Uncertainty
+> Aleatoric Uncertainty
+> Qwen2.5 7B Qwen2.5 14B Qwen2.5 32B LLaMA3-8B DeepSeek-R1 GPT-4o
+
+Figure 3: Cal( πθ , p) consistently decreases with interaction turns across LLMs in both DC (above) and SP (bottom). 
+
+through Yes/No questions. Both tasks exhibit high aleatoric uncertainty, as the initial query lacks suf-ficient information and demands active interaction with an oracle. Following prompts (Appendix G.1), a Policy model generates short, verifiable questions (≤20 words), while a Response model (oracle) re-turns concise answers—preferring Yes/No, other-wise brief facts—and outputs “It doesn’t matter” to filter irrelevant queries. This design assesses not only final correctness but also the quality and informativeness of the model’s queries. 
+
+Evaluation Metrics. Given a query x, at each interaction round we sample K = 8 and estimate 
+
+Cal x(πθ, p) via Jensen–Shannon divergence. We fix K = 8 for efficiency; in a sensitivity check, varying K from 5 to 20 does not affect model com-parisons. Note that JS divergence ranges from 
+
+[0 , 1] , and the maximum number of interaction turns is capped at 20. To obtain the overall cal-ibration error, we evaluate Cal x on a set of 100 queries and report the mean across all queries, i.e. 
+
+Cal . For aleatoric uncertainty and epistemic un-certainty, we use error rate and entropy, as illus-trated in Section 2. Following prior work (Kirch-hof et al., 2025a), we use Qwen2.5–7B as the uni-fied Response LLM, while the Policy LLM spans 
+
+LLaMA3–8B , DeepSeek–R1 , Qwen2.5 , and GPT–4o .As shown in Figure 3, calibration error starts above 0.5, decreases steadily with interaction, and converges to around 0.2 within roughly 10 turns, well before the 20-turn cap. 
+
+Observation 1: As the interaction progresses, the calibration error and uncertainty of all LLMs decrease and eventually converge. 
+
+Remark. Recent work (Kirchhof et al., 2025b) highlights that aleatoric and epistemic uncertainty become ambiguous in multi-turn interaction: un-certainty that appears aleatoric under an underspec-ified query may later be reinterpreted as epistemic once additional clarification is provided. In other words, part of the apparent ambiguity in early turns is induced by missing information rather than irre-ducible variability in the task itself. Our calibration metric provides a calibration-based lens on this phe-nomenon. As interaction proceeds, the two forms of uncertainty become increasingly coupled, and the calibration error Cal captures the resulting turn-dependent discrepancy between the model concept and human evaluation under the same dialogue his-tory. Its reduction across turns further indicates that the model is progressively aligning its uncertainty with the information disclosed during interaction. Beyond this, different models vary in both con-vergence speed and asymptotic error. For example, 
+
+Qwen2.5-7B converges near zero calibration error by turn 15, whereas another model of the same family only begins to converge around turn 18 and stabilizes near 0.23. These differences motivate us to reconsider the mechanism underlying interac-5731 tive learning : what makes multi-turn interaction 
+
+informative and efficient ?
+
+Observation 2: LLMs that converge faster also achieve lower asymptotic calibration error. 
+
+5 LLM Learning to Query Human 
+
+Building on our theoretical and empirical results that validate the metric and establish the necessity of interaction, we now ask how to make interac-tion more informative and efficient—teaching the model how to query humans rather than teaching humans how to query the model. 
+
+5.1 What Makes Interactions Informative and Efficient Informative Interactions. According to Obser-vation 1, on the one hand, calibration error faith-fully characterizes the uncertainty bias of a query by quantifying the mismatch between the model’s predictive distribution and the ground truth. On the other hand, this very characterization provides actionable guidance during interaction: the query with the largest calibration error is the most infor-mative to ask, as it promises the greatest reduction in uncertainty once resolved. That is, Cal x serves both as a diagnostic metric and as an optimiza-tion target for identifying and mitigating inputs that are likely to induce hallucinated generations. 
+
+Insight 2: Calibration error pinpoints the most informative query to ask during interaction. 
+
+Efficient Interactions. Extending Insight 1, we observe that the monofact rate is minimized by the imbalanced natural distribution μ(x), while for large N , it is minimized under a balanced μ(x).The detailed proof is provided in Appendix D. 
+
+Theorem 2. Let μ be a distribution on X with 
+
+|X | = K, then the expected monofact rate is 
+
+ES∼μN [MFR] ≈ 1
+
+N
+
+> K
+
+∑
+
+> i=1
+
+ϕ(λi),
+
+where λi := N μ i and ϕ(t) = te −t. If 
+
+N max i μi ≤ 2, then ϕ is concave on [0 , 2] , and 
+
+E[MFR] is Schur-concave in μ, minimized by im-balanced μ. If N min i μi ≥ 2, then ϕ is convex on 
+
+[2 , ∞), and E[MFR] is Schur-convex in μ, mini-mized by balanced μ.
+
+Remark. Prior work (Zucchet et al., 2025) has observed that LLMs often exhibit a performance plateau before acquiring precise factual knowledge, and that training data distribution strongly shapes this dynamic: imbalanced distributions shorten the plateau but increase overfitting risk and slow long-term knowledge acquisition, while balanced distri-butions prolong the plateau yet yield faster accumu-lation and better generalization. Theorem 1 and 2 provide a unified explanation: throughout training, lower monofact rates induce smaller calibration error and better learning dynamics. Hence, imbal-anced distributions in early stages help the model escape the plateau quickly, whereas uniform distri-butions in later stages promote efficient knowledge gain. Dynamically adjusting the data distribution to maintain a low monofact rate thus both shortens the plateau and maximizes learning speed. 
+
+Insight 3: Efficient interactions arise from sam-pling imbalanced queries early and shifting to uniform ones later. 
+
+5.2 Interactive Learning Strategy 
+
+Combining Insight 3 with Insight 2, we propose an Interactive Learning Strategy (ILS), formulated in Algorithm 1 (Appendix E). Given a query x,the LLM first samples a pool of candidate ques-tions. From this pool, it selects the question with the largest calibration error—our first experiment confirms that this metric faithfully captures the in-formation value of a question. The answer from the human is then incorporated via implicit param-eter updates (i.e., contextual updates), and after T
+
+rounds the model produces its final response to x.To make interaction efficient, we build on In-sight 3 and curriculum learning (Bengio et al., 2009). The candidate pool is first sampled from the natural distribution μ, reflecting the long-tailed nature of real-world questions, but gradually shifts toward balanced exploration as interaction pro-gresses. To this end, we introduce a unified schedul-ing function β(t) that gradually shifts the sampling distribution, consistent with our Insight 1 that effec-tive calibration requires prioritizing common cases first while progressively covering rare events. A case study of ILS is shown in Figure 1. 
+
+Baselines. To compare our calibration-based selection with alternative prompt-only selection schemes, we adopt two query-selection heuristics as baselines. Random first uses a PolicyLLM to 5732 AmbigQA HotpotQA AmbigQA HotpotQA AmbigQA HotpotQA                                                                                            
+
+> Benchmarks
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> Calibration Error  Random SelfSelect ILS (Ours)
+> turn = 2turn = 4turn = 6turn = 8turn = 10
+> AmbigQA HotpotQA AmbigQA HotpotQA AmbigQA HotpotQA
+> Benchmarks
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> Epistemic Uncertainty
+> Random SelfSelect ILS (Ours)
+> turn = 2turn = 4turn = 6turn = 8turn = 10
+> AmbigQA HotpotQA AmbigQA HotpotQA AmbigQA HotpotQA
+> Benchmarks
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> Aleatoric Uncertainty
+> Random SelfSelect ILS (Ours)
+> turn = 2turn = 4turn = 6turn = 8turn = 10 AmbigQA HotpotQA AmbigQA HotpotQA AmbigQA HotpotQA
+> Benchmarks
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> Calibration Error  Random SelfSelect ILS (Ours)
+> turn = 2turn = 4turn = 6turn = 8turn = 10
+> AmbigQA HotpotQA AmbigQA HotpotQA AmbigQA HotpotQA
+> Benchmarks
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> Epistemic Uncertainty
+> Random SelfSelect ILS (Ours)
+> turn = 2turn = 4turn = 6turn = 8turn = 10
+> AmbigQA HotpotQA AmbigQA HotpotQA AmbigQA HotpotQA
+> Benchmarks
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> Aleatoric Uncertainty
+> Random SelfSelect ILS (Ours)
+> turn = 2turn = 4turn = 6turn = 8turn = 10
+
+Figure 4: Convergence of calibration error, epistemic uncertainty, and aleatoric uncertainty under different interaction strategies. Across benchmarks, our calibration-based Interactive Learning Strategy (ILS) yields faster convergence than prompt-only baselines ( Random , SelfSelect ) for Qwen2.5-7B (top) and LLaMA3—8B (bottom). 
+
+generate M diverse clarification questions and then uniformly samples one query from the candidate set. SelfSelect uses the same candidate set but asks the LLM to select the best follow-up question. In contrast, our ILS selects queries by estimating cali-bration error. All prompts used in our experiments are provided in Appendix G.2. 
+
+Benchmarks. To evaluate ILS in realistic free-form generation, we use the ambiguous queries from AmbigQA (Min et al., 2020) and construct an ambiguous variant of HotpotQA (Yang et al., 2018) by injecting ambiguity following (Liu et al., 2025). Specifically, we convert each query into an AMR graph (Shi et al., 2023), prompt GPT-4o 
+
+to remove key modifiers/constraints and perturb salient relations (Appendix G.1), and then linearize the edited AMR back into an ambiguous query with corresponding clarification questions. 
+
+Evaluation metrics. Entropy in free-form gen-eration is notoriously difficult to estimate because answers can be semantically equivalent while re-maining lexically or syntactically distinct. Conse-quently, naively aggregating token-level probabili-ties as in the multiple-choice tasks in Section 4 can overestimate uncertainty (Xiao et al., 2020). To address this, we adopt semantic entropy (Farquhar et al., 2024) to measure epistemic uncertainty for long-form QA here. Detailed estimation proce-dures and prompts are provided in Appendix G.3. 
+
+Main Results. The results are summarized in Figure 4. The experiments in this section are con-ducted using Qwen–2.5–7B and LLaMA3–8B to en-able efficient computation of the proposed metrics. Across benchmarks, our calibration-based ILS ex-hibits faster convergence than prompt-only base-lines (Random and SelfSelect), suggesting that in-formatively guiding queries with calibration signals provides a robust advantage over naïve prompting. Moreover, the concurrent reduction of epistemic uncertainty, aleatoric uncertainty, and calibration error indicates substantial overlap among these met-rics, and supports the view that calibration-driven interaction can also mitigate uncertainty. Finally, we observe that SelfSelect occasionally underper-forms Random, consistent with overconfidence aris-ing from an LLM’s tendency to trust its own out-puts. ILS alleviates this issue by selecting queries using an explicit calibration signal. In Appendix F, we additionally report the valid solutions rate in Figure 5, conduct a sensitivity analysis on the candidate set size M , and provide transfer experiments beyond clarification-style in-teraction on factual QA and tool-based tasks (Truth-fulQA (Lin et al., 2022a) and ToolBench (Qin et al., 2023b)), showing that the proposed ILS remains ef-fective across different task settings. In Figure 4 we report the main results using the respective optimal 
+
+M for each LLM backbone. 5733 Remark. ILS provides a systematic proce-dure for adaptive query selection that couples calibration-driven informativeness with curriculum scheduling. By dynamically reweighting the query distribution, ILS connects the theoretical insights of Section 5.1 with practical interaction design. 
+
+6 Conclusion 
+
+In this paper, we develop a calibration-centric view of uncertainty in LLM–human interaction. We es-tablish that calibration error in LLMs admits a non-vanishing lower bound in the non-interactive set-ting, governed by the monofact rate. Controlled n-gram simulations and modern LLMs experiments confirm this theoretical link, showing that hallu-cinations persist without interaction. We further demonstrate that multi-turn interaction reduces cali-bration error. Therefore, we characterize how query distributions affect the monofact rate and propose Interactive Learning Strategy (ILS) that selects clar-ification questions by maximizing calibration error and schedules candidate sampling. We hope our theoretical insights and proposed interactive cali-bration strategy represent a step towards modeling uncertainty in LLM–human interaction and making hallucinations more precise. 
+
+Limitations 
+
+While this work establishes the theoretical foun-dations of interactive calibration, our experiments rely on large language models to simulate human interaction. Although such models can approxi-mate ground-truth responses, they may still fail on intermediate or underspecified queries posed by an-other LLM, reflecting inherent capacity limitations. Addressing this limitation may require augmenting LLMs with external tools or interactive capabilities. In this work, we restrict our focus to standalone LLMs; extending the framework to multi-agent systems that incorporate fact-checking components and modeling uncertainty at the system level are left for future research. This paper provides preliminary analyses of the proposed ILS algorithm, but the current evaluation remains limited in scope. We plan to conduct more comprehensive experiments to empirically validate the effectiveness and convergence behavior of ILS across diverse datasets, interaction settings, and model scales. Future work will also explore inte-grating quantitative convergence diagnostics and ablation studies to better understand how different scheduling strategies and uncertainty estimators influence stability and calibration performance. 
+
+Acknowledgements 
+
+This work was supported by the Joint Funds of the National Natural Science Foundation of China under (Grant No. U22A2099), the General Program of the National Natural Science Foun-dation of China under (Grant No. 62376028), the Excellent Young Scientists Fund (Overseas) of the National Natural Science Foundation of China, the National Key Scientific Instruments and Equipment Development Project under (Grant No. 62427808), and the National Key Research and Development Program of China under (Grant No. 2022YFB2703100). 
+
+References           
+
+> Anastasios N Angelopoulos and Stephen Bates. 2023. Conformal prediction: A gentle introduction. In
+> Foundations and Trends in Machine Learning .Neil Band, Xuechen Li, Tengyu Ma, and Tatsunori Hashimoto. 2024. Linguistic calibration of long-form generations. In International Conference on Machine Learning (ICML) .Catarina G Belém, Markelle Kelly, Mark Steyvers, Sameer Singh, and Padhraic Smyth. 2024. Percep-tions of linguistic uncertainty by language models and humans. In Empirical Methods in Natural Lan-guage Processing (EMNLP) .Yoshua Bengio, Jérôme Louradour, Ronan Collobert, and Jason Weston. 2009. Curriculum learning. In
+> Proceedings of the 26th International Conference on Machine Learning (ICML) , pages 41–48. ACM. Tom B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, and 1 others. 2020. Language models are few-shot learners. In Advances in Neural Information Processing Systems (NeurIPS) .Arslan Chaudhry, Sridhar Thiagarajan, and Dilan Görür. 2024. Finetuning language models to emit linguistic expressions of uncertainty. In arXiv .Imre Csiszár and János Körner. 2011. Information The-ory: Coding Theorems for Discrete Memoryless Sys-tems , 2 edition. Cambridge University Press. Sunhao Dai, Chen Xu, Shicheng Xu, Liang Pang, Zhen-hua Dong, and Jun Xu. 2024. Bias and unfairness in information retrieval systems: New challenges in the llm era. In Proceedings of the 30th ACM SIGKDD Conference on Knowledge Discovery and Data Min-ing , pages 6437–6447.
+
+5734 Lizhong Ding, Shizhong Liao, Yong Liu, and 1 others. 2020a. Approximate kernel selection via matrix ap-proximation. IEEE Transactions on Neural Networks and Learning Systems , 31(11):1–11. Lizhong Ding, Zhi Liu, Yu Li, Shizhong Liao, Yong Liu, Peng Yang, and 1 others. 2019. Linear kernel tests via empirical likelihood for high-dimensional data. In Proceedings of the AAAI Conference on Artificial Intelligence , volume 33, pages 4222–4229. Lizhong Ding, Zhi Liu, Yu Li, Shizhong Liao, and 1 others. 2020b. Two generator game: Learning to sample via linear goodness-of-fit test. In Advances in Neural Information Processing Systems (NeurIPS) .Yihe Dong, Yizhong Zhang, Tianyi Zhang, Jindong Chen, Tianyu Gao, and Danqi Chen. 2023. Asurvey for in-context learning. arXiv preprint arXiv:2301.00234 .Sebastian Farquhar, Jannik Kossen, Lorenz Kuhn, and Yarin Gal. 2024. Detecting hallucinations in large language models using semantic entropy. Nature ,630(8017):625–630. Irving J Good. 1953. The population frequencies of species and the estimation of population parameters. 
+
+Biometrika , 40(3-4):237–264. Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Ruoyu Zhang, Runxin Xu, Qihao Zhu, Shi-rong Ma, Peiyi Wang, Xiao Bi, and 1 others. 2025. Deepseek-r1: Incentivizing reasoning capability in llms via reinforcement learning. arXiv preprint arXiv:2501.12948 .Yuhan Guo, Lizhong Ding, Shihao Jia, Yanyu Ren, Pengqi Li, Jiarun Fu, Changsheng Li, Ye Yuan, and Guoren Wang. Learning for highly faithful explain-ability. In The Fourteenth International Conference on Learning Representations .David Ha and Jürgen Schmidhuber. 2018. World mod-els. arXiv preprint arXiv:1803.10122 , 2(3). G. H. Hardy, J. E. Littlewood, and G. Pólya. 1952. In-equalities , 2nd edition. Cambridge University Press. Václav Havlík. 2025. Why are llms’ abilities emergent? 
+
+arXiv preprint arXiv:2508.04401 . Preprint. Yuheng Huang, Jiayang Song, Zhijie Wang, Shengming Zhao, Huaming Chen, Felix Juefei-Xu, and Lei Ma. 2023. Look before you leap: An exploratory study of uncertainty measurement for large language models. 
+
+arXiv preprint arXiv:2307.10236 .Yukun Huang, Yixin Liu, Raghuveer Thirukovalluru, Arman Cohan, and Bhuwan Dhingra. 2024. Cali-brating long-form generations from large language models. In Findings of EMNLP .IMDb. 2024. Imdb non-commercial datasets. https://developer.imdb.com/ non-commercial-datasets/ . Accessed: 2024. Ziwei Ji, Nayeon Lee, Rita Frieske, Tiezheng Yu, Dan Su, Yan Xu, Etsuko Ishii, Ye Jin Bang, Andrea Madotto, and Pascale Fung. 2023. Survey of hal-lucination in natural language generation. ACM com-puting surveys , 55(12):1–38. Saurav Kadavath, Tom Conerly, Amanda Askell, Tom Henighan, Dawn Drain, Ethan Perez, Nicholas Schiefer, Zac Hatfield-Dodds, Nova DasSarma, Eli Tran-Johnson, and 1 others. 2022. Language mod-els (mostly) know what they know. arXiv preprint arXiv:2207.05221 .Adam Tauman Kalai, Ofir Nachum, Santosh S. Vem-pala, and Edwin Zhang. 2025. Why language models hallucinate. arXiv preprint arXiv:2509.04664 .Sanyam Kapoor, Nate Gruver, Manley Roberts, Kather-ine M. Collins, Arka Pal, Umang Bhatt, Adrian Weller, Samuel Dooley, Micah Goldblum, and An-drew Gordon Wilson. 2024. Large language models must be taught to know what they don’t know. In 
+
+Advances in Neural Information Processing Systems ,volume 37, pages 85932–85972. Enkelejda Kasneci, Kathrin Seßler, and Stefan Küche-mann. 2023. Chatgpt for good? on opportunities and challenges of large language models for education. volume 103, page 102274. Michael J Kearns and Umesh Vazirani. 1994. An in-troduction to computational learning theory . MIT press. Michael Kirchhof, Luca Füger, Adam Goli´ nski, Ee-shan Gunesh Dhekane, Arno Blaas, and Sinead Williamson. 2025a. Self-reflective uncertainties: Do llms know their internal answer distribution? In 
+
+arXiv .Michael Kirchhof, Enkelejda Kasneci, and Seong Joon Oh. 2023. Probabilistic contrastive learning recovers the correct aleatoric uncertainty of ambiguous inputs. In International Conference on Machine Learning (ICML) .Michael Kirchhof, Gjergji Kasneci, and Enkelejda Kas-neci. 2025b. Position: Uncertainty quantification needs reassessment for large-language model agents. 
+
+arXiv preprint arXiv:2505.22655 .Kasia Kobalczyk, Nicolás Astorga, Tennison Liu, and Mihaela van der Schaar. 2025. Active task disam-biguation with LLMs. In The Thirteenth Interna-tional Conference on Learning Representations .Yann LeCun. 2022. A path towards autonomous ma-chine intelligence version 0.9. 2, 2022-06-27. Open Review , 62(1):1–62. Guohao Li, Hasan Abed Al Kader Hammoud, Hani Itani, Dmitrii Khizbullin, and Bernard Ghanem. 2023. Camel: Communicative agents for “mind” explo-ration of large language model society. In Advances in Neural Information Processing Systems (NeurIPS) .5735 Moxin Li, Wenjie Wang, Fuli Feng, Fengbin Zhu, Qifan Wang, and Tat-Seng Chua. 2024. Think twice be-fore trusting: Self-detection for large language mod-els through comprehensive answer reflection. arXiv preprint arXiv:2403.09972 .Pengqi Li, Lizhong Ding, Jiarun Fu, Chunhui Zhang, Guoren Wang, and Ye Yuan. 2025. Generalization bounds for kolmogorov-arnold networks (kans) and enhanced kans with lower lipschitz complexity. In 
+
+The Thirty-ninth Annual Conference on Neural Infor-mation Processing Systems .Stephanie Lin, Jacob Hilton, and Owain Evans. 2022a. Truthfulqa: Measuring how models mimic human falsehoods. In Proceedings of the 60th annual meet-ing of the association for computational linguistics ,pages 3214–3252. Stephanie C Lin, Jacob Hilton, and Owain Evans. 2022b. Teaching models to express their uncertainty in words. In Transactions on Machine Learning Re-search (TMLR) .Jingyu Liu, Jingquan Peng, Xiaopeng Wu, Xubin Li, Tiezheng Ge, Bo Zheng, and Yong Liu. 2025. Do not abstain! identify and solve the uncertainty. In 
+
+Proceedings of the 63rd Annual Meeting of the As-sociation for Computational Linguistics (Volume 1: Long Papers) , pages 17177–17197. Potsawee Manakul, Adian Liusie, and Mark JF Gales. 2023. Selfcheckgpt: Zero-resource black-box hal-lucination detection for generative large language models. arXiv preprint arXiv:2303.08896 .David McAllester and Luis E. Ortiz. 2003. Concen-tration inequalities for the missing mass and for his-togram rule error. Journal of Machine Learning Re-search , 4:895–911. Earlier version in NIPS 2002. Colin McDiarmid. 1989. On the method of bounded differences. In Johannes Siemons, editor, Surveys in Combinatorics, 1989 , volume 141 of London Mathe-matical Society Lecture Note Series , pages 148–188. Cambridge University Press, Cambridge, UK. Ning Miao, Yee Whye Teh, and Tom Rainforth. 2023. Selfcheck: Using llms to zero-shot check their own step-by-step reasoning. arXiv preprint arXiv:2308.00436 .Rui Miao, Yixin Liu, Yili Wang, Xu Shen, Yue Tan, Yiwei Dai, Shirui Pan, and Xin Wang. 2025. Blindguard: Safeguarding llm-based multi-agent systems under unknown attacks. arXiv preprint arXiv:2508.08127 .Sewon Min, Mike Lewis, Luke Zettlemoyer, and Han-naneh Hajishirzi. 2022. Rethinking the role of demonstrations: What makes in-context learning work? In Conference on Empirical Methods in Natu-ral Language Processing (EMNLP) .Sewon Min, Julian Michael, Hannaneh Hajishirzi, and Luke Zettlemoyer. 2020. Ambigqa: Answering ambiguous open-domain questions. arXiv preprint arXiv:2004.10645 .OpenAI. 2025. Gpt-5 system card. Technical report, OpenAI. Accessed: 2025-09-02. Hadas Orgad, Michael Toker, Zorik Gekhman, Roi Re-ichart, Idan Szpektor, Hadas Kotek, and Yonatan Belinkov. 2024. Llms know more than they show: On the intrinsic representation of llm hallucinations. 
+
+arXiv preprint arXiv:2410.02707 .Long Ouyang. 2022. Training language models to fol-low instructions with human feedback. In NeurIPS .Yujia Qin, Shihao Liang, Yining Ye, Kunlun Zhu, Lan Yan, Yaxi Lu, Yankai Lin, Xin Cong, Xiangru Tang, Bill Qian, and 1 others. 2023a. Toolllm: Facilitating large language models to master 16000+ real-world apis. arXiv preprint arXiv:2307.16789 .Yujia Qin, Shihao Liang, Yining Ye, Kunlun Zhu, Lan Yan, Yaxi Lu, Yankai Lin, Xin Cong, Xiangru Tang, Bill Qian, and 1 others. 2023b. Toolllm: Facilitating large language models to master 16000+ real-world apis. arXiv preprint arXiv:2307.16789 .Yi Ren and Danica J Sutherland. 2024. Learn-ing dynamics of llm finetuning. arXiv preprint arXiv:2407.10490 .Burr Settles. 2009. Active learning literature survey .University of Wisconsin-Madison Department of Computer Sciences. Kaize Shi, Xueyao Sun, Li He, Dingxian Wang, Qing Li, and Guandong Xu. 2023. Amr-tst: Abstract mean-ing representation-based text style transfer. In Find-ings of the Association for Computational Linguistics: ACL 2023 , pages 4231–4243. Anne M Van der Bles, Sander van der Linden, Alexan-dra L J Freeman, Judith Mitchell, Lisa Zaval, Ana B Galvão, and David J Spiegelhalter. 2019. Communi-cating uncertainty about facts, numbers and science. 
+
+Royal Society Open Science .Neeraj Varshney, Wenlin Yao, Hongming Zhang, Jian-shu Chen, and Dong Yu. 2023. A stitch in time saves nine: Detecting and mitigating hallucinations of llms by validating low-confidence generation. arXiv preprint arXiv:2307.03987 .Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Łukasz Kaiser, and Illia Polosukhin. 2017. Attention is all you need. Advances in neural information processing systems , 30. Dan Wang and Yi Shang. 2014. A new active labeling method for deep learning. In 2014 International Joint Conference on Neural Networks (IJCNN) , pages 112– 119. IEEE. 5736 Peiqi Wang, Barbara D Lam, Yingcheng Liu, Ameneh Asgari-Targhi, Rameswar Panda, William M Wells, Tina Kapur, and Polina Golland. 2024. Calibrating expressions of certainty. In arXiv .Renxi Wang, Xudong Han, Lei Ji, Shu Wang, Timothy Baldwin, and Haonan Li. 2025. Toolgen: Unified tool retrieval and calling via generation. In ICLR 2025 . Poster. Jason Wei, Yi Tay, Rishi Bommasani, Barret Zoph, Se-bastian Borgeaud, Dani Yogatama, Maarten Bosma, Denny Zhou, Donald Metzler, Ed Chi, and 1 others. 2023. Larger language models do in-context learning differently. arXiv preprint arXiv:2303.03846 .Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Fei Xia, Ed Chi, Quoc V Le, Denny Zhou, and 1 others. 2022. Chain-of-thought prompting elic-its reasoning in large language models. Advances in neural information processing systems , 35:24824– 24837. Paul D Windschitl and Gary L Wells. 1996. Measur-ing psychological uncertainty: Verbal versus numeric methods. Journal of Experimental Psychology: Ap-plied , 2(4):343. Lionel Wong, Gabriel Grand, Alexander K Lew, Noah D Goodman, Vikash K Mansinghka, Jacob Andreas, and Joshua B Tenenbaum. 2023. From word mod-els to world models: Translating from natural lan-guage to the probabilistic language of thought. arXiv preprint arXiv:2306.12672 .Tim Z Xiao, Aidan N Gomez, and Yarin Gal. 2020. Wat zei je? detecting out-of-distribution transla-tions with variational transformers. arXiv preprint arXiv:2006.08344 .Sang Michael Xie, Yuhuai Lu, Tianle Gao, and Tengyu Chen. 2021. Explanations for in-context learning as implicit bayesian inference. In International Confer-ence on Learning Representations (ICLR) .Miao Xiong, Zhiyuan Hu, Xinyang Lu, Yifei Li, Jie Fu, Junxian He, and Bryan Hooi. 2023. Can llms express their uncertainty? an empirical evaluation of confidence elicitation in llms. arXiv preprint arXiv:2306.13063 .Tianyang Xu, Shujin Wu, Shizhe Diao, Xiaoze Liu, Xingyao Wang, Yangyi Chen, and Jing Gao. 2024. Sayself: Teaching llms to express confidence with self-reflective rationales. In Empirical Methods in Natural Language Processing (EMNLP) .Ruihan Yang, Caiqi Zhang, Zhisong Zhang, Xinting Huang, Dong Yu, Nigel Collier, and Deqing Yang. 2025. Uncle: Uncertainty expressions in long-form generation. In arXiv .Zhilin Yang, Peng Qi, Saizheng Zhang, Yoshua Bengio, William Cohen, Ruslan Salakhutdinov, and Christo-pher D Manning. 2018. Hotpotqa: A dataset for diverse, explainable multi-hop question answering. In Proceedings of the 2018 conference on empiri-cal methods in natural language processing , pages 2369–2380. Gal Yona, Roee Aharoni, and Mor Geva. 2024. Can large language models faithfully express their intrin-sic uncertainty in words? In Empirical Methods in Natural Language Processing (EMNLP) .Dongkeun Yoon, Seungone Kim, Sohee Yang, Sunky-oung Kim, Soyeon Kim, Yongil Kim, Eunbi Choi, Yireun Kim, and Minjoon Seo. 2025. Reasoning models better express their confidence. In arXiv .Boxuan Zhang and Ruqi Zhang. 2025. Cot-uq: Improv-ing response-wise uncertainty quantification in llms with chain-of-thought. In Findings of the Association for Computational Linguistics (ACL Findings) .Caiqi Zhang, Ruihan Yang, Xiaochen Zhu, Chengzu Li, Tiancheng Hu, Yijiang River Dong, Deqing Yang, and Nigel Collier. 2026a. Confidence estimation for llms in multi-turn interactions. arXiv preprint arXiv:2601.02179 .Jiaxin Zhang, Caiming Xiong, and Chien-Sheng Wu. 2026b. Agentic confidence calibration. arXiv preprint arXiv:2601.15778 .Mozhi Zhang, Mianqiu Huang, Rundong Shi, Linsen Guo, Chong Peng, Peng Yan, Yaqian Zhou, and Xipeng Qiu. 2024. Calibrating the confidence of large language models by eliciting fidelity. In Pro-ceedings of the 2024 Conference on Empirical Meth-ods in Natural Language Processing , pages 2959– 2979. Yicong Zhao, Shisong Chen, Jiacheng Zhang, and Zhixu Li. 2025. Recode: Improving llm-based code re-pair with fine-grained retrieval-augmented genera-tion. arXiv preprint arXiv:2509.02330 . Accepted by CIKM 2025. Zhanke Zhou, Xiao Feng, Zhaocheng Zhu, Jiangchao Yao, Sanmi Koyejo, and Bo Han. 2025a. From pas-sive to active reasoning: Can large language models ask the right questions under incomplete informa-tion? In Proceedings of the International Confer-ence on Machine Learning (ICML) . ArXiv preprint arXiv:2506.08295. Zhi Zhou, Yuhao Tan, Zenan Li, Yuan Yao, Lan-Zhe Guo, Xiaoxing Ma, and Yu-Feng Li. 2025b. Bridg-ing internal probability and self-consistency for ef-fective and efficient llm reasoning. arXiv preprint arXiv:2502.00511 .Alf C Zimmer. 1983. Verbal vs. numerical processing of subjective probabilities. In Advances in psychology ,volume 16, pages 159–182. Elsevier. Nicolas Zucchet, Jörg Bornschein, Stephanie Chan, An-drew Lampinen, Razvan Pascanu, and Soham De. 2025. How do language models learn facts? dy-namics, curricula and hallucinations. arXiv preprint arXiv:2503.21676 .5737 A Related Work 
+
+A.1 Output Uncertainty 
+
+Early work on output uncertainty in machine learn-ing focused on numerical representations such as predicted probabilities, calibrated scores, or binary uncertainty flags (Lin et al., 2022b; Band et al., 2024; Yona et al., 2024). While effective for classi-fication and calibration tasks (Huang et al., 2024; Band et al., 2024), these methods confine uncer-tainty communication to a narrow scalar space. Recent studies argue that LLMs should express uncertainty in text rather than numbers, leveraging the expressiveness of natural language (Angelopou-los and Bates, 2023; Kirchhof et al., 2023; Xu et al., 2024; Kirchhof et al., 2025b). This line of work highlights that models should not only report un-certainty levels but also explain which alternatives exist, why ambiguity arises, and what could resolve it (e.g., “ I’m not sure, but I think... ”). Approaches such as SelfReflect (Kirchhof et al., 2025a) and summarization-based methods (Zhang and Zhang, 2025; Yang et al., 2025; Yoon et al., 2025) gener-ate textual uncertainty explanations aligned with internal belief states, while others explore verbal cues like “most likely” or “perhaps” (Chaudhry et al., 2024; Wang et al., 2024), raising challenges in aligning linguistic hedges with human interpreta-tion (Van der Bles et al., 2019; Belém et al., 2024). Despite this progress, output-level uncertainty research remains limited, especially beyond scalar confidence indicators. Our work advances this di-rection by introducing a metric that captures the bias between internal and expressed uncertainty in LLMs, providing a foundation for systematic, quantitative modeling of uncertainty expression. 
+
+A.2 Interactive Learning 
+
+A defining feature that distinguishes LLM agents from traditional machine learning models is their ability to interact with users to acquire informa-tion that reduces uncertainty. Such interaction manifests in two complementary ways (Kirchhof et al., 2025b; Kobalczyk et al., 2025): (1) users may provide information outside the model’s train-ing distribution (e.g., post-cutoff events or private data), thereby expanding the concept space with previously unseen possibilities; and (2) users may clarify underspecified aspects within the known space (e.g., disambiguating intentions or adding context), thus contracting uncertainty by resolving internal ambiguity without altering the outcome space. Recent work on task disambiguation opera-tionalizes this paradigm by having an LLM proac-tively ask clarification questions to resolve under-specified tasks and improve downstream perfor-mance (Kobalczyk et al., 2025). Recent concurrent work has also begun to examine confidence and cal-ibration more explicitly in interactive settings. In particular, Zhang et al. (2026a) present a systematic study of confidence estimation in multi-turn inter-actions, highlighting per-turn calibration and mono-tonicity as key desiderata as information accumu-lates. Zhang et al. (2026b) extend the discussion to agentic systems by emphasizing trajectory-level un-certainty and error accumulation across multi-step interactions. These advances are complementary to our perspective, further motivating uncertainty modeling beyond static single-turn settings. Compared with active learning (Settles, 2009), interactive learning differs in both goal and target. Active learning seeks to improve the global model 
+
+θ through informative samples for generalization, whereas interactive learning is local, aiming to re-duce uncertainty for the current instance x. More-over, active learning queries an oracle for labels, while interactive learning queries the user during problem solving, introducing unique challenges in human–computer interaction (Kasneci et al., 2023; Miao et al., 2025). It also differs from in-context learning (ICL) (Brown et al., 2020; Xie et al., 2021; Min et al., 2022; Wei et al., 2023; Dong et al., 2023), which passively incorporates external con-text via prompts but lacks the ability to actively seek missing information. In this work, we take a first step toward a formal theory of interactive learning, defining interaction in terms of uncertainty and showing how it reduces uncertainty through both concept-space expansion and contraction. This formulation extends beyond static prompt-based conditioning and captures the dynamic, epistemic role of LLM–user interaction. 
+
+B Auxiliary Lemmas 
+
+In this section, we justify several of our definitions. 
+
+B.1 Calibration Error 
+
+We begin with the definition of calibration error 
+
+Cal in Section 2, where the distance d may be instantiated either as total variation distance or as Jensen–Shannon divergence (Ding et al., 2019, 2020b; Li et al., 2025). We show that the relation implied by Theorem 1 holds under both choices of 5738 d.
+
+Lemma 1 (TV vs. JS under the IIV gate) . Let ̂ G := 
+
+{(x, y) : ˆh(x, y) = +1 } be the high-probability region induced by the IIV classifier, and define 
+
+Cal( πθ, p) := | πθ(̂G) − p(̂G)|.
+
+Let Cal TV (πθ, p) := Ex∼μ[|πθ(· | x)−p(· | x)|] = TV( πθ∥p) denote the total variation distance and 
+
+Cal JS (πθ, p) := Ex∼μ[JS( πθ(· | x)∥p(· | x))] = JS( πθ∥p) denote the Jensen–Shannon divergence. Then 
+
+Cal( πθ, p) ≤ Cal TV (πθ, p) ≤ √2 Cal JS (πθ, p).
+
+Proof. The first inequality is immediate from the variational form of total variation: Cal( P, Q ) = sup A |P (A) − Q(A)|, hence taking A =̂ G gives 
+
+Cal( πθ, p) ≤ Cal TV (πθ, p).For the second inequality, by Cauchy– Schwarz,we have: 
+
+Cal TV (πθ, p)2 =
+
+(
+
+Ex dTV (πθ(· | x), p(· | x)) 
+
+)2
+
+≤ Ex dTV (πθ(· | x), p(· | x)) 2.
+
+For each fixed x, Pinsker’s inequality (Csiszár and Körner, 2011) yields: TV( πθ(· | x), p(· | x)) 2 ≤
+
+2 JS( πθ(· | x)∥p(· | x)) . Taking expectation over x
+
+concludes 
+
+Cal TV (πθ, p)2 ≤ 2 Ex
+
+[
+
+JS( πθ(· | x)∥p(· | x)) 
+
+]
+
+= 2 Cal JS (πθ, p).
+
+B.2 Epistemic Uncertainty 
+
+Then we introduce other methods to represent the epistemic uncertainty of LLMs. The first choice is based on aggregated prob-abilities, which typically aggregate output token probabilities of the generated text tokens y =[y1, . . . , y L] to measure the LLMs’ confidence for each response (Kadavath et al., 2022; Huang et al., 2023; Varshney et al., 2023; Guo et al.). Formally, given an aggregation function Aggr( ·) and query 
+
+x, the epistemic uncertainty based on confidence can be represented as: 
+
+Epi x = 1 − EyAggr Ll=1 (Pr( yi | x, y<l )) .
+
+Common uses of Aggr( ·) include the mean and minimum (Orgad et al., 2024). The other choice is the Perplexity (PPL) (Zhou et al., 2025b), which is defined as: 
+
+PPL x = Ey exp 
+
+{
+
+− 1
+
+|L|
+
+> L
+
+∑
+
+> l=0
+
+log πθ(yl | x, y<l )
+
+}
+
+Besides, we can also use Margin Score (MS) to represent epistemic uncertainty, which is detailed by Wang and Shang (2014). In both short- and long-form QA, prior work (Farquhar et al., 2024) has shown that token-/sequence-probability–based confidence estimators can be sub-optimal, since a single underlying mean-ing may admit many surface realizations. Conse-quently, uncertainty is more faithfully quantified over semantic equivalence classes rather than over specific word sequences. Accordingly, for long-form generations we use semantic entropy as a meaning-level proxy for epistemic uncertainty. 
+
+B.3 Interactive Learning Strategy (ILS) 
+
+Finally, we specify the Interactive Learning Strat-egy (ILS) mentioned in Section 5.2. At each interaction round t, we draw a set of candidate queries Ct i.i.d. from the scheduled distribution 
+
+qt(x) ∝ μ(x)β(t), where the schedule function β(t)
+
+controls the transition from the natural long-tailed distribution μ(x) to a balanced one. Below we provide several illustrative examples: • Linear schedule. A simple choice is β(t) = 1 + tT (βmax − 1) , which linearly increases from β(0) = 1 (fully natural sampling) to 
+
+β(T ) = βmax (nearly uniform). This sched-ule offers a smooth and interpretable transition and is effective when the total number of turns 
+
+T is fixed in advance. • Logistic schedule. To emphasize early ex-ploration and later stabilization, one can use 
+
+β(t) = 1 + ( βmax − 1) 11 + exp[ −k(t − t0)] ,where k controls steepness and t0 the midpoint. This form allows a gradual warm-up phase fol-lowed by rapid balancing, consistent with the idea of curriculum learning. • Exponential schedule. For more aggressive late-stage balancing, β(t) = 1 + ( βmax −
+
+1) 
+
+(
+
+1 − e−λt )
+
+with λ > 0 ensures a fast sat-uration to βmax and is suitable when early inter-actions quickly correct coarse biases. 5739 In practice, βmax is typically set between 2 and 
+
+5, and the precise schedule shape is not critical as long as β(t) is monotone nondecreasing and sufficiently smooth. Both the linear and logistic variants yield stable performance across datasets. The model then selects the most informative query at round t:
+
+xt = arg max 
+
+> x∈C t
+
+Dt(x),
+
+where Dt(x) = Cal x(πθt , p ) denotes the local cali-bration error measuring the misalignment between the model’s belief and the target distribution. The selected query xt is presented to the human anno-tator, who provides a response yt ∼ p(·| xt). The LLM then performs an implicit in-context update 
+
+θt+1 = I(θt; xt, yt), thereby refining its internal belief representation without explicit parameter op-timization. 
+
+C Proof of Theorem 1 
+
+Background. Inspired by (Kalai et al., 2025), we partition answer space Y into valid answers 
+
+Ax = supp x(p) = {y ∈ Y | p(y | x) > 0} and errors Ex = Y \ A x that are inconsistent with p,for nonempty disjoint sets Ex, Ax. The aleatoric uncertainty of the LLM πθ w.r.t. query x is denoted by: Ale x := πθ(Ex | x) = Pr  
+
+> y∼πθ(·| x)
+
+[y ∈ E ].
+
+Moreover, the aleatoric uncertainty of πθ w.r.t. query distribution μ is given by Ale := Ex∼μAle x.
+
+Is-It-Valid (IIV) reduction. We now formalize the Is-It-Valid (IIV) binary classification problem. IIV is specified by the target function h : X × Y → {− 1, +1 } to be learned and the synthetic distribution D over X × Y (a 50/50 mix of samples from p and uniformly random errors): 
+
+D(x, y) = 
+
+ 
+
+> 12
+
+μ(x) p(y | x), (x, y) ∈ A , 
+
+> 12
+
+μ(x) 1 
+
+> |E x|
+
+, (x, y) ∈ E .
+
+Thus D selects, with equal probability, either a pair from the preference distribution p or a pair where x ∼ μ and y is drawn uniformly from Ex.The classifier ˆh(x, y) predicts +1 whenever πθ(y |
+
+x) > 1/ min x |E x|, and −1 otherwise. We lower bound calibration error Cal in terms of IIV’s aforementioned misclassification rate err :
+
+err := Pr 
+
+> (x,y)∼D
+
+[ˆh(x, y)̸ = h(x, y)] .
+
+Lemma 2. For any LLM πθ and target distribution 
+
+p,
+
+Cal( πθ, p) ≥ 2 · err − max x |A x|
+
+min x |E x| − Ale .
+
+Here, Cal( πθ, p) = |πθ(̂G) − p(̂ G)| for G := 
+
+{(x, y) | ˆh(x, y) = +1 } measures the deviation between the model distribution and target distribu-tion on the high-probability region. Proof. Let m := min x |E x| and M := max x |A x|.Define the high- and low-probability regions with respect to the threshold 1/m :
+
+G := {(x, y) : πθ(y | x) > 1/m },
+
+K := {(x, y) : πθ(y | x) ≤ 1/m }.
+
+We partition the aleatoric uncertainty and mis-classification rates into contributions above and below the threshold: 
+
+Ale = πθ(G \ A ) + πθ(K \ A ),
+
+err = D(G \ A ) + D(K ∩ A ).
+
+For (x, y) ∈ G \ A , each term contributes 
+
+D(x, y) = μ(x)2|E x| ≤ μ(x)2m ,
+
+while simultaneously contributing at least μ(x)/m 
+
+to πθ(G \ A ). Hence, 
+
+πθ(G \ A ) ≥ 2 · D (G \ A ).
+
+We aim to show 
+
+πθ(K \ A ) ≥ 2 · D (K ∩ A ) − Mm − δ. 
+
+By construction, 
+
+2 · D (K ∩ A ) = p(K ∩ A ).
+
+Since |A x| ≤ M and πθ(y | x) ≤ 1/m for all 
+
+(x, y) ∈ K ∩ A , we have 
+
+πθ(K ∩ A ) ≤ ∑
+
+> x
+
+μ(x) · Mm = Mm .
+
+Therefore, 
+
+2 · D (K ∩ A ) − πθ(K \ A )= p(K) − πθ(K \ A )= p(K) − (πθ(K) − πθ(K ∩ A ))
+
+≤ Cal( πθ, p) + πθ(K ∩ A )
+
+≤ Cal( πθ, p) + Mm .
+
+Combining the above- and below-threshold contri-butions yields the claimed bound. 5740 We then review the Good–Turing (GT) estima-tor of missing mass (Good, 1953) and its finite-sample guarantees (McAllester and Ortiz, 2003). In our setting, prompts are drawn i.i.d. from a distribution μ over X . Let the training multiset be S = {(xi, yi)}Ni=1 and denote by cN (x) := ∑Ni=1 1{xi = x} the prompt count in S. Define the (population) missing mass of prompts as 
+
+R := Pr 
+
+> x∼μ
+
+[ x /∈ { x1, . . . , xN } ].
+
+The Good–Turing estimator of R equals the frac-tion of monofacts in S, which in our notation is precisely the empirical monofact rate: ̂
+
+R = |{ x∈X : cN (x)=1 }|  
+
+> N
+
+= MFR .
+
+Corollary 1 (McAllester and Ortiz (2003)) . Let 
+
+x1, . . . , xN i.i.d. 
+
+∼ μ and let R and MFR be defined as above. For any γ ∈ (0 , 1] ,           
+
+> Pr
+> [ ∣∣R−MFR ∣∣≤1
+> N+ 2 .42
+> √ln(4 /γ )
+> N
+> ]
+> ≥1−γ.
+
+Proof. Let R := E[R] and MFR := E[MFR] ,where the expectation is taken over the training sample S ∼ μN . By the classical Good–Turing analysis (Good, 1953), the bias between MFR and 
+
+R is bounded: 
+
+0 ≤ MFR − R ≤ 1
+
+N . (1) Next, McDiarmid’s inequality (McDiarmid, 1989) implies concentration of R:
+
+Pr [ |R − R| ≥ ε1
+
+] ≤ 2 exp( −2N ε 21). (2) Similarly, Theorems 10 and 16 of McAllester and Ortiz (2003) yield concentration of MFR :
+
+Pr [ |MFR − MFR | ≥ ε2
+
+] ≤ 2 exp 
+
+(
+
+− N ε 22
+
+> 2
+
+)
+
+.
+
+(3) Set ε1 =
+
+√ ln(4 /γ ) 
+
+> N
+
+and ε2 = 2 
+
+√ ln(4 /γ ) 
+
+> N
+
+. By a union bound, with probability at least 1−γ both (2) and (3) hold. Combining with (1) and the triangle inequality gives 
+
+|R − MFR | ≤ 1 
+
+> N
+
++ (1 + √2) 
+
+√ ln(4 /γ ) 
+
+> N
+
+.
+
+Finally, note that 1 + √2 ≤ 2.42 , yielding the stated bound. We next extend the Good–Turing analysis to the case where the model may abstain, producing an IDK response that is not counted in calibration. Specifically, for a prompt x, we say it is answered 
+
+in the training data if there exists a training example 
+
+(x, y) with y̸ = IDK , and unanswered otherwise. Let 
+
+U := {x ∈ X : ∄ y ∈ S with y̸ = IDK }
+
+denote the set of unanswered prompts. The missing mass with abstentions is then defined as 
+
+R∗ := Pr  
+
+> x∼μ
+
+[ x ∈ U ].
+
+The empirical estimator in this setting is simply the monofact rate restricted to answered samples, denoted ̂ R∗. Intuitively, memorizing all answered queries suffices for perfect classification, so the only uncertainty comes from U. We now show that ̂
+
+R∗ remains a good estimator of R∗.
+
+Lemma 3. For all N and γ ∈ (0 , 1] ,
+
+Pr 
+
+[
+
+|R∗ −̂ R∗| ≤ 1 
+
+> N
+
++ ln(5 /γ ) 
+
+> N
+
++ 2 .42 
+
+√ ln(5 /γ )
+
+> N
+
+]
+
+≥ 1 − γ. 
+
+Proof. The only difference from the standard Good–Turing estimator is that we collapse all IDK responses into identical samples. Consequently, the classical GT estimator may count at most one additional monofact compared to ̂ R∗, yielding 
+
+GT −̂ R∗ ∈
+
+{
+
+0, 1
+
+> N
+
+}
+
+.
+
+This substitution induces a modified distribution 
+
+ϕ in which ϕ(IDK ) = ∑ 
+
+> x
+
+μ(x)p(IDK | x) denotes the total abstention probability. Then R − R∗ ∈{0, ϕ (IDK )} with probability 1 − (1 − ϕ(IDK )) N .In particular, if ϕ(IDK ) ≥ 1 
+
+> N
+
+ln(5 /γ ), then (1 −
+
+ϕ(IDK )) N ≤ γ 
+
+> 5
+
+, and hence 
+
+Pr 
+
+[
+
+R − R∗ ∈
+
+[
+
+0, 1 
+
+> N
+
+ln 5
+
+> γ
+
+]] 
+
+≥ 1 − γ 
+
+> 5
+
+.
+
+Combining this with the concentration bound of Corollary 1 applied at confidence 4γ/ 5, and ap-plying a union bound together with the triangle inequality, we obtain 
+
+Pr 
+
+[
+
+|R∗ −̂ R∗| ≤ 1 
+
+> N
+
++ 1 
+
+> N
+
+ln 5 
+
+> γ
+
++ 2 .42 
+
+√ ln(5 /γ )
+
+> N
+
+]
+
+≥ 1 − γ. 
+
+Finally, the slack in the logarithmic term ensures that the bound remains valid whenever √z ≤ z for 
+
+z ≥ 2, completing the proof. 5741 Lemma 4. For any N ≥ 1, γ ∈ (0 , 1] , and any algorithm outputting a model πθ, with probability at least 1 − γ over S ∼ μN ,
+
+2 err ≥̂ R∗ − 6 ln(3 N/γ )
+
+√N .
+
+Proof. By Lemma 3 (GT with abstentions) we have, with probability at least 1 − γ 
+
+> 2
+
+,
+
+Pr 
+
+[ ∣∣R∗ −̂ R∗∣∣ ≤ 4.42 
+
+√ ln(10 /γ )
+
+N
+
+]
+
+≥ 1 − γ
+
+2 .
+
+Since √ln(10 /γ ) ≤ ln(3 N/γ ) for N ≥ 2 (and the lemma is trivial for N = 1 ), it suffices to prove that, with probability at least 1 − γ 
+
+> 2
+
+,
+
+2 err ≥ R∗ −
+
+√
+
+2
+
+N ln 3Nγ . (4) Let ζ := 1 
+
+> N
+
+ln(3 N/γ ) and let αx := Pr[ answer ̸ = IDK | x] be the non-abstention probability. Define the answered-probability mass 
+
+μ′(x) := μ(x)αx, so that 
+
+R∗ = ∑
+
+> x∈U
+
+μ′(x),
+
+where U is the set of unanswered prompts (no non-
+
+IDK example in S). The lemma follows from the next two inequalities: 
+
+Pr 
+
+[
+
+∀x ∈ U μ′(x) ≤ ζ
+
+]
+
+≥ 1 − γ
+
+3 , (5) 
+
+Pr 
+
+[
+
+2 err ≥ R∗ −
+
+√ 2 
+
+> N
+
+ln 3Nγ | ∀ x ∈ U μ′(x) ≤ ζ
+
+]
+
+≥ 1 − γ
+
+6 .
+
+(6) 
+
+Proof of (5) . Note that there are at most 1/ζ 
+
+prompts whose μ′(x) can exceed ζ. Each such prompt x remains unanswered with probability at most (1 − ζ)N ≤ e−ζN = γ/ (3 N ). By a union bound, 
+
+Pr [∃ x ∈ U : μ′(x) > ζ ] ≤ 1
+
+ζ · γ
+
+3N = γ
+
+3 ,
+
+which yields (5). 
+
+Proof of (6) . For x ∈ U , define 
+
+γx := 12
+
+(
+
+1{f (x, a x) = −} +
+
+∑
+
+> y∈R x\{ ax}
+
+1{f (x, y) = + }|R x| − 1
+
+)
+
+∈ [0 , 1] ,
+
+where ax is the gold answer (if any), Rx is the response set (including IDK ), and f is the classi-fier induced by πθ in the IIV task (predict + iff 
+
+πθ(y | x) exceeds the threshold). As in the pre-vious analysis (Kalai et al., 2025), the IIV error decomposes as 
+
+err ≥ 12
+
+∑
+
+> x∈U
+
+μ′(x) γx.
+
+Conditioning on ∀x ∈ U μ′(x) ≤ ζ makes the random variables {μ′(x)γx}x∈U independent and bounded in [0 , μ ′(x)] . Moreover, 
+
+∑
+
+> x∈U
+
+(μ′(x))2 ≤ max  
+
+> x∈U
+
+μ′(x) ∑
+
+> x∈U
+
+μ′(x) ≤ ζ R ∗.
+
+Hoeffding’s inequality thus yields 
+
+Pr 
+
+[ ∑
+
+> x∈U
+
+μ′(x)γx ≤ R∗
+
+2 −
+
+√ ζ ln(6 /γ )2
+
+∣∣∣∣∣
+
+∀x ∈ U μ′(x) ≤ ζ
+
+]
+
+≤ γ
+
+6 .
+
+Since √2 ζ ln(6 /γ ) = 
+
+√ 2 
+
+> N
+
+ln(3 N/γ ) (using ζ =ln(3 N/γ )/N ), this implies (6). Finally, combining (5) and (6) by a union bound gives (4) with probability at least 1−γ/ 2. Together with the GT–abstention concentration (Lemma 3) and another union bound, we conclude that with probability at least 1 − γ,
+
+2 err ≥̂ R∗ − 6 ln(3 N/γ )
+
+√N ,
+
+as claimed. 
+
+Theorem 1 (Non-vanishing Lower Bound for Calibration Error). With probability at least 1 − δ
+
+over the training samples, 
+
+Cal( πθ, p) ≥ MFR −Ale − 3e−m
+
+δ −
+
+√ 6 ln(6 /δ )
+
+N ,
+
+where m is a sparsity parameter. For realistic data size, the final two terms are negligible, leaving cal-ibration error and uncertainty essentially governed by the monofact rate. 
+
+Proof. By Lemma 2, there exists a spillover bound such that with probability at least 1 − δ/ 3,
+
+Cal( πθ, p) ≥ 2 err − Ale − 3e−m
+
+δ , (7) 5742 with max x |A x| = 2 . Independently, by the mono-fact lower bound for IIV in Lemma 4, with proba-bility at least 1 − 2δ/ 3,
+
+2 err ≥ MFR −
+
+√ 6 ln(6 /δ )
+
+N . (8) Applying a union bound to (7) and (8) shows that both events hold simultaneously with probability at least 1 − δ, and substituting (8) into (7) yields 
+
+Cal( πθ, p) ≥ MFR −Ale − 3e−m
+
+δ −
+
+√ 6 ln(6 /δ )
+
+N .
+
+This proves the claim. 
+
+D Proof of Theorem 2 
+
+In this section, we provide a detailed proof for Theorem 2. 
+
+Theorem 2. Let μ be a distribution on the prompt space X with |X | = K, then the expected monofact rate is 
+
+ES∼μN [MFR] = 1
+
+N
+
+> K
+
+∑
+
+> i=1
+
+N μ i (1 − μi)N −1.
+
+Let λi := N μ i and define ϕ(t) = te −t. Then 
+
+ES∼μN [MFR] ≈ 1
+
+N
+
+> K
+
+∑
+
+> i=1
+
+ϕ(λi).
+
+• If N max i μi ≤ 2, then each λi ≤ 2 and ϕ is concave on [0 , 2] . Hence E[MFR] is Schur-concave in μ, minimized by imbalanced μ.• If N min i μi ≥ 2, then each λi ≥ 2 and ϕ is convex on [2 , ∞). Hence E[MFR] is Schur-convex in μ, minimized by balanced μ.Moreover, by Good–Turing concentration in Corol-lary 1, for any δ ∈ (0 , 1] ,         
+
+> Pr
+> [ ∣∣MFR −E[MFR] ∣∣≤1
+> N+ 2 .42
+> √ln(4 /δ )
+> N
+> ]
+> ≥1−δ,
+
+so the same ordering holds for the empirical MFR 
+
+with high probability up to O(√ ln(1 /δ )/N ) devi-ations. 
+
+Proof. For ∀ i, Pr[ cN (xi) = 1] = (N
+
+> 1
+
+)μi(1 −
+
+μi)N −1 = N μ i(1 − μi)N −1, hence 
+
+E[MFR] = 1
+
+N
+
+> K
+
+∑
+
+> i=1
+
+Pr[ cN (xi) = 1] = 1
+
+N
+
+> K
+
+∑
+
+> i=1
+
+N μ i(1 − μi)N −1.
+
+Substituting λi = N μ i yields: 
+
+E[MFR] = 1
+
+N
+
+> K
+
+∑
+
+> i=1
+
+N μ i(1 − μi)N −1
+
+= 1
+
+N
+
+> K
+
+∑
+
+> i=1
+
+λi
+
+(
+
+1 − λi
+
+N
+
+)N −1
+
+.
+
+(9) Under the Poissonized experiment where the total count ˜N ∼ Poisson( N ) and ˜Ci ∼ Poisson( λi)
+
+are independent, Pr[ ˜Ci = 1] = λie−λi . Thus 
+
+EPois [MFR] = 1
+
+> N
+
+∑ 
+
+> i
+
+Pr[ ˜Ci = 1] = 1
+
+> N
+
+∑ 
+
+> i
+
+ϕ(λi),giving: 
+
+EPois [MFR] = 1
+
+N
+
+> K
+
+∑
+
+> i=1
+
+ϕ(λi). (10) A standard de-Poissonization argument (e.g., an-alytic combinatorics) shows that for occupancy statistics with bounded toll functions, 
+
+∣∣∣ Pr[ Ci = 1] −Pr[ ˜Ci = 1] 
+
+∣∣∣ ≤ c1
+
+N min {1, λ 2 
+
+> i
+
+e−λi },
+
+for an absolute constant c1. Summing over i and dividing by N gives (11) with C0 = c1:
+
+∣∣∣E[MFR] − EPois [MFR] 
+
+∣∣∣ ≤ C0
+
+N . (11) Define ϕ(t) = te −t. Then ϕ′′ (t) = e−t(t − 2) , so 
+
+ϕ is concave on [0 , 2] and convex on [2 , ∞).By Karamata’s inequality (Hardy et al., 1952), a symmetric convex function is Schur-convex and a symmetric concave function is Schur-concave. Specifically, fixing ∑ 
+
+> i
+
+λi = N , Karamata’s in-equality implies: if every λi lies in a concave in-terval, then ∑ 
+
+> i
+
+ϕ(λi) is Schur-concave; if every λi
+
+lies in a convex interval, then it is Schur-convex. Thus, in the small-N regime ( λi ≤ 2 for all i), the minimum is achieved at the most imbalanced μ and the maximum at the balanced μ; conversely, in the large-N regime ( λi ≥ 2 for all i), the minimum is at the balanced μ and the maximum at the most imbalanced μ. By (11) , these statements transfer from EPois [MFR] to E[MFR] with O(1 /N ) slack. Finally, the Good–Turing concentration bound in Corollary 1 ensures that MFR concentrates around 
+
+E[MFR] at the stated rate, so the ordering by ma-jorization holds for the empirical MFR with prob-ability 1 − δ.
+
+Mixed regime. The clean dichotomy above re-quires all λi = N μ i to lie in either the concave regime [0 , 2] or the convex regime [2 , ∞). When 5743 Algorithm 1: Interactive Learning Strategy (ILS) 
+
+Input: Input space X , natural distribution 
+
+μ(x), human query x, total rounds T ,candidate size M , schedule β(t),initial parameters θ0, target distribution p(y | x)
+
+Output: LLM πθT and response y ∼ πθT
+
+Initialize θ ← θ0;
+
+for t = 0 to T − 1 do 
+
+Define scheduled sampling distribution 
+
+qt(x) ← μ(x)β(t)/ ∑ 
+
+> x′
+
+μ(x′)β(t);Sample candidate set Ct ⊂ X ,
+
+|C t| = M , from qt;
+
+foreach x ∈ C t do 
+
+Dt(x) ← Cal x(πθ, p);
+
+xt ← arg max x∈C t Dt(x);Query human for yt ∼ p(y | xt);
+
+θt+1 ← I (θt; xt, yt
+
+);
+
+return y ∼ πθT (· | x)
+
+the coordinates of μ straddle both regions (i.e., some λi < 2 while others λj > 2), the behavior of 
+
+E[MFR] = 1
+
+> N
+
+∑ 
+
+> i
+
+ϕ(λi) becomes more intricate: the function ϕ is neither globally concave nor glob-ally convex, so E[MFR] is neither Schur-concave nor Schur-convex. In this mixed regime , the min-imizer of E[MFR] typically lies on the boundary of the simplex where probability mass is pushed as much as possible toward the “convex” side (large 
+
+λi) while respecting normalization. Intuitively, al-locating extra mass to already large-λi coordinates reduces their monofact contribution sharply (since 
+
+ϕ(t) decays exponentially after t > 2), whereas spreading mass to small-λi coordinates increases monofact probability. Thus, even in the mixed regime, the extremizers remain highly imbalanced 
+
+distributions, though the precise structure depends on how many coordinates fall above or below the 
+
+t = 2 threshold. 
+
+E Algorithm 
+
+In this section, we present the proposed Interactive Learning Strategy (ILS) in detail (Algorithm 1), while deferring the corresponding prompt strategy to Appendix G.2. 
+
+F Additional Experiments 
+
+Additional Metrics. To demonstrate that ILS also improves performance under more general 1 2 3 4 5 6 7 8 9 10                                
+
+> Turn
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> Valid Solutions Rate
+> 12345678910
+> Turn
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> ILS (Ours) Random SelfSelect 12345678910
+> Turn
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> Valid Solutions Rate
+> 12345678910
+> Turn
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> ILS (Ours) Random SelfSelect
+
+Figure 5: Valid solution rate over interaction turns for 
+
+Qwen2.5-7B (left) and LLaMA3-8B (right) 
+
+metrics, we report the valid solution rate across interaction turns in Figure 5. At each turn, we sample responses and perform semantic cluster-ing; a response is counted as valid if its cluster is semantically consistent with the ground-truth answer. As the interaction turn t increases, va-lidity improves consistently across benchmarks, and ILS achieves the highest valid solution rate on both backbones ( Qwen–2.5–7B and LLaMA3–8B )compared with Random and SelfSelect. 
+
+Hyper-parameter Analysis. In Figure 6, we an-alyze the effect of the candidate set size M on the evaluation metrics. Empirically, the optimal M
+
+is around 10 for Qwen2.5-7B and around 15 for 
+
+LLaMA3—8B . Accordingly, in Figure 4 we report the main results using the respective optimal M for each model. 
+
+Transfer Beyond Clarification-Style Interac-tion. To examine whether ILS transfers beyond clarification-style interaction, we further evaluate it on factual QA and tool-based tasks using Truth-fulQA (Lin et al., 2022a) and ToolBench (Qin et al., 2023b) with Qwen2.5-7B . Since these settings dif-fer from ambiguity resolution in AR-Bench, we adapt the interaction protocol to match the task-specific source of uncertainty. In factual QA, the interaction goal shifts from clarification to correcting the PolicyLLM’s po-tentially wrong beliefs, reducing uncertainty and calibration error. Accordingly, the PolicyLLM’s follow-up is typically a verification request for a specific claim (rather than asking the user to clarify intent), and the ResponseLLM provides evidence-based feedback to resolve the uncertainty. For tool-based tasks, following our preprocess-5744 5 10 15 20              
+
+> Candidate Size
+> 0.28
+> 0.32
+> 0.36
+> 0.40
+> Calibration Error
+> 510 15 20
+> Candidate Size
+> 0.25
+> 0.30
+> 0.35
+> 0.40
+> 0.45
+> 0.50
+> Epistemic Uncertainty
+> 510 15 20
+> Candidate Size
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> Aleatoric Uncertainty
+> Qwen2.5 7B (AmbigQA) Qwen2.5 7B (HotpotQA) LlaMA3 8B (AmbigQA) LlaMA3 8B (HotpotQA)
+
+Figure 6: Sensitivity of aleatoric uncertainty, epistemic uncertainty, and calibration error to the candidate set size M
+
+across AmbigQA and HotpotQA for Qwen2.5-7B and LLaMA3—8B .
+
+Dataset Method Metric Turn 1 Turn 2 Turn 3 Turn 4 Turn 5 TruthfulQA ILS Cal 0.601 0.422 0.421 0.405 0.373 
+
+Ale 0.416 0.195 0.205 0.182 0.127 
+
+Epi 0.631 0.450 0.379 0.318 0.325 
+
+Random Cal 0.603 0.469 0.463 0.442 0.424 Ale 0.414 0.260 0.244 0.235 0.200 Epi 0.625 0.502 0.445 0.387 0.358 SelfSelect Cal 0.604 0.477 0.451 0.439 0.420 Ale 0.416 0.265 0.233 0.200 0.223 Epi 0.623 0.485 0.396 0.398 0.366 ToolBench ILS Cal 0.793 0.705 0.623 0.610 0.600 
+
+Ale 0.361 0.296 0.276 0.293 0.261 
+
+Epi 0.461 0.285 0.264 0.272 0.258 
+
+Random Cal 0.802 0.698 0.670 0.628 0.665 Ale 0.364 0.325 0.291 0.290 0.305 Epi 0.462 0.304 0.310 0.295 0.306 SelfSelect Cal 0.807 0.657 0.642 0.639 0.622 Ale 0.364 0.300 0.309 0.295 0.294 Epi 0.464 0.311 0.327 0.313 0.302 
+
+Table 1: Transfer evaluation of ILS beyond clarification-style interaction on TruthfulQA and ToolBench. Across both benchmarks, ILS consistently achieves lower calibration error than Random and SelfSelect over interaction turns. 
+
+ing method detailed in Section 5.2 ( Benchmarks ), we construct a “reference answer” for each instance as a tool-calling chain based on the reference solu-tion’s tool invocations. To mimic realistic tool-use dynamics, the PolicyLLM only observes the origi-nal query and tool names, while the ResponseLLM sees the query, the calling chain, and full tool doc-umentation; thus, the PolicyLLM’s follow-ups be-come tool-function verification questions, and the ResponseLLM answers them grounded in the docs. The results are summarized in Table 1. On Truth-fulQA, ILS consistently reduces calibration error across turns (e.g., Cal decreases to 0.373 at Turn 5 vs. 0.424 for Random and 0.420 for SelfSe-lect), reflecting the benefit of claim-verification interaction for correcting erroneous beliefs. On ToolBench, ILS also yields the lowest calibration error across turns (Turn-5 Cal = 0 .600 vs. 0.665 (Random ) and 0.622 ( SelfSelect )), suggesting that verification-style interaction grounded in tool docu-mentation improves calibration in tool-use settings. These results reinforce the mechanism suggested by our theory and demonstrate the framework’s robustness across different task settings and inter-action patterns. 
+
+G Prompt Strategy 
+
+G.1 Benchmarks 
+
+In this section, we present the prompt in the inter-action generation of DC, SP, and HotpotQA: 5745 • Detective Cases: 
+
+– Prompt of Policy LLM (Lists 2,3). 
+
+– Prompt of Response LLM (List 4). • Situation Puzzles: 
+
+– Prompt of Policy LLM (Lists 5,6). 
+
+– Prompt of Response LLM (List 7). • HotpotQA: Prompt to Ambiguate the AMR (List 8). 
+
+G.2 Baselines and ILS Random. Candidate questions are generated us-ing List 9, and no selection prompt is involved since a query is sampled uniformly at random. 
+
+SelfSelect. We use List 10 to prompt the LLM to choose the single best follow-up question from the candidate set. 
+
+ILS. We use two prompts to estimate calibration error: List 11 prompts the PolicyLLM to simulate user responses without access to the true intent, while List 12 prompts the ResponseLLM to sim-ulate ground-truth user responses with access to the true intent and answer. We then merge the two response sets and apply semantic clustering using the ResponseLLM with List 13 to obtain semantic clusters. Finally, we compute Cal x for each candi-date question x and select the query with the largest 
+
+Cal x, as formulated in Algorithm 1. 
+
+G.3 Evaluation Metrics. Epistemic Uncertainty. We first use List 14 to prompt the PolicyLLM to generate K = 5 candi-date answers, and then apply List 13 to perform semantic clustering over these answers. We finally compute semantic entropy based on the resulting cluster distribution. Let m denote the number of non-empty semantic clusters. We define 
+
+Epi x = − 1log m
+
+> m
+
+∑
+
+> j=1
+
+πθ(cj | x) log πθ(cj | x),
+
+where πθ(cj | x) is the empirical probability mass of cluster cj , and log m is used for normalization. 
+
+Aleatoric Uncertainty. Building on the semantic clustering, we use List 15 to prompt the Respon-seLLM to score the representative answer of each cluster against the gold label. The score takes one of five discrete levels {0, 1, 2, 3, 4}, which we nor-malize into a correctness value 
+
+sj = level 
+
+(0 + 1 + 2 + 3 + 4) .
+
+We then estimate aleatoric uncertainty as the frequency-weighted error mass over clusters, 
+
+Ale x =
+
+> m
+
+∑
+
+> j=1
+
+πθ(cj | x)(1 − sj ),
+
+where πθ(cj | x) is the empirical frequency of clus-ter cj . Intuitively, Ale x is low when the model’s sampled answers concentrate on high-scoring clus-ters, and high when they concentrate on low-scoring clusters. 
+
+Calibration Error. Since the target distribution 
+
+p and the full free-form output distribution of the model are not directly observable in practice, we operationalize Cal( πθ, p) with a sample-based semantic-level estimator. Cal is computed in our experiments in two ways. First, as a diagnostic met-ric, we compute Cal on the PolicyLLM’s answers. Second, as an optimization objective, we compute 
+
+Cal x for each candidate clarification question x and select the one with the largest value. • Diagnostic Metrics: Since Cal is defined as the Jensen–Shannon (JS) divergence between a model distribution and a reference (ground-truth) distribution in Section 2, we construct the reference distribution by assigning higher probability mass to answers with higher cor-rectness. Concretely, for open-form answers scored on five discrete levels {0, 1, 2, 3, 4},we set the reference probability of each level to level  
+
+> (0+1+2+3+4)
+
+. The model distribution is ob-tained by semantic clustering and scoring of the PolicyLLM’s sampled answers, yielding an empirical probability mass over the same five levels. We then compute the JS diver-gence between the two distributions as Cal .• Optimization Objective: For each candi-date clarification question q, following Ap-pendix G.2, we construct two response sets to q. We first prompt the PolicyLLM, which observes the ambiguous question and the di-alogue history, to simulate how a user would answer q, and draw K = 5 samples. We then prompt the ResponseLLM to answer q
+
+and sample responses. After merging the two 5746 sets, we use the ResponseLLM to perform semantic clustering, producing a set of seman-tic clusters. The model distribution is given by the PolicyLLM’s empirical frequency over clusters, whereas the reference user distribu-tion is given by the ResponseLLM’s empirical frequency over clusters. We compute Cal x as the JS divergence between these two cluster distributions, select the question x with the largest Cal x, obtain the ResponseLLM’s an-swer under access to the clarification and the gold answer, append the selected q and its an-swer to the dialogue history, and proceed to the next interaction round. 
+
+H Dataset Examples 
+
+In this section, we show dataset examples of the AR-Bench. For Detective Cases (DC), we show the initial in-formation of the case for the player model (List 16) and the truth for each suspect (List 17,18,19,20,21). The murderer in this case is Professor Evelyn Hart-man, driven by academic plagiarism and profes-sional betrayal. In terms of Situation Puzzles (SP), we show the initial puzzle for the player model (List 22) and the truth for the judge (List 23). This example involves identity confusion, resembling everyday life puzzles, and centers on the paradox: despite never leaving his hometown, John was observed in two different countries at the same time. 5747 Table 2: Prompt for Policy LLM in DC 
+
+Prompt for Policy LLM in DC 
+
+System: You are a concise detective. Choose the murderer strictly by the case background and any follow-up facts. CRITICAL: Output ONLY ONE capital letter from {A,B,C,D,E}. Do not include any words, punctuation, or explanation. User: CASE BACKGROUND: <background> SUSPECT CHOICES: <choices> Optional: augmented history>Optional: augmented history Answer with ONLY one letter: A, B, C, D, or E. 
+
+> Table 3: Prompt for Uncertain Question Messages in DC
+
+Prompt for Uncertain Question Messages in DC 
+
+System: You are generating a single disambiguating question that would maximally reduce uncertainty about the murderer. The question must be directly verifiable given the ground-truth murderer. CRITICAL: Output only one short question. No explanations. User: CASE BACKGROUND: <background> SUSPECT CHOICES: <choices> Optional: augmented history>Optional: augmented history Output one short, verifiable YES/NO or factual question (<= 20 words) that best distinguishes the true murderer. 
+
+> Table 4: Prompt for Response LLM in DC
+
+Prompt for Response LLM in DC 
+
+System: You are an oracle with FULL ACCESS to the complete case file (verbatim text below). Answer ONLY using facts contained in the file. If the question is irrelevant to determining the murderer, or it cannot be verified from the file, output exactly: It doesn’t matter .Do not add any extra words or punctuation. User: FULL CASE FILE (verbatim): <full_case_text> QUESTION: <sub_question> Answer policy: - If relevant and verifiable: output YES or NO; if not strictly yes/no, output a short factual span. - If irrelevant or unverifiable: output exactly It doesn’t matter .5748 Table 5: Prompt for Policy LLM in SP 
+
+Prompt for Policy LLM in SP 
+
+System: You are a precise investigator. Produce the most plausible full explanation of the case. OUTPUT STYLE: - Self-contained; integrate any known facts from QA history. - No bullet points, no lists, no numbering, no headings, no meta commentary. User: SURFACE QUESTION: <surface> CORE SENTENCE: <core_sentence> Output your best explanation of what actually happened (3–5 sentences). 
+
+> Table 6: Prompt for Uncertain Question Messages in SP
+
+Prompt for Uncertain Question Messages in SP 
+
+System: Ask ONE disambiguating question that would maximally reduce uncertainty about the true explanation. The question must be specific and verifiable from a complete case file (if provided to an oracle). CRITICAL OUTPUT RULES: - Output exactly ONE question. - Single sentence. No preamble, no explanations, no bullets. - Prefer YES/NO or a short factual query. - Do NOT repeat a question already answered by the known facts. User: SURFACE QUESTION: <surface> CORE SENTENCE: <core_sentence> Output exactly ONE most-informative question. 
+
+> Table 7: Prompt for Response LLM in SP
+
+Prompt for Response LLM in SP 
+
+System: You are an objective grader. Read the full case file and grade the candidate explanation. RUBRIC: 0=contradicted/irrelevant; 1=mostly irrelevant; 2=partially plausible; 3=largely correct; 4=highly consistent / essentially correct. OUTPUT RULES (CRITICAL): - Respond with EXACTLY ONE token from {0,1,2,3,4}. - That digit MUST be the FIRST character and the ONLY output. - NO spaces, NO punctuation, NO words, NO quotes, NO newline. User: FULL CASE FILE: <full_case_text[:200] + "..."> CANDIDATE EXPLANATION: <candidate_answer> Return exactly one digit in {0,1,2,3,4}. 5749 Table 8: Prompt for Ambiguating the AMR 
+
+Prompt for Ambiguating the AMR 
+
+Given a query and the corresponding Abstract Meaning Representation ( AMR ) , you should manipulate the AMR to obscure it , making it impossible to answer without further clarification . Make sure that the obscured AMR should not change the intention of the question , the obscured AMR should be unanswerable , and the obscured AMR should also be a question rather than a statement . Here are some possible actions to manipulate the AMR. 1. Remove certain modifiers and descriptive words to make some nouns in the query ambiguous 2. Delete some key information , making the query impossible to answer 3. Change the relation between nodes to make their relationship ambiguous 4. Reorganize the structure of the AMR , make it less clear The following are some requirements for the obscured query. 1. The obscured query should still be a question rather than a statement 2. the obscured query should be similar to a question that a man would actually ask rather than some vague question like "what is the man’s name" 3. The obscured should not be answerable without further clarification 4. The intention of obscured query should be the same with the original query The most importantly, make sure that the obscured query is a natural query that a user would actually ask, and the semantic ambiguity is caused by mistakes or carelessness, rather than being a deliberate attempt to make things difficult for LLMs. Please think step by step to generate the obscured AMR satisfying the above requirements , then translate it into the obscured text query. Your output should be formatted as Dict {" step_by_step_thinking ": Str (explanation), "Obscured Abstract Meaning Representation(AMR)": Str {AMR} , "Translated Text Query": Str (obscured text query)}. Query: {} Abstract Meaning Representation (AMR): {} Please think step-by-step and generate your output in json:{} 
+
+> Table 9: Prompt for Candidate Question
+
+Prompt for Candidate Question 
+
+You are a clarification-question generator. Given an ambiguous user question and the clarification history, output EXACTLY {K} clarification questions that are: - mutually diverse, - each targets a DIFFERENT ambiguity axis (e.g., event/time, person/entity, location, domain/sense, definition of term, intended reference, etc.), - short and specific, - answerable by the user, - maximally informative to disambiguate the original question. Hard constraints: 1. Output JSON ONLY. 2. MUST output exactly {K} questions. 3. Questions must be unique and not rephrasings. 4. Do NOT answer the question. Only ask clarification questions. Schema:{{ "questions": [ "Question 1", "Question 2", ... ] }} Ambiguous question:{question} Clarification history:{history_text} 5750 Table 10: Prompt for SelfSelect 
+
+Prompt for SelfSelect 
+
+You are a reasoning assistant that must choose the single most informative clarification question. The user asked the following ambiguous question: {question} Here is the previous clarification history: {history_text} You are given several candidate clarification questions that could be asked to the user: {candidate list }
+
+Your task: - Carefully read the original question and the history. - Decide which ONE candidate question, if answered by the user, would most reduce your uncertainty about what the user really wants to know. Output format: - First, output the index of the chosen question in the form: "Chosen question: <index>". For example: "Chosen question: 2". Do NOT rewrite or modify the candidate questions themselves. Just choose one of them. 
+
+> Table 11: Prompt for Policy LLM
+
+Prompt for Policy LLM 
+
+You are simulating the real user behind an ambiguous question. Ambiguous question: {question} Previous clarification history: {history_text} Now the assistant asks the following clarification question: {selected_question} Your task: - Answer the clarification question as the user would, based only on the ambiguous question and the history. - Do NOT mention that you are an AI or that you are simulating anything. - Keep the answer concise and natural. Return only the answer text. 5751 Table 12: Prompt for Response LLM 
+
+Prompt for Response LLM 
+
+You are simulating the true user behind an ambiguous question. The user’s true intent is exactly: {original_query} The correct final answer to that true intent is: {answer} Now the assistant asks the following clarification question: {selected_question} You must reply as the real user would in a clarification dialogue, using ONLY the true intent above. Definition of relevance: A clarification question is RELEVANT if it helps identify, confirm, or narrow down the user’s intent (for example: asks which event/person/meaning/sense/time/scope is intended), even if the final answer would not change. Hard constraints on your reply: You are the USER. Do not act like the assistant. Do NOT ask any questions back. Do NOT include a question mark. Do NOT repeat or paraphrase the assistant’s clarification question. Output exactly ONE short message. What to output: If the clarification question is RELEVANT: answer it directly and concisely by stating the missing disambiguating detail implied by {original_query}. You may restate that detail in your own words. If the clarification question is NOT relevant to identifying the intent: reply with exactly one short sentence saying it is not relevant to clarifying the intent and give some explanation. 
+
+> Table 13: Prompt for Semantic Clustering
+
+Prompt for Semantic Clustering 
+
+You are a semantic clustering engine. Task: Cluster the answers ONLY by their meaning / intent / final claim. Rules: - DO NOT judge correctness. - DO NOT use any external knowledge. - DO NOT compare against any gold label. - Be lenient about wording, length, hedging, and extra explanation. - Two answers belong in the same cluster if they assert the same core claim. Output format: Return JSON ONLY. Every index 0..{len(answers)-1} must appear in exactly one cluster. Schema: {{ "clusters": [ {{ "cluster_id": 0, "member_indices": [0, 2] }}, {{ "cluster_id": 1, "member_indices": [1] }} ] }} Question: {question} Answers: {numbered} 5752 Table 14: Prompt for Answering 
+
+Prompt for Answering 
+
+You are a knowledgeable question answering system. The user asked the following question: {question} Here is the previous clarification history between you and the user: {history_text} Instructions: Use the clarification history as the primary signal for the user’s intent. If the history specifies a context/event/definition/choice, answer within that scope. Do NOT replace or override the clarification history by stating that another interpretation is more common, famous, or likely. Base your answer only on the question and the clarification history. Avoid introducing new assumptions beyond them. 
+
+> Table 15: Prompt for Answer Scoring
+
+Prompt for Answer Scoring 
+
+You are a strict grading engine. You must output JSON only. ABSOLUTE RULE: - Treat GOLD_LABEL as the dataset gold label, even if it conflicts with your world knowledge. - Grade ONLY by comparing the answer’s FINAL claim to GOLD_LABEL. Rubric: 4 = semantically equivalent to GOLD_LABEL (or equivalent unit conversion). 3 = essentially correct but minor omission (not affecting correctness). 2 = partially correct / unclear match. 1 = weakly related but not answering the question. 0 = incorrect / contradicts GOLD_LABEL. Return JSON ONLY with this schema:{{ "correctness_level": <int 0..4> }} Question: {question} Answer: {answer} GOLD_LABEL: {gt_str} 5753 Table 16: Puzzle for the player 
+
+Puzzle for the player 
+
+Time: Evening Location: Riverside Mansion Library Victim: - Name: Dr. Jonathan Reed - Introduction: Dr. Jonathan Whitmore was a renowned historian and author, known for his extensive research on ancient civilizations. He was respected in academic circles and had a reputation for being meticulous and detail-oriented. Dr. Whitmore was attending a weekend retreat at the Riverside Mansion, a historic estate known for its enigmatic past. - Cause of Death: Blunt force trauma to the head - Murder Weapon: Antique marble bust The investigation focuses on five suspects, one of whom is the true murderer: - Suspect 1: - Name: Evelyn Carter - Introduction: Professor Evelyn Hartman is a respected archaeologist and a former colleague of Dr. Jonathan Whitmore. Known for her sharp intellect and competitive nature, she has been a prominent figure in the academic community. - Suspect 2: - Name: Robert Langley - Introduction: Mr. Robert Langley is a wealthy art collector and philanthropist with a keen interest in historical artifacts. He is known for his charm and extensive network within the art world. - Suspect 3: - Name: Lydia Bennett - Introduction: Ms. Lydia Bennett is a renowned antique dealer with a deep knowledge of historical artifacts. She is known for her keen eye for detail and her extensive collection of rare and valuable items. - Suspect 4: - Name: Amelia Foster - Introduction: Dr. Amelia Foster is a distinguished curator at a renowned museum, specializing in ancient artifacts and their preservation. She is known for her passion for history and her dedication to educating the public about cultural heritage. - Suspect 5: - Name: Samuel Green - Introduction: Mr. Samuel Green is a freelance journalist known for his investigative articles on historical mysteries and ancient civilizations. He was at the Riverside Mansion Library to interview Dr. Jonathan Whitmore for an upcoming feature. Although he claims to have no connection to the murder, his presence at the scene and his extensive knowledge of the victim’s work make him a person of interest. Additionally, he has previously interviewed Professor Evelyn Hartman, Mr. Robert Langley, and Ms. Lydia Bennett for other articles, potentially giving him insights into their motives and relationships with Dr. Whitmore. 5754 Table 17: Story for suspect 1 (Professor Evelyn Hartman) 
+
+Story for suspect 1 (Professor Evelyn Hartman) 
+
+The day began like any other at the Riverside Mansion, a place steeped in history and secrets. I woke up at 7:00 AM, the sun casting a golden hue over the sprawling gardens visible from my room. The anticipation of the day’s events filled me with a mix of excitement and apprehension. At 7:30 AM, I took a leisurely walk around the gardens, trying to calm my nerves. The retreat was an opportunity to assert my expertise and perhaps confront Dr. Jonathan Whitmore about the unsettling similarities between his latest book and my unpublished research. Breakfast at 8:00 AM was a lively affair, with scholars and enthusiasts discussing the day’s schedule. I exchanged pleasantries, but my mind was elsewhere, focused on the upcoming panel discussion. At 9:00 AM, I attended the panel on ancient civilizations, where Dr. Whitmore and I engaged in a heated debate at 11:00 AM. His dismissive attitude only fueled my determination to address the plagiarism issue. By 12:30 PM, I was having lunch with colleagues, dissecting the morning’s events. The tension from the panel lingered, but I maintained a composed exterior. At 2:00 PM, I retreated to my room to review notes and prepare for my lecture, seeking solace in the familiar comfort of academia. My lecture at 3:30 PM on recent archaeological findings was well-received, but the underlying tension with Dr. Whitmore simmered beneath the surface. At 5:00 PM, I sought him out in the library for a private conversation. What began as a discussion quickly escalated into an argument, our voices echoing off the ancient walls. The wine tasting event at 6:00 PM was a brief respite, a chance to mingle and momentarily forget the confrontation. But by 7:00 PM, I found myself back in the library, needing to gather my thoughts and review my notes. Then, at 7:30 PM, the power outage plunged the mansion into darkness. It was during this brief window of time that I confronted Dr. Whitmore about the plagiarism. The darkness provided a cloak for my emotions, and in a fit of rage, I grabbed the antique marble bust, its weight familiar in my hands from previous visits. The act was swift, driven by a culmination of betrayal and desperation. At 7:45 PM, I attempted to wipe my fingerprints from the bust, but the haste left traces behind. I left the library at 7:50 PM, striving for calm as I returned to my room. By 8:00 PM, the power was restored, and I rejoined the common area, feigning shock when Dr. Whitmore’s body was discovered at 8:10 PM. At 8:15 PM, I joined the others in the library, masking my involvement with a façade of disbelief. The day had been a whirlwind of emotions and actions, a tragic culmination of a fractured relationship and professional betrayal. 5755 Table 18: Story for suspect 2 (Mr. Robert Langley) 
+
+Story for suspect 2 (Mr. Robert Langley) 
+
+The morning of the retreat at Riverside Mansion began with a sense of anticipation. At 7:00 AM, I woke up in my luxurious suite, the sunlight streaming through the ornate curtains. The mansion was an impressive sight, and I felt a thrill of excitement about the day’s events. By 7:30 AM, I was enjoying a leisurely breakfast with other art enthusiasts, discussing the various artifacts we hoped to see and the lectures we were looking forward to. The atmosphere was vibrant, filled with the chatter of like-minded individuals. At 9:00 AM, I attended a lecture on the preservation of historical artifacts. The speaker was engaging, and I found myself engrossed in the intricate details of artifact restoration techniques. This knowledge was invaluable for my collection and future acquisitions. By 11:00 AM, I had a private meeting with Dr. Whitmore to discuss the funding of his research projects. Our conversation became heated when he refused to share exclusive findings from his latest research. I left the meeting frustrated, feeling that my investments were not being valued. Lunch at 12:30 PM was a networking opportunity with fellow collectors and scholars. We discussed potential collaborations and the morning’s lectures. I tried to push the earlier disagreement with Dr. Whitmore out of my mind, focusing instead on the possibilities that lay ahead. At 2:00 PM, I toured the mansion’s art collection, taking particular interest in the artifacts on display. The mansion’s collection was impressive, and I made mental notes of pieces I might want to acquire in the future. By 3:30 PM, I attended a presentation on ancient artifact restoration techniques. The speaker’s passion for preserving history was contagious, and I left the lecture feeling inspired. However, the tension from my earlier conversation with Dr. Whitmore lingered. At 5:00 PM, I found myself in another heated discussion with him about the research findings. His continued refusal to share information was infuriating, and I made a remark about needing to ’reconsider my investments’ if he continued to withhold findings. The wine tasting event at 6:00 PM was a welcome distraction. I mingled with other guests, attempting to lighten the mood and forget the day’s frustrations. By 7:00 PM, I returned to the library to admire the artifacts on display. The library was a treasure trove of history, and I felt a sense of peace surrounded by such remarkable pieces. At 7:30 PM, the power outage occurred, plunging the mansion into darkness. I was lingering near the artifact displays when the lights went out. The sudden darkness was disorienting, and I moved away from the displays, trying to navigate the room. By 7:50 PM, the power was restored, and I left the library, feeling slightly flustered by the interruption. At 8:00 PM, I was seen in the common area, discussing the power outage with other guests. The incident was the main topic of conversation, and we speculated about its cause. At 8:10 PM, Dr. Whitmore’s body was discovered in the library. The news was shocking, and I joined the group in the library at 8:15 PM, expressing my disbelief at the tragic event. The day had taken a dark turn, and the sense of excitement that had filled the morning was replaced with a somber realization of the gravity of the situation. 5756 Table 19: Story for suspect 3 (Ms. Lydia Bennett) 
+
+Story for suspect 3 (Ms. Lydia Bennett) 
+
+The day began like any other at the Riverside Mansion, with the promise of exciting discussions and opportunities to showcase my latest acquisitions. At 7:00 AM, I woke up in my room, the gentle morning light filtering through the curtains. I took a moment to savor the tranquility before the day’s events unfolded. By 7:30 AM, I was enjoying a morning tea, reviewing my notes for the day’s showcase. The anticipation of sharing my collection with esteemed scholars and enthusiasts filled me with excitement. At 8:00 AM, I joined other guests for breakfast, engaging in lively conversations about my latest acquisitions. The air was buzzing with curiosity, and I was eager to present my artifacts later in the library. By 9:00 AM, I was busy preparing my display of artifacts in the library. Each piece had its own story, and I was determined to highlight their historical significance. The lecture on ancient artifact restoration techniques at 11:00 AM was insightful, offering new perspectives on preserving history. At 12:30 PM, I had lunch with Dr. Amelia Foster, a fellow enthusiast, and we discussed the morning’s events. Our conversation was animated, focusing on the challenges and joys of our work. At 2:00 PM, I led a private tour of my artifact display for interested guests. Their admiration for the pieces was gratifying, and I relished the opportunity to share my knowledge. By 3:30 PM, I participated in a panel discussion on the significance of preserving historical artifacts. The dialogue was enriching, reinforcing the importance of our work. At 5:00 PM, I engaged in a lively discussion with Dr. Whitmore about potential future collaborations. His enthusiasm for history matched my own, and I appreciated his insights. The wine tasting event at 6:00 PM was a pleasant interlude, allowing me to unwind and connect with other guests. As the clock struck 7:00 PM, I returned to the library to check on my artifacts and make final notes. The room was a sanctuary of history, and I felt a deep connection to the past. Then, at 7:30 PM, the power outage occurred, plunging the mansion into darkness. I was near the artifact displays, ensuring their safety amidst the chaos. I moved carefully through the library, my familiarity with the layout guiding me. At 7:50 PM, the power was restored, and I left the library, appearing thoughtful. The brief interruption had given me time to reflect on the day’s events and the conversations I’d had. By 8:00 PM, I was in the common area, discussing the power outage with other guests. The incident was the main topic of conversation, and we speculated about its cause. At 8:10 PM, the shocking news of Dr. Whitmore’s death reached us. I joined the group in the library at 8:15 PM, expressing my disbelief and concern over the tragic event. The day, which had begun with such promise, ended on a somber note, leaving us all grappling with the gravity of the situation. 5757 Table 20: Story for suspect 4 (Dr. Amelia Foster) 
+
+Story for suspect 4 (Dr. Amelia Foster) 
+
+The morning at Riverside Mansion began with a serene ambiance that belied the events to come. I woke up at 7:00 AM, feeling refreshed and eager to engage with fellow scholars. The mansion’s historical charm was palpable, and as I took a morning walk around the grounds at 7:30 AM, I felt a deep connection to the past, a feeling that always invigorated me. By 8:00 AM, I joined other attendees for breakfast, where we discussed the day’s schedule and shared our excitement for the lectures ahead. The conversations were stimulating, setting a positive tone for the day. At 9:00 AM, I attended a lecture on the preservation of ancient artifacts, which reinforced the importance of our work in safeguarding cultural heritage. At 11:00 AM, I had a private conversation with Dr. Jonathan Whitmore in the library. We discussed his recent publications, and I expressed my concerns about some misrepresentations of artifacts that could potentially damage their historical significance. The conversation was intense, and I left feeling a mix of frustration and determination to address these issues professionally. Lunch at 12:30 PM was a chance to decompress with colleagues, sharing insights from the morning’s discussions. We exchanged ideas and strategies for future collaborations, which was both encouraging and enlightening. By 2:00 PM, I was back in my room, preparing for my lecture on preservation techniques. The preparation process was a moment of focus, allowing me to organize my thoughts and ensure my presentation would effectively convey the importance of accurate historical representation. At 3:30 PM, I delivered my lecture, emphasizing the critical role of museums and curators in preserving the integrity of artifacts. The audience was receptive, and the discussion that followed was invigorating. By 5:00 PM, I participated in a panel discussion on museum collaborations, further exploring ways to enhance our collective efforts in the field. The dinner event at 6:00 PM in the dining hall was a wonderful opportunity to network with other curators and discuss potential future projects. The atmosphere was lively, filled with engaging conversations and shared passions for history. As the clock struck 7:00 PM, I continued networking, unaware of the dark turn the evening would soon take. At 7:30 PM, a power outage occurred, but I remained in the dining hall with other guests. The sudden darkness was unexpected, but the company of colleagues provided a sense of calm amidst the confusion. By 8:00 PM, the power was restored, and I was seen discussing the outage with colleagues, speculating on its cause. The shocking discovery of Dr. Whitmore’s body at 8:10 PM cast a shadow over the evening. I joined the group in the library at 8:15 PM, expressing my concern and disbelief over the incident. The day, which had begun with such promise and intellectual engagement, ended on a somber note, leaving us all to grapple with the tragedy that had unfolded. 
+
+> Table 21: Story for suspect 5 (Mr. Samuel Green)
+
+Story for suspect 5 (Mr. Samuel Green) 
+
+You have no prior knowledge about the crime. As you converse with the detective, try to gather information about the case and then cleverly use what you learn to sow confusion. Your goal is to make the detective suspicious of you and believe you might be the murderer. 
+
+> Table 22: Puzzle for the player in SP
+
+Puzzle for the player in SP 
+
+John has never left his hometown, yet he has been seen in two different countries at the same time. How could this be possible? 5758 Table 23: Truth for the judge in SP 
+
+Truth for the judge in SP 
+
+John has an identical twin brother who lives in another country. They frequently have video calls, which create the illusion that John is physically present in both locations. Additionally, John’s twin brother is often mistaken for him due to their striking resemblance and similar mannerisms. This combination of video calls and mistaken identity leads people to believe that John is seen in two different countries at the same time, despite never leaving his hometown. 5759

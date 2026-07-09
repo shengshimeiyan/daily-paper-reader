@@ -1,0 +1,1012 @@
+Title: 2026.acl-long.1492.pdf
+
+URL Source: https://aclanthology.org/2026.acl-long.1492.pdf
+
+Published Time: Thu, 11 Jun 2026 01:28:55 GMT
+
+Number of Pages: 19
+
+Markdown Content:
+Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 32329–32347 July 2-7, 2026 ©2026 Association for Computational Linguistics RLSeek: Evidence-Grounded Reasoning for RAG Hallucination Detection 
+
+Zhaoheng Huang 1, Dacheng Wen 2, Yutao Zhu 1*, Xiaoying Lian 3, Yushi Liang 3, Kai Hao 3
+
+Nan Li 3, Liangjie Zhang 3, Qi Zhang 3, Ji-Rong Wen 1, Zhicheng Dou 1*, and Fangzhao Wu 4*
+
+> 1
+
+Gaoling School of Artificial Intelligence, Renmin University of China 
+
+> 2
+
+School of Computing and Data Science, The University of Hong Kong 
+
+> 3
+
+Microsoft 4Microsoft Research Asia 
+
+{huangzh,ytzhu,dou}@ruc.edu.cn , fangzwu@microsoft.com 
+
+Abstract 
+
+Large language models (LLMs) in retrieval-augmented generation systems can still produce hallucinations, generating content that is un-supported or contradicted by the source texts and undermines reliability. Recent work ad-dressed this problem by training span-level hal-lucination detectors using reinforcement learn-ing (RL) and chain-of-thought (CoT) reasoning. In this work, we show through error analysis that incorrect predictions by existing reasoning-based detectors are strongly associated with CoT processes that lack explicit grounding in source evidence, particularly when verification steps do not quote or verify claims against the retrieved documents. This behaviour contrasts with human verification practices in bench-marks such as RAGTruth, where evidence quo-tation is a prerequisite for determining hallu-cinated spans. Motivated by this observation, we propose an evidence-grounded RL frame-work, namely RLSeek , to explicitly enforce ac-tive evidence seeking during CoT reasoning by requiring quotation of relevant source segments at each verification step. Experiments on the RAGTruth and NewsSum dataset demonstrate consistent improvements in hallucination span detection performance, with limited additional reasoning overhead and improved robustness in out-of-domain settings. 1
+
+1 Introduction 
+
+Over the past years, large language models (LLMs) have demonstrated strong capabilities across a wide range of tasks (DeepSeek-AI, 2025; Jiang et al., 2024; Zhao et al., 2023), yet they still fre-quently produce factually incorrect or outdated content (Huang et al., 2025; Wang et al., 2024; Ji et al., 2023). To mitigate such issues, many applica-tions adopt retrieval-augmented generation (RAG), 
+
+> *
+
+Corresponding authors. 
+
+> 1
+
+The code is released in https://github.com/ WaldenRUC/RLSeek .…The restaurant also provide takeout                                                                       
+
+> op2ons ,and catering services …
+> Source JSON Data LLM -Generated Article
+> Step 1:The ar'cle correctly reflects the takeout
+> op'ons provided in the structured JSON data.
+> Step 2:The catering services men'oned in the
+> ar'cle are consistent with the data.
+> Hence, there is no hallucina'on.
+> Step 1:<quote >'RestaurantsTakeOut ': True </quote>
+> The ar'cle correctly reflects the takeout op'ons
+> provided in the structured JSON data.
+> Step 2:<quote> ’AIributes’: …</quote>
+> The catering services are not men'oned in the
+> aIributes of the structured data.
+> Hence, hallucina'on spans are: [“ catering services ”].
+> Evidence Seeking
+> Incentivization
+> Source RLSeek
+> CoT No grounding
+
+Figure 1: Illustration of evidence seeking-oriented hal-lucination span detection. Without explicit evidence grounding, the model may conclude “no hallucination” without verifying against the source. By enforcing quo-tation of the most relevant source segment at each ver-ification step, our model RLSeek explicitly grounds its reasoning and localizes hallucinated spans. The non-hallucinated span is underlined , and the hallucinated span is in red. 
+
+which supplements LLMs with external grounding documents (Zhu et al., 2025; Li et al., 2024; Ayala and Béchard, 2024). Despite explicit access to sup-porting documents, RAG systems remain prone to 
+
+hallucinations , where generated content may be un-faithful to the source, fabricate details, or produce statements that contradict the source (Niu et al., 2024). This makes hallucination detection critical for ensuring the reliability of RAG systems. Most prior work formulates hallucination de-tection as a binary classification task, predicting whether an LLM-generated output contains hallu-cinations (Huang et al., 2026; Tang et al., 2024; Chern et al., 2023). However, they fall short 
+
+32329 in practical settings where users need to identify which specific parts of an output are unsupported or contradicted to the source (Mishra et al., 2024; Min et al., 2023). This limitation motivates the study of fine-grained span-level hallucination de-tection, as explored in recent benchmarks such as RAGTruth (Niu et al., 2024). The hallucinated span detection task aims to localize the exact spans of generated text that are not grounded in the provided source text, enabling a more fine-grained assess-ment of output reliability. Recent methods for hallucination span detection, such as RL4HS (Su et al., 2025), train detectors to perform chain-of-thought (CoT) reasoning. These approaches typically employ group relative pol-icy optimization (GRPO) (Shao et al., 2024; Liu et al., 2025) and optimize a span-level F1 reward that measures the overlap between predicted and ground-truth spans. To investigate the limitations of such models, we conducted an error analysis by comparing incorrect predictions with accurate ones. Our analysis reveals two critical insights :(1) There is a distinct difference in reasoning be-haviour within the model predictions. Specifically, incorrect predictions (zero span-F1) significantly rely on reasoning that lacks evidence grounding, where the model fails to quote relevant source segments. In contrast, accurate predictions (non-zero span-F1) frequently exhibit explicit evidence grounding through direct quotation. (2) This lack of grounding in models stands in sharp contrast to human verification practices in benchmarks like RAGTruth (Niu et al., 2024). In these settings, an-notators must validate each hallucinated span by explicitly identifying and quoting the most rele-vant evidence from the source. This requirement ensures that judgments are directly traceable to ver-ifiable content. The gap between model behaviours and human standards described in these two points indicates that insufficient evidence grounding is a key factor in detection errors, motivating a closer examination of how evidence is sought and used during reasoning. To address these problems, we propose RLSeek ,an RL framework designed to enforce active evidence-seeking behaviour during CoT reason-ing. As illustrated in Figure 1, the core mechanism involves instructing the model to ground each ver-ification step by actively seeking and quoting the most relevant source segments from the source text. Consequently, the model determines hallucinated spans based strictly on this quoted evidence. To optimize this behaviour, we introduce a composite reward function that integrates standard outcome-based rewards with a novel process-level penalty. This penalty specifically targets reasoning steps that fail to provide quotes or that generate text de-viating from the original source. Technically, we implement this by calculating the lexical overlap between the quoted evidence and the source text, ensuring strict adherence to the provided material. We evaluate the effectiveness of RLSeek on the RAGTruth benchmark and a proprietary dataset named NewsSum, covering diverse scenarios in-cluding question answering, news summariza-tion, and data-to-text generation. Experimental results demonstrate that explicitly encouraging evidence-grounded reasoning consistently outper-forms strong baselines, including state-of-the-art supervised and RL-based methods. Further analy-sis indicates that these gains stem from more disci-plined evidence usage achieved with minimal rea-soning overhead. Our contributions can be summarized as follows: 
+
+• We conduct a systematic analysis of CoT be-haviours in hallucination span detection, revealing that incorrect predictions are strongly associated with the absence of explicit evidence grounding during reasoning. 
+
+• Motivated by these observations, we propose an evidence-grounded RL framework that explicitly encourages active evidence seeking during CoT reasoning for hallucination span detection. 
+
+• Extensive experiments on RAGTruth and NewsSum dataset demonstrate consistent perfor-mance improvements with only limited additional reasoning overhead. 
+
+2 Preliminary Study 
+
+2.1 Problem Formulation 
+
+Given a task instruction I and a grounding source text D as context, an LLM Mθ generates an output text T = Mθ(I, D ) = ( t1, t 2, · · · , t n), where T
+
+consists of n characters. The goal of hallucination span detection is to identify all text segments ˆS in 
+
+T that are not supported by the source D:
+
+ˆS = {sk = [ ik, j k]}Kk=1 , sk ⊂ T. (1) Each hallucinated span sk corresponds to a con-tiguous subsequence of characters (tik , · · · , t jk ) in 
+
+T . Following RAGTruth (Niu et al., 2024), a hallu-cinated span is defined as a text segment that either 32330 contradicts the source text or contains fabricated content that is not substantiated by the source D.2
+
+2.2 Verifiable Span-Level Reward in GRPO 
+
+To evaluate hallucination span detection and incen-tivize accurate span localization, we follow Su et al. (2025) and directly compare the predicted hallu-cination spans ˆS with the ground-truth spans S.When both span sets are empty, indicating a correct prediction of no hallucination, the model receives a reward of 1. Otherwise, the reward is defined as the span-level F1 score between two span sets: 
+
+rspan =
+
+{
+
+1, if ˆS = ∅ and S = ∅,
+
+span-F1 ( ˆS, S ), otherwise .
+
+This reward formulation provides a unified mea-sure for span-level prediction performance in both hallucinated and non-hallucinated cases. Using this span-level reward, we employ GRPO (Shao et al., 2024) to train the hallucination span detector. The optimization objective is defined as: 
+
+LGRPO (θ) = Lclip (θ) − β DKL 
+
+[πθ ∥ πref 
+
+]. (2) The clipped policy gradient objective Lclip (θ) fol-lows the proximal policy optimization formulation: 
+
+Lclip (θ) = Eτ ∼πθ
+
+[
+
+min 
+
+( πθ(τ )
+
+πold (τ ) A(τ ),
+
+clip 
+
+( πθ(τ )
+
+πold (τ ) , 1 − ϵ, 1 + ϵ
+
+)
+
+A(τ )
+
+)] 
+
+,
+
+where the KL-divergence term regularizes the learned policy πθ to remain close to the reference policy πref , τ denotes a trajectory sampled from the current policy πθ, and rθ(τ ) = πθ (τ )  
+
+> πold (τ)
+
+is the probability ratio between the current and previous policies. Following GRPO, the advantage A(τ )
+
+is computed using relative rewards {ri} within a group of sampled trajectories G(τ ):
+
+A(τ ) = r − mean ({ri}i∈G(τ ))
+
+std ({ri}i∈G(τ )) . (3) 
+
+2.3 Analysis of Evidence-Seeking Behaviours 
+
+To examine whether prediction errors are asso-ciated with changes in reasoning behaviour, we analyze evidence-seeking patterns in the model’s   
+
+> 2We follow the settings from RAGTruth and assume that the grounding source Dis provided and fixed, and the design of the retriever and the quality of retrieved documents are considered out of scope.
+
+CoT. In human verification criteria for hallucina-tion detection, annotators are required to explic-itly ground each judgment by quoting the most relevant source evidence (Niu et al., 2024; Song et al., 2024). In contrast, when evidence ground-ing is not explicitly reinforced during RL training, the model may arrive at decisions without verifi-able support. This motivates us to study how evi-dence usage in CoT differs across predictions with varying span-level outcome reward. To this end, we employ an LLM-as-a-judge (Gu et al., 2024) framework to determine whether the verification steps in each CoT explicitly quote relevant evi-dence from the source. The resulting judgments achieve 96% accuracy with human annotations un-der majority voting (details are in Appendix A). We group samples based on span-level prediction outcomes, contrasting worst-case predictions with zero span-F1 against predictions achieving non-zero span-F1, and quantify evidence usage by the proportion of samples whose CoT contains no ex-plicit source quotation. As shown in Figure 2, predictions with zero span-F1 consistently exhibit a higher proportion of CoT without evidence quotation than those with non-zero span-F1. Across all three tasks, the gap in the ratio of non-quoting CoT between the two groups reaches around 20%. Moreover, this gap persists throughout RL optimization, indicating that degraded evidence-seeking behaviour remains a characteristic of worst-case span-level failures. Overall, these results reveal a strong correlation between span-level detection failures and the ab-sence of explicit evidence-seeking behaviour dur-ing CoT reasoning, suggesting that insufficient evi-dence grounding directly undermines the model’s ability to localize hallucinated spans. 
+
+3 Our Method: RLSeek 
+
+3.1 Evidence-Seeking Reasoning 
+
+We propose RLSeek as an evidence-seeking rea-soning framework for hallucination span detection. Our method builds on the CoT framework (Su et al., 2025) by requiring explicit evidence quotation at each verification step. Given a source text and a generated response, the model conducts step-by-step CoT verification, where each step first seeks and quotes the most relevant evidence from the source and then determines the hallucinated spans based on the quoted content. Details of the instruc-tion design are provided in Appendix B. 32331 Figure 2: Ratio of samples whose CoT contains no source quotation, grouped by span-level prediction outcomes (zero span-F1 vs. non-zero span-F1) during RL optimization on three RAGTruth detection tasks. 
+
+Quoting Evidence in CoT (Summarization Task) 
+
+> ## Step 1: <your first reasoning step, briefly state what you are going to check in this step> If this step is used to verify whether some part of the summary contains hallucinations, you MUST follow the instructions below: - First, using only the original document, locate and quote the most relevant, precise, and shortest self-contained evi-dence from the original document for this verification step. Place each evidence verbatim inside: <quote>...</quote>. - Then, explain how the evidence supports your evaluation of this part (supported or hallucinated). If key evidence is missing, explicitly state the missing evidence and why it indicates hallucination. If this part contains hallucination, list all hallucinated text spans.
+
+3.2 Quotation-Faithful Measurement 
+
+While evidence-seeking reasoning encourages quo-tation, it does not guarantee faithful use of source evidence. Since intermediate CoT steps are not ex-plicitly constrained during optimization, the model may paraphrase or summarize source content in-stead of quoting it verbatim, thereby introducing information not present in the source text (Belém et al., 2025). To assess quotation faithfulness, let 
+
+Q = {Q1, · · · , Q |Q|} denote the set of evidence spans enclosed by the <quote> tag in the CoT. We assume the CoT contains L steps and denote by 
+
+Q(l) ⊆ Q the quotation set at step l. We consider two complementary cases when evaluating quota-tion faithfulness. 
+
+Invalid quotation sets. Quotation sets that vi-olate the quotation instruction are considered un-faithful by definition. This includes cases where no evidence is quoted or where quoted spans are empty in any CoT step, indicating that the model bypasses evidence grounding or produces ill-formed quota-tions. Formally, a quotation set is defined as invalid 
+
+if it violates the quotation requirement: 
+
+Iinvalid (Q) = 
+
+{
+
+1, if ∃ | Q(l)| = 0 or ∃ | Qi| = 0 ,
+
+0, otherwise .
+
+Valid quotation sets. Valid quotation sets sat-isfy the instruction format, i.e. , each CoT step contains at least one non-empty quoted evidence span. However, format validity alone does not en-sure faithfulness, as the model may still partially quote the source or introduce content not present in the source text. To quantify quotation faithful-ness, we measure the lexical alignment between each quoted span and the source text using the longest common substring (LCS). Specifically, for each quoted span Qi, we compute the normalized overlap LCS( Qi, D )/|Qi|, where D denotes the source text. A faithful quotation should largely consist of contiguous text copied from the source. Thus, higher overlap indicates stronger grounding, while lower overlap suggests deviations from the quoted evidence. Compared to semantic similarity measures or learned methods, LCS is lightweight, model-free, and directly measures lexical overlap with the source text, making it suitable for assess-ing quotation faithfulness in CoT reasoning. 
+
+3.3 Evidence-Grounded Policy Optimization 
+
+To incorporate quotation faithfulness into policy optimization, we convert the measurement defined above into a penalty term for reinforcement learn-ing. Specifically, we define a quotation faithfulness penalty rpenalty based on the validity of the quota-tion set and its lexical alignment with the source: 
+
+rpenalty =
+
+
+
+0.5, if Iinvalid (Q) = 1 ,
+
+> 1
+> |Q||Q|
+
+∑
+
+> i=1
+
+[1 − LCS( Qi, D )
+
+|Qi| ], otherwise .
+
+For invalid quotation sets, we apply a fixed penalty inspired by prior work (Shang et al., 2025) to dis-courage trajectories that violate the quotation in-struction. For valid quotation sets, the penalty is defined as the average proportion of unmatched 32332 content across quoted spans, penalizing partial quo-tation and paraphrasing via lexical mismatch with the source text. We combine the quotation faithful-ness penalty with the span-level detection reward to form the final training objective. Under GRPO, the resulting reward is used to compute the advantage: 
+
+rfinal = rspan − rpenalty , (4) 
+
+A(τ ) = rfinal − mean ({rfinal ,i }i∈G(τ ))
+
+std ({rfinal ,i }i∈G(τ )) .
+
+By incorporating quotation faithfulness into ad-vantage estimation, GRPO differentiates reasoning with similar span-level outcomes but different evi-dence faithfulness, encouraging the policy to favor evidence-grounded reasoning during optimization. 
+
+4 Experimental Setup 
+
+4.1 Dataset 
+
+We conduct experiments on the RAGTruth bench-mark (Niu et al., 2024), which provides fine-grained span-level hallucination annotations across three representative tasks: (1) Summarization ,where a generated summary T is evaluated against the source document D; (2) Question Answering (QA) , where a generated answer T is verified us-ing the corresponding retrieved passages D; and (3) Data-to-Text , where a generated article T is grounded in structured input data D. Due to the limited availability of publicly accessible datasets with span-level hallucination annotations, we fur-ther include NewsSum , a proprietary news summa-rization dataset. Each sample consists of several source news articles paired with one generated sum-mary, where hallucinated spans in the summary are manually annotated. More dataset statistics are shown in Appendix C. 
+
+4.2 Baselines and Evaluation Metric Baselines (1) Fine-tuned Models . We include supervised fine-tuning (SFT) models trained end-to-end with span-level hallucination annotations, without explicit reasoning. We evaluate Qwen2.5-7B-Instruct ( SFT-7B ) and Qwen2.5-14B-Instruct (SFT-14B ). We also compare with MVA (Ogasa and Arase, 2025), which detects hallucinations us-ing aggregated attention-based features. (2) Rea-soning Models . We evaluate advanced LLMs, in-cluding Qwen3 , GPT-5 , and OpenAI-o3 . We test both CoT prompting (Su et al., 2025) and 
+
+CoT+Seek , which encourages evidence quotation before reasoning (as shown in Prompt 1). (3) RL-based Models . We compare our method against 
+
+RL4HS (Su et al., 2025), which trains hallucination span detectors with GRPO and class-aware policy optimization (CAPO). This is the most closely re-lated baseline to our approach. The implementation details are shown in Appendix D. 
+
+Evaluation Metric. Following prior work (Niu et al., 2024; Song et al., 2024), we evaluate halluci-nation span detection using dataset-level span-F1, and additionally report sample-level binary detec-tion metrics. Details are provided in Appendix E. 
+
+5 Results and Analysis 
+
+5.1 Experimental Results 
+
+Table 1 and Table 2 demonstrate hallucination de-tection performance on the RAGTruth benchmark across three tasks and macro-averaged metrics. Ta-ble 3 reports results on the NewsSum dataset. 
+
+(1) Active evidence quotation improves CoT-based detection. Starting from the CoT-based hallucination detection framework (Su et al., 2025), we instruct the model to actively quote source evi-dence at each reasoning step. Across four reason-ing models (Qwen3-14B, GPT-5-mini, GPT-5, and o3), this active quoting strategy (CoT-Seek) consis-tently improves span-level detection performance on all three RAGTruth tasks. These results show that enforcing explicit evidence grounding is benefi-cial for hallucination detection; however, the gains remain limited, suggesting that prompting alone is insufficient to fully regulate evidence-seeking behaviour during reasoning. 
+
+(2) Evidence-seeking RL yields better precision-recall trade-offs. Building on active quoting, we further apply our evidence-seeking RL framework. Compared with prior RL-based methods, our ap-proach consistently improves span-level F1, achiev-ing gains of up to 2.5% (7B) and 3.1% (14B) over CAPO. At the sample level, we observe correspond-ing gains of 2.4% and 2.0% in binary detection F1 for the 7B and 14B models, respectively, with similar trends on the NewsSum dataset. We also analyze sample-level false rates in Appendix F. No-tably, while CAPO mainly rebalances precision and recall by suppressing non-hallucination predic-tions, our method enforces explicit evidence quo-tation during reasoning for both hallucinated and non-hallucinated cases. As shown in Figure 3, this 32333 Methods Summarization Question Answering Data-to-Text Average P R F1 P R F1 P R F1 P R F1                                                                                                                                                                                                             
+
+> Fine-tuned Models
+> SFT-7B 52.2 38.2 44.1 51.3 51.4 51.3 58.8 51.5 54.8 54.1 47.0 50.1 SFT-14B 57.6 48.7 52.7 53.1 54.8 53.9 61.6 57.8 59.6 57.4 53.8 55.4 MVA-7B 49.6 35.7 41.5 38.5 73.7 50.6 53.5 57.1 55.2 47.2 55.5 49.1
+> Reasoning Models
+> Qwen3-14B-CoT 36.9 34.9 35.8 30.7 30.6 30.6 40.9 30.4 34.8 36.2 32.0 33.7 Qwen3-14B-CoT-Seek 39.8 40.8 40.3 32.8 40.3 36.2 35.2 41.3 38.0 35.9 40.8 38.2 GPT5-mini-CoT 33.0 65.5 43.9 37.9 62.7 47.2 29.8 74.7 42.5 33.6 67.6 44.5 GPT5-mini-CoT-Seek 32.7 67.4 44.0 37.6 64.5 47.5 32.4 75.9 45.4 34.2 69.3 45.6 GPT5-CoT 24.9 68.4 36.5 32.1 71.8 44.4 33.2 73.5 45.7 30.0 71.2 42.2 GPT5-CoT-Seek 24.9 70.2 36.8 32.4 74.7 45.2 34.3 78.3 47.7 30.5 74.4 43.2 o3-CoT 40.7 60.1 48.5 43.4 58.9 49.9 45.6 70.0 55.2 43.2 63.0 51.2 o3-CoT-Seek 41.5 61.4 49.5 44.7 59.5 51.0 46.0 71.0 55.8 44.1 64.0 52.1
+> RL-based Models
+> RL4HS-GRPO-7B 68.7 40.9 51.2 59.6 52.1 55.6 66.5 48.8 56.3 64.9 47.3 54.4 RL4HS-CAPO-7B 64.4 42.3 50.9 57.1 56.5 56.8 67.1 54.9 60.4 62.9 51.2 56.1
+> RLSeek -7B (ours) 67.4 44.3 53.5 58.0 57.6 57.8 69.6 54.5 61.2 65.0 52.1 57.5 RL4HS-GRPO-14B 66.4 44.5 53.3 67.5 48.1 56.1 65.0 56.4 60.4 66.3 49.7 56.6 RL4HS-CAPO-14B 64.2 52.3 57.6 52.5 57.3 54.8 67.2 58.7 62.6 61.3 56.1 58.3
+> RLSeek -14B (ours) 65.1 53.0 58.4 58.6 59.1 58.8 69.7 57.5 63.0 64.5 56.5 60.1
+
+Table 1: Span-level hallucination detection performance across different tasks on the RAGTruth benchmark. Best F1 scores are in bold , and the second best result is underlined.                     
+
+> Methods # Params Precision Recall F1 GRPO 7B 83.7 76.4 79.9 CAPO 81.7 79.8 80.7
+> RLSeek 83.1 82.2 82.6
+> GRPO 14B 85.0 81.1 83.0 CAPO 82.9 84.0 83.4
+> RLSeek 84.8 85.4 85.1
+
+Table 2: Overall performance of sample-level hallucina-tion detection on the RAGTruth benchmark.                                
+
+> Methods Span-level Sample-level PRF1 PRF1 SFT 31.1 29.3 30.2 79.3 85.0 82.1 GRPO 66.4 44.7 53.4 90.5 78.2 83.9 CAPO 59.3 48.7 53.5 90.4 81.1 85.5
+> RLSeek 61.3 49.9 55.0 89.6 83.0 86.2
+
+Table 3: Hallucination detection performance on the NewsSum dataset, trained on Qwen2.5-7B-Instruct. 
+
+leads to simultaneous and stable improvements in both precision and recall throughout RL training. 
+
+5.2 Ablation Study 
+
+We conduct ablation studies to analyze the contribu-tion of each component in our method. w/o Penalty 
+
+removes the quotation faithfulness penalty from the reward (Equation 4). w/ CAPO applies CAPO by scaling the advantage of non-hallucinated sam-ples with α = 0 .5 (Su et al., 2025). w/o RL uses evidence-quoting CoT prompting without RL. w/o 
+
+RL&Seek further removes evidence-quoting, re-ducing the model to standard CoT prompting. Results in Table 4 show that the quotation faith-fulness penalty plays a crucial role in stabilizing evidence-seeking behaviour and improving perfor-mance. Removing the penalty ( w/o Penalty ) yields only limited gains over the GRPO baseline, indi-cating that evidence-quoting instructions alone are insufficient without explicit incentivization. Exper-imental results in Appendix G reveal that, without the penalty term in the reward, the overlap between quoted content and the source drops to approxi-mately 55%. In contrast, when the penalty is ap-plied, the percentage of valid quotation set and over-lap remains near 100%, indicating that the penalty effectively enforces faithful quotation and discour-ages paraphrased evidence. Applying CAPO ( w/ 
+
+CAPO ) slightly improves recall but degrades pre-cision due to suppressed negative-sample advan-tages, resulting in a lower overall F1 score. This suggests that outcome-level re-weighting alone is insufficient to regulate the reasoning process, high-lighting the importance of explicitly incentivizing evidence seeking and quoting in CoT reasoning. Finally, w/o RL and w/o RL&Seek show that ac-tive quoting improves CoT prompting but provides only marginal benefits, highlighting the necessity of RL optimization for effective evidence-seeking. 32334 0 100 200 300 400 500 600             
+
+> Training Step
+> 10
+> 20
+> 30
+> 40
+> 50
+> 60
+> 70
+> Span-F1
+> 0100 200 300 400 500 600
+> Training Step
+> Span-Precision
+> 0100 200 300 400 500 600
+> Training Step
+> Span-Recall
+> RLSeek-7B
+> CAPO-7B
+
+Figure 3: Performance on the test set across training checkpoints for RLSeek (red) and CAPO (blue) on the RAGTruth benchmark. Solid lines indicate the moving average over the most recent 50 steps. 
+
+Methods Span-level Sample-level P R F1 P R F1 GRPO 64.9 47.3 54.4 83.7 76.4 79.9 CAPO 62.9 51.2 56.1 81.7 79.8 80.7 
+
+RLSeek 65.0 52.1 57.5 83.1 82.2 82.6 
+
+w/o Penalty 63.8 48.4 54.9 83.5 77.0 80.1 
+
+w/ CAPO 60.7 52.4 56.4 82.3 82.4 82.3 
+
+w/o RL 26.0 14.8 18.8 59.7 46.2 52.1 
+
+w/o RL&Seek 26.2 12.3 16.2 56.7 46.1 50.8 
+
+Table 4: Ablation study of different training components on the RAGTruth benchmark. 
+
+5.3 Analysis of Evidence-Quoting Behaviour 
+
+To analyze evidence-quoting behaviour during rea-soning, we examine the relationship between CoT length and the amount of quoted evidence across different RL methods at fixed training steps, as shown in Figure 4. During the early stage of RL training (within the first 100 steps), the model pro-duces relatively long CoT with few effective quota-tions, reflecting unstable adherence to the quoting instruction. As training progresses, the number of quoted spans stabilizes at approximately four to five per sample, and the overall CoT length be-comes comparable to the GRPO and CAPO base-lines. These trends indicate that evidence quoting gradually becomes more concise and structured, introducing only limited additional reasoning over-head during inference. We further analyze the diversity and relevance 
+
+of quoted evidence across reasoning steps. Specifi-cally, we measure lexical diversity within each quo-tation set Qi using Self-BLEU (Zhu et al., 2018) and Distinct-n (Li et al., 2016), and assess quota-tion relevance with an LLM-as-a-judge framework to assess whether each quoted segment is relevant to its corresponding verification claim. Additional implementation details are provided in Appendix H. 0 100 200 400 600     
+
+> Step
+> 200
+> 300
+> 400
+> 500
+> 600
+> 700
+> 800
+> # Tokens
+> GRPO CAPO RLSeek Quoted tokens # Quoted
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> 7
+> # Quoted
+
+Figure 4: Analysis of CoT length and evidence quota-tion statistics across different RL methods. 
+
+Results show that, as training proceeds, the model increasingly distributes quotations across distinct source segments while consistently focusing on the most relevant evidence. This suggests that the pro-posed evidence-seeking objective effectively dis-courages reward-hacking behaviours, such as re-peatedly quoting long or irrelevant source texts, since redundant or uninformative quotations pro-vide limited benefit for span-level outcome rewards and may incur explicit penalties. 
+
+5.4 Out-of-Domain Detection 
+
+We further evaluate the robustness of our method under out-of-domain (OOD) settings. Following a leave-one-out protocol, we train the model on two subsets of RAGTruth and evaluate it on the remaining unseen dataset. As shown in Figure 5, our method consistently outperforms the state-of-the-art baseline CAPO across all OOD settings, demonstrating strong generalization without any exposure to the target domain during training. This suggests that explicitly grounding verification steps in source evidence enables the model to rely on evidence-seeking strategies rather than domain-specific training patterns, leading to more robust hallucination detection on unseen tasks. 32335 Summarization Question-Answering Data-to-Text    
+
+> 20
+> 30
+> 40
+> 50
+> 60
+> Span-F1
+> CAPO-OOD RLSeek-OOD CAPO RLSeek Figure 5: Out-of-domain (OOD) detection performance.
+
+5.5 Case Study 
+
+We present qualitative case studies to examine evidence-quoting behaviour during reasoning, with representative examples provided in Appendix I. We observe that existing methods are often able to identify the content to be verified, but frequently fail to support their decisions with precise source quotations. In contrast, our method enforces a structured verification process consisting of three explicit steps: (1) stating the verification objec-tive, (2) quoting relevant source evidence, and (3) identifying hallucinated spans based on the quoted evidence. The case studies show that our approach produces reasoning traces that are more explicitly source-grounded for both hallucinated samples (in-cluding contradictory and fabricated spans) and non-hallucinated samples, and more closely align with human verification criteria. Notably, when hallucinated spans lack supporting evidence, the model identifies relevant source segments and cor-rectly concludes that the spans are unsupported, rather than relying on ungrounded reasoning. 
+
+6 Related Work 
+
+Hallucination Detection Early work formu-lates hallucination detection as a coarse-grained task, including binary classification (Tang et al., 2024) and natural language inference (NLI) (Scirè et al., 2024). Later studies propose LLM-based verification pipelines that decompose text into atomic claims and verify them with external ev-idence (Iqbal et al., 2024; Min et al., 2023; Chern et al., 2023), but these pipelines are difficult to op-timize end-to-end. Another line of work leverages internal signals of the generator, such as hidden states or attention patterns (Sun et al., 2025; Lu et al., 2025; Chen et al., 2024), yet these methods are model-specific and cannot generalize well to unseen LLMs. More recent research focuses on fine-grained detection that localizes hallucinated spans. RAGTruth (Niu et al., 2024) introduces supervised fine-tuning based on span-level annota-tions, while Multi-View (Ogasa and Arase, 2025) aggregates attention features for token-level de-tection. RL4HS (Su et al., 2025) further applies GRPO (Shao et al., 2024) to directly optimize span-level F1, and proposes class-aware policy optimiza-tion (CAPO) to mitigate precision-recall imbalance. In this paper, we propose a framework based on GRPO that improves hallucination span detection by explicitly enhancing evidence-grounded reason-ing during optimization. 
+
+Reasoning Technique in NLP Applications 
+
+GRPO (Shao et al., 2024) was originally proposed to enhance mathematical reasoning in LLMs. Sub-sequent work has extended GRPO to various NLP tasks, including intent classification (Feng et al., 2025) and safety alignment (Li et al., 2025b; Rong et al., 2025). Across these applications, CoT rea-soning is widely adopted to support multi-step rea-soning and reward optimization. However, exist-ing studies show that imbalanced reward design or task difficulty can induce prediction bias and degrade CoT behaviours (Fan et al., 2025; Laidlaw et al., 2025). Recent work further suggests that in-corporating explicit, step-wise weak process-level supervision on CoT can help stabilize reasoning behaviour and improve task performance (Zheng et al., 2025). In this work, we study GRPO-based reasoning for hallucination span detection, analyze the evolution of CoT behaviours during training, and propose an evidence-seeking enhancement tai-lored to the hallucination span detection task. 
+
+7 Conclusion 
+
+In this work, we study hallucination span detection from a process-level perspective and reveal that de-tection errors are closely associated with degraded evidence-seeking behaviour during CoT reasoning, where verification steps lack explicit grounding in source evidence. Motivated by this observation, we propose an evidence-grounded reinforcement learn-ing framework that explicitly incentivizes active evidence quotation at each reasoning step, align-ing model verification behaviour with human an-notation practices. Experiments on RAGTruth and the NewsSum dataset demonstrate consistent im-provements in both span-level and sample-level detection performance, as well as more faithful and structured reasoning behaviour, while introducing only limited additional reasoning overhead. 32336 Limitations 
+
+Despite the effectiveness of the proposed method, we acknowledge some limitations in our work: First, training span-level hallucination detectors relies on high-quality span-level annotations. Fu-ture work may leverage strong teacher models to automatically synthesize high-quality evidence-seeking reasoning traces and span-level super-vision, where each reasoning step is explicitly grounded in retrieved or quoted evidence. Such synthesized trajectories can be used to supervise student models via SFT, followed by RL for further optimization. Second, as recent studies explore dynamic agents that leverage multiple tools during the CoT process (Li et al., 2025a; Jin et al., 2025), extend-ing hallucination detection to such dynamic agent-based frameworks represents an interesting direc-tion for future research. 
+
+Ethical Statements 
+
+We use the publicly released RAGTruth dataset, which does not contain private personal data. For evaluating our LLM-as-a-judge framework, we em-ploy crowd workers to annotate model outputs with classification labels. The NewsSum dataset is inter-nally curated from publicly available news articles and does not contain private or sensitive personal information. No personal data are released in this work, thereby minimizing the risk of ethical issues. 
+
+Acknowledgment 
+
+This work was supported by China Postdoc-toral Science Foundation under Grant Number 2025T180440. The work was partially done at the Beijing Key Laboratory of Research on Large Models and Intelligent Governance. 
+
+References 
+
+Orlando Ayala and Patrice Béchard. 2024. Reduc-ing hallucination in structured outputs via retrieval-augmented generation. In Proceedings of the 2024 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies: Industry Track, NAACL 2024, Mexico City, Mexico, June 16-21, 2024 , pages 228–238. Association for Computational Linguistics. Catarina G. Belém, Pouya Pezeshkpour, Hayate Iso, Seiji Maekawa, Nikita Bhutani, and Estevam Hr-uschka. 2025. From single to multi: How llms hal-lucinate in multi-document summarization. In Find-ings of the Association for Computational Linguistics: NAACL 2025, Albuquerque, New Mexico, USA, April 29 - May 4, 2025 , pages 5276–5309. Association for Computational Linguistics. Chao Chen, Kai Liu, Ze Chen, Yi Gu, Yue Wu, Mingyuan Tao, Zhihang Fu, and Jieping Ye. 2024. INSIDE: llms’ internal states retain the power of hal-lucination detection. In The Twelfth International Conference on Learning Representations, ICLR 2024, Vienna, Austria, May 7-11, 2024 . OpenReview.net. I-Chun Chern, Steffi Chern, Shiqi Chen, Weizhe Yuan, Kehua Feng, Chunting Zhou, Junxian He, Graham Neubig, and Pengfei Liu. 2023. Factool: Factual-ity detection in generative AI - A tool augmented framework for multi-task and multi-domain scenar-ios. CoRR , abs/2307.13528. DeepSeek-AI. 2025. Deepseek-r1: Incentivizing rea-soning capability in llms via reinforcement learning. 
+
+CoRR , abs/2501.12948. Lishui Fan, Yu Zhang, Mouxiang Chen, and Zhongxin Liu. 2025. Posterior-grpo: Rewarding reasoning pro-cesses in code generation. CoRR , abs/2508.05170. Zihao Feng, Xiaoxue Wang, Ziwei Bai, Donghang Su, Bowen Wu, Qun Yu, and Baoxun Wang. 2025. Im-proving generalization in intent detection: GRPO with reward-based curriculum sampling. CoRR ,abs/2504.13592. Jiawei Gu, Xuhui Jiang, Zhichao Shi, Hexiang Tan, Xuehao Zhai, Chengjin Xu, Wei Li, Yinghan Shen, Shengjie Ma, Honghao Liu, Yuanzhuo Wang, and Jian Guo. 2024. A survey on llm-as-a-judge. CoRR ,abs/2411.15594. Ari Holtzman, Jan Buys, Li Du, Maxwell Forbes, and Yejin Choi. 2020. The curious case of neural text degeneration. In 8th International Conference on Learning Representations, ICLR 2020, Addis Ababa, Ethiopia, April 26-30, 2020 . OpenReview.net. Lei Huang, Weijiang Yu, Weitao Ma, Weihong Zhong, Zhangyin Feng, Haotian Wang, Qianglong Chen, Weihua Peng, Xiaocheng Feng, Bing Qin, and Ting Liu. 2025. A survey on hallucination in large lan-guage models: Principles, taxonomy, challenges, and open questions. ACM Trans. Inf. Syst. , 43(2):42:1– 42:55. Zhaoheng Huang, Yutao Zhu, Jirong Wen, and Zhicheng Dou. 2026. Evaluating the factuality of large lan-guage models using multiple plug-and-play fact sources. In Fortieth AAAI Conference on Artificial Intelligence, Thirty-Eighth Conference on Innova-tive Applications of Artificial Intelligence, Sixteenth Symposium on Educational Advances in Artificial Intelligence, AAAI 2026, Singapore, January 20-27, 2026 , pages 41607–41609. AAAI Press. Hasan Iqbal, Yuxia Wang, Minghan Wang, Georgi Nenkov Georgiev, Jiahui Geng, Iryna Gurevych, and Preslav Nakov. 2024. Open-FactCheck: A unified framework for factuality 32337 evaluation of LLMs. In Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing: System Demonstrations ,pages 219–229, Miami, Florida, USA. Association for Computational Linguistics. Ziwei Ji, Nayeon Lee, Rita Frieske, Tiezheng Yu, Dan Su, Yan Xu, Etsuko Ishii, Yejin Bang, Andrea Madotto, and Pascale Fung. 2023. Survey of halluci-nation in natural language generation. ACM Comput. Surv. , 55(12):248:1–248:38. Juyong Jiang, Fan Wang, Jiasi Shen, Sungju Kim, and Sunghun Kim. 2024. A survey on large language models for code generation. CoRR , abs/2406.00515. Bowen Jin, Hansi Zeng, Zhenrui Yue, Dong Wang, Hamed Zamani, and Jiawei Han. 2025. Search-r1: Training llms to reason and leverage search engines with reinforcement learning. CoRR , abs/2503.09516. Cassidy Laidlaw, Shivam Singhal, and Anca D. Dra-gan. 2025. Correlated proxies: A new definition and improved mitigation for reward hacking. In The Thir-teenth International Conference on Learning Repre-sentations, ICLR 2025, Singapore, April 24-28, 2025 .OpenReview.net. Jiarui Li, Ye Yuan, and Zehua Zhang. 2024. Enhancing LLM factual accuracy with RAG to counter halluci-nations: A case study on domain-specific queries in private knowledge-bases. CoRR , abs/2403.10446. Jiwei Li, Michel Galley, Chris Brockett, Jianfeng Gao, and Bill Dolan. 2016. A diversity-promoting ob-jective function for neural conversation models. In 
+
+Proceedings of the 2016 Conference of the North American Chapter of the Association for Computa-tional Linguistics: Human Language Technologies ,pages 110–119, San Diego, California. Association for Computational Linguistics. Xiaoxi Li, Wenxiang Jiao, Jiarui Jin, Guanting Dong, Jiajie Jin, Yinuo Wang, Hao Wang, Yutao Zhu, Ji-Rong Wen, Yuan Lu, and Zhicheng Dou. 2025a. Deepagent: A general reasoning agent with scalable toolsets. CoRR , abs/2510.21618. Xuying Li, Zhuo Li, Yuji Kosuga, and Victor Bian. 2025b. Optimizing safe and aligned language gen-eration: A multi-objective GRPO approach. CoRR ,abs/2503.21819. Wenhan Liu, Xinyu Ma, Weiwei Sun, Yutao Zhu, Yuchen Li, Dawei Yin, and Zhicheng Dou. 2025. Reasonrank: Empowering passage ranking with strong reasoning ability. CoRR , abs/2508.07050. Pengqian Lu, Jie Lu, Anjin Liu, and Guangquan Zhang. 2025. Spad: Seven-source token probability attribu-tion with syntactic aggregation for detecting halluci-nations in rag. Preprint , arXiv:2512.07515. Sewon Min, Kalpesh Krishna, Xinxi Lyu, Mike Lewis, Wen-tau Yih, Pang Wei Koh, Mohit Iyyer, Luke Zettlemoyer, and Hannaneh Hajishirzi. 2023. Factscore: Fine-grained atomic evaluation of factual precision in long form text generation. In Proceed-ings of the 2023 Conference on Empirical Methods in Natural Language Processing, EMNLP 2023, Sin-gapore, December 6-10, 2023 , pages 12076–12100. Association for Computational Linguistics. Abhika Mishra, Akari Asai, Vidhisha Balachandran, Yizhong Wang, Graham Neubig, Yulia Tsvetkov, and Hannaneh Hajishirzi. 2024. Fine-grained halluci-nation detection and editing for language models. 
+
+CoRR , abs/2401.06855. Cheng Niu, Yuanhao Wu, Juno Zhu, Siliang Xu, Kashun Shum, Randy Zhong, Juntong Song, and Tong Zhang. 2024. Ragtruth: A hallucination corpus for develop-ing trustworthy retrieval-augmented language models. In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers), ACL 2024, Bangkok, Thailand, August 11-16, 2024 , pages 10862–10878. Association for Computational Linguistics. Yuya Ogasa and Yuki Arase. 2025. Hallucinated span detection with multi-view attention features. In Pro-ceedings of the 14th Joint Conference on Lexical and Computational Semantics (*SEM 2025) , pages 381– 394, Suzhou, China. Association for Computational Linguistics. Xuankun Rong, Wenke Huang, Tingfeng Wang, Daiguo Zhou, Bo Du, and Mang Ye. 2025. Safe-grpo: Self-rewarded multimodal safety alignment via rule-governed policy optimization. Preprint ,arXiv:2511.12982. Alessandro Scirè, Karim Ghonim, and Roberto Navigli. 2024. FENICE: Factuality evaluation of summariza-tion based on natural language inference and claim extraction. In Findings of the Association for Compu-tational Linguistics: ACL 2024 , pages 14148–14161, Bangkok, Thailand. Association for Computational Linguistics. Ning Shang, Yifei Liu, Yi Zhu, Li Lyna Zhang, Wei-jiang Xu, Xinyu Guan, Buze Zhang, Bingcheng Dong, Xudong Zhou, Bowen Zhang, Ying Xin, Zim-ing Miao, Scarlett Li, Fan Yang, and Mao Yang. 2025. rstar2-agent: Agentic reasoning technical re-port. CoRR , abs/2508.20722. Zhihong Shao, Peiyi Wang, Qihao Zhu, Runxin Xu, Junxiao Song, Mingchuan Zhang, Y. K. Li, Y. Wu, and Daya Guo. 2024. Deepseekmath: Pushing the limits of mathematical reasoning in open language models. CoRR , abs/2402.03300. Guangming Sheng, Chi Zhang, Zilingfeng Ye, Xibin Wu, Wang Zhang, Ru Zhang, Yanghua Peng, Haibin Lin, and Chuan Wu. 2025. Hybridflow: A flexible and efficient RLHF framework. In Proceedings of the Twentieth European Conference on Computer Systems, EuroSys 2025, Rotterdam, The Netherlands, 30 March 2025 - 3 April 2025 , pages 1279–1297. ACM. 32338 Juntong Song, Xingguang Wang, Juno Zhu, Yuanhao Wu, Xuxin Cheng, Randy Zhong, and Cheng Niu. 2024. RAG-HAT: A hallucination-aware tuning pipeline for LLM in retrieval-augmented generation. In Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing: EMNLP 2024 - Industry Track, Miami, Florida, USA, Novem-ber 12-16, 2024 , pages 1548–1558. Association for Computational Linguistics. Hsuan Su, Ting-Yao Hu, Hema Swetha Koppula, Kun-dan Krishna, Hadi Pouransari, Cheng-Yu Hsieh, Cem Koc, Joseph Yitan Cheng, Oncel Tuzel, and Raviteja Vemulapalli. 2025. Learning to reason for hallucina-tion span detection. CoRR , abs/2510.02173. Zhongxiang Sun, Xiaoxue Zang, Kai Zheng, Jun Xu, Xiao Zhang, Weijie Yu, Yang Song, and Han Li. 2025. Redeep: Detecting hallucination in retrieval-augmented generation via mechanistic interpretabil-ity. In The Thirteenth International Conference on Learning Representations, ICLR 2025, Singapore, April 24-28, 2025 . OpenReview.net. Liyan Tang, Philippe Laban, and Greg Durrett. 2024. Minicheck: Efficient fact-checking of llms on ground-ing documents. In Proceedings of the 2024 Confer-ence on Empirical Methods in Natural Language Processing, EMNLP 2024, Miami, FL, USA, Novem-ber 12-16, 2024 , pages 8818–8847. Association for Computational Linguistics. Yuxia Wang, Minghan Wang, Muhammad Arslan Man-zoor, Fei Liu, Georgi N. Georgiev, Rocktim Jyoti Das, and Preslav Nakov. 2024. Factuality of large lan-guage models: A survey. In Proceedings of the 2024 Conference on Empirical Methods in Natural Lan-guage Processing, EMNLP 2024, Miami, FL, USA, November 12-16, 2024 , pages 19519–19529. Associ-ation for Computational Linguistics. Peter Weiner. 1973. Linear pattern matching algorithms. In 14th Annual Symposium on Switching and Au-tomata Theory (swat 1973) , pages 1–11. Jiageng Wu, Kevin Xie, Bowen Gu, Nils Krüger, Kueiyu Joshua Lin, and Jie Yang. 2025. Why chain of thought fails in clinical text understanding. CoRR ,abs/2509.21933. Wayne Xin Zhao, Kun Zhou, Junyi Li, Tianyi Tang, Xiaolei Wang, Yupeng Hou, Yingqian Min, Beichen Zhang, Junjie Zhang, Zican Dong, Yifan Du, Chen Yang, Yushuo Chen, Zhipeng Chen, Jinhao Jiang, Ruiyang Ren, Yifan Li, Xinyu Tang, Zikang Liu, and 3 others. 2023. A survey of large language models. 
+
+CoRR , abs/2303.18223. Xin Zheng, Jie Lou, Boxi Cao, Xueru Wen, Yuqiu Ji, Hongyu Lin, Yaojie Lu, Xianpei Han, Debing Zhang, and Le Sun. 2025. Critic-CoT: Boosting the reasoning abilities of large language model via chain-of-thought critic. In Findings of the Associa-tion for Computational Linguistics: ACL 2025 , pages 1768–1806, Vienna, Austria. Association for Compu-tational Linguistics. Yaowei Zheng, Richong Zhang, Junhao Zhang, Yanhan Ye, and Zheyan Luo. 2024. LlamaFactory: Unified efficient fine-tuning of 100+ language models. In 
+
+Proceedings of the 62nd Annual Meeting of the As-sociation for Computational Linguistics (Volume 3: System Demonstrations) , pages 400–410, Bangkok, Thailand. Association for Computational Linguistics. Yaoming Zhu, Sidi Lu, Lei Zheng, Jiaxian Guo, Weinan Zhang, Jun Wang, and Yong Yu. 2018. Texygen: A benchmarking platform for text generation models. In The 41st International ACM SIGIR Conference on Research & Development in Information Retrieval, SIGIR 2018, Ann Arbor, MI, USA, July 08-12, 2018 ,pages 1097–1100. ACM. Yutao Zhu, Zhaoheng Huang, Zhicheng Dou, and Ji-Rong Wen. 2025. One token can help! learning scalable and pluggable virtual tokens for retrieval-augmented large language models. In Thirty-Ninth AAAI Conference on Artificial Intelligence, Thirty-Seventh Conference on Innovative Applications of Artificial Intelligence, Fifteenth Symposium on Ed-ucational Advances in Artificial Intelligence, AAAI 2025, Philadelphia, PA, USA, February 25 - March 4, 2025 , pages 26166–26174. AAAI Press. 
+
+A LLM-as-a-Judge 
+
+Manually examining the quality of CoT reasoning is time-consuming and costly. Inspired by prior work on LLM-as-a-judge evaluation (Wu et al., 2025), we adopt an automatic judging framework to assess whether the CoT explicitly seeks and quotes evidence from the reference source during verifica-tion. Specifically, we evaluate whether a model’s CoT exhibits any evidence-quoting behaviour in its verification steps. To construct an evaluation set, we first apply the LLM-as-a-judge to samples collected during GRPO training and select a balanced subset of 100 samples, including 50 samples predicted as contain-ing evidence-quoting behaviour and 50 samples predicted as containing none. We use Qwen2.5-14B-Instruct as the LLM judge, with the prompt shown in Prompt 2. If the output label is “2”, the judge determines that the CoT contains no evidence-quoting behaviour. 32339 Dataset                            
+
+> RAGTruth NewsSum Summarization Question-Answering Data-to-Text Summarization # Pos. # Neg. # Pos. # Neg. # Pos. # Neg. # Pos. # Neg. Train 1,469 2,646 1,556 2,732 3,700 1,347 1,000 1,000 Test 204 696 160 715 579 321 500 500
+
+Table 5: Statistics of the RAGTruth and NewsSum datasets used in this paper. 
+
+LLM-as-a-Judge of evidence quoting      
+
+> You are an evaluator. Task: In a RAG hallucination detection setting, a RESPONSE contains step-by-step reasoning. A verification step is any step where the RESPONSE checks whether a specific claim or span matches the reference source. Your goal is to determine whether the verification steps explicitly use text evidence from the reference source. Evidence usage is defined strictly: A verification step uses evidence only if it contains identi-fiable content from the source, for example: - directly quoting or closely copying text from the source, introduced with phrasing like “the reference source states . . . ”, or - explicitly contrasting a RESPONSE span with a specific source span. Generic or high-level statements without concrete source content—such as: - “the claim matches the reference source”, - “the claim contradicts the reference source”, do NOT count as using evidence. Classification: You must assign EXACTLY one of the following labels: 1→All verification steps explicitly use evidence, or some verification steps use evidence and some do not. 2→No verification steps use evidence. If there are zero verification steps, output 2. Output: <label>the_label_value</label> [RESPONSE] {response_text} [SOURCE] {source_text}
+
+To validate the reliability of this automatic judge, we recruit three educated crowd workers who are proficient in English to independently annotate the same 100 samples under identical instructions, serving as human references. The annotation in-terface is shown in Figure 6, and annotators are compensated at a rate of 20 USD per hour. Anno-tating these 100 samples requires approximately 2 hours in total. We compute Fleiss’ Kappa over the human an-notations and obtain a score of 0.71, indicating substantial inter-annotator agreement and reason-able consistency among human judgments. We then take the majority vote of the human anno-tations as the reference and compare it with the LLM-as-a-judge predictions. Under this setting,              
+
+> Avg. Length Train Test Input T90.38 91.31 Hallucinated spans S13.44 12.83 Source D1,988.41 1,995.06 # Source News 2.59 2.63
+
+Table 6: Statistics of the NewsSum dataset. 
+
+the agreement between the LLM judge (Qwen2.5-14B-Instruct) and the human reference reaches 96%, indicating high consistency on this relevance judgment task. 
+
+B Prompts for CoT with Evidence Quoting 
+
+We adopt the CoT framework from Su et al. (2025) and further instruct the model to actively seek and quote relevant evidence from the source at each reasoning step. Figures 7, 8, 9, and 10 present a comparison between the conventional CoT prompt-ing and our proposed CoT+Seek prompting. The additional instructions introduced by CoT+Seek are highlighted in blue. 
+
+C Dataset 
+
+Following the settings of Su et al. (2025), we filter out samples in RAGTruth that are marked as bad quality and rebalance the dataset by keeping an equal number of hallucinated and non-hallucinated samples. Table 5 reports detailed statistics of the resulting datasets, and statistics of the NewsSum dataset are shown in Table 6. After preprocessing, RAGTruth contains 13,450 training samples and 2,675 test samples. The NewsSum dataset con-sists of 2,000 training samples (1,000 hallucinated and 1,000 non-hallucinated) and 1,000 test samples (500 hallucinated and 500 non-hallucinated). 
+
+D Implementation Details 
+
+Fine-tuned and Reasoning Models. We fine-tune the 7B and 14B models using LLaMA Fac-tory (Zheng et al., 2024) with a learning rate of 
+
+1 × 10 −6. During inference, following Su et al. 32340 Figure 6: The web interface used by human annotators to judge whether the CoT contains evidence-quoting behaviour in any verification step. 
+
+(2025), we adopt top-p = 0 .95 , top-k = 20 , and temperature = 0 .6 for generation (Holtzman et al., 2020). 
+
+RL-based Models. For RL-based training, we fol-low the GRPO configuration of RL4HS (Su et al., 2025). We use a learning rate of 1 × 10 −6 for the 7B model and 5 × 10 −7 for the 14B model. Rollouts are generated with temperature = 1 .0,top-p = 1 .0, and top-k = −1, with a clip range 
+
+ϵ = 0 .2, KL coefficient β = 0 .001 , and group size 
+
+|G(τ )| = 16 . All experiments are implemented us-ing the VeRL framework (Sheng et al., 2025) and trained for three epochs on 8 NVIDIA A100 GPUs with a batch size of 64. In our proposed method, we employ a suffix automaton (SAM) (Weiner, 1973) to efficiently compute the longest common sub-string (LCS) in O(n + m) time, where n and m
+
+denote the lengths of the two strings. 
+
+E Evaluation Metric 
+
+Following prior work (Niu et al., 2024; Su et al., 2025), we evaluate hallucination span detection performance using the dataset-level span-F1 met-ric. Let the ground-truth hallucinated spans be 
+
+S = {sm = [im, j m]}Mm=1 , where each span 
+
+[im, j m] corresponds to the set of character indices from im to jm. The set of hallucinated charac-            
+
+> Metric SFT GRPO CAPO RLSeek FNR (%) 16.0 23.6 20.2 17.8 FPR (%) 15.2 8.1 9.7 9.1
+> Table 7: Comparison of FNR and FPR across different training methods on RAGTruth.
+
+ters in the ground truth is G = M⋃
+
+> m=1
+
+sm. Similarly, the predicted spans are denoted as ˆS = {sn =[in, j n]}Nn=1 , with the corresponding predicted hal-lucinated characters P = N⋃
+
+> n=1
+
+sn. The span-level precision, recall, and F1 score are defined as: F1 = 2 · P · RP + R , P = |P ∩ G| |P| , R = |P ∩ G| |G| .
+
+We additionally report sample-level binary detec-tion metrics. At the sample level, each prediction is treated as a binary decision, where a sample is classified as hallucinated if P̸ = ∅ and as non-hallucinated otherwise. The ground-truth label is defined in the same way based on whether G̸ = ∅.Sample-level precision, recall, and F1 score are then computed based on these binary labels. 32341 Below is the original document: 
+
+{Reference }
+
+Below is a summary of the document: 
+
+{Response }
+
+Your task is to determine whether the summary contains hallucinations. 
+
+First, provide reasoning in a step -by -step format: 
+
+## Step 1: < your first reasoning step, briefly state what you are going to 
+
+check in this step> 
+
+If this step is used to verify whether some part of the summary contains 
+
+hallucinations, you MUST follow the instructions below: 
+
+- First, using only the original document, locate and quote the most 
+
+relevant, precise, and shortest self -contained evidence from the original 
+
+document for this verification step. Place each evidence verbatim inside: 
+
+<quote>...</quote>. 
+
+- Then, explain how the evidence supports your evaluation of this part 
+
+(supported or hallucinated). If key evidence is missing, explicitly state 
+
+the missing evidence and why it indicates hallucination. If this part 
+
+contains hallucination, list all hallucinated text spans. 
+
+## Step 2: <your next reasoning step, also describe what you are going 
+
+to check in this step> 
+
+(For later steps, follow the same pattern.) 
+
+...(add as many steps as needed) 
+
+Then, compile the labeled hallucinated spans into a JSON dict , with a 
+
+key hallucination list and its value as a list of hallucinated spans. If 
+
+there are hallucinations, output: 
+
+``` json 
+
+{{"hallucination list": [hallucination span1, hallucination span2, ...]}} 
+
+``` 
+
+Otherwise, use: 
+
+``` json 
+
+{{"hallucination list": []}} 
+
+``` 
+
+Now begin your output, starting with "##". Figure 7: The CoT and CoT-Seek instruction of the summarization task on the RAGTruth benchmark. The “Seek” instruction is marked blue. 
+
+F Comparison of the False Rates 
+
+We further compare two types of sample-level er-ror rates, i.e. , the false negative rate (FNR) and the false positive rate (FPR), across different training strategies. The results are summarized in Table 7. Compared with SFT, GRPO substantially reduces the FPR, but at the cost of a noticeably higher FNR. CAPO partially alleviates this imbalance by trading a moderate increase in FPR for a lower FNR. In contrast, our proposed RLSeek achieves a more fa-vorable trade-off by simultaneously reducing both FNR and FPR compared with CAPO, while main-taining a low FPR close to that of GRPO. This suggests that explicitly enforcing evidence-seeking behavior enables more balanced error control in hallucination span detection. 
+
+G Analysis of Penalty Item 
+
+In this section, we analyze the effect of the penalty item in the RL objective on quotation behaviour. Specifically, we examine how the quoted content evolves when the explicit constraint on quoting is removed. We consider two metrics on the test set: Below is a question: 
+
+{Question }
+
+Below are the related passages: 
+
+{Reference }
+
+Below is an answer: 
+
+{Response }
+
+Your task is to determine whether the answer contains hallucinations. 
+
+First, provide reasoning in a step -by -step format: 
+
+## Step 1: < your first reasoning step, briefly state what you are going to 
+
+check in this step> 
+
+If this step is used to verify whether some part of the answer contains 
+
+hallucinations, you MUST follow the instructions below: 
+
+- First, using only the related passages, locate and quote the most 
+
+relevant, precise, and shortest self -contained evidence from the related 
+
+passages for this verification step. Place each evidence verbatim inside: 
+
+<quote>...</quote>. 
+
+- Then, explain how the evidence supports your evaluation of this part 
+
+(supported or hallucinated). If key evidence is missing, explicitly state 
+
+the missing evidence and why it indicates hallucination. If this part 
+
+contains hallucination, list all hallucinated text spans. 
+
+## Step 2: <your next reasoning step, also describe what you are going 
+
+to check in this step> 
+
+(For later steps, follow the same pattern.) 
+
+...(add as many steps as needed) 
+
+Then, compile the labeled hallucinated spans into a JSON dict , with a 
+
+key hallucination list and its value as a list of hallucinated spans. If 
+
+there are hallucinations, output: 
+
+``` json 
+
+{{"hallucination list": [hallucination span1, hallucination span2, ...]}} 
+
+``` 
+
+Otherwise, use: 
+
+``` json 
+
+{{"hallucination list": []}} 
+
+``` 
+
+Now begin your output, starting with "##". 
+
+Figure 8: The CoT and CoT-Seek instruction of the question-answering task on the RAGTruth benchmark. 
+
+(1) the percentage of invalid quotation sets, and (2) the average LCS overlap between the quoted con-tent and the source. The results are shown in Fig-ure 11. With the penalty item, the overlap between the quoted content and the source rapidly increases and reaches nearly 100% after 50 RL steps, while the percentage of invalid quotation sets remains low. In contrast, without the penalty item, the proportion of valid quotation sets decreases by approximately 4% during training, and the LCS overlap degrades to around 50%–60%. We further evaluate the word-level longest common subsequence between the quoted content and the source. As shown in Fig-ure 12, removing the penalty item leads to a severe degradation of overlap, dropping to approximately 40%. These results indicate that, without an ex-plicit constraint, the model tends to summarize or paraphrase the source instead of faithfully quoting it. Such behaviour weakens the alignment between quoted content and the source, leading to degraded overall performance, as further reflected in Table 4. 32342 Below is structured data in JSON format:             
+
+> {Reference }
+> Below is an overview article written in accordance with the structured
+> data:
+> {Response }
+> Your task is to determine whether the article contains hallucinations.
+> First, provide reasoning in a step -by -step format:
+> ## Step 1: < your first reasoning step, briefly state what you are going to
+> check in this step>
+> If this step is used to verify whether some part of the article contains
+> hallucinations, you MUST follow the instructions below:
+> -First, using only the structured data, locate and quote the most relevant,
+> precise, and shortest self -contained evidence from the structured data
+> for this verification step. Place each evidence verbatim inside:
+> <quote>...</quote>.
+> -Then, explain how the evidence supports your evaluation of this part
+> (supported or hallucinated). If key evidence is missing, explicitly state
+> the missing evidence and why it indicates hallucination. If this part
+> contains hallucination, list all hallucinated text spans.
+> ## Step 2: <your next reasoning step, also describe what you are going
+> to check in this step>
+> (For later steps, follow the same pattern.)
+> ...(add as many steps as needed)
+> Then, compile the labeled hallucinated spans into a JSON dict , with a
+> key hallucination list and its value as a list of hallucinated spans. If
+> there are hallucinations, output:
+> ``` json
+> {{"hallucination list": [hallucination span1, hallucination span2, ...]}}
+> ```
+> Otherwise, use:
+> ``` json
+> {{"hallucination list": []}}
+> ```
+> Now begin your output, starting with "##".
+
+Figure 9: The CoT and CoT-Seek instruction of the data-to-text task on the RAGTruth benchmark. 
+
+H Analysis of Quoting Behaviour 
+
+Beyond analyzing the length of CoT and the fre-quency of quoting, we further investigate the diver-sity of the quoted evidence used during reasoning as well as the relevance between each quoted evi-dence and its corresponding verified claim. Quo-tation diversity and relevance are crucial for di-agnosing potential reward hacking behaviours ,where the model may repeatedly quote the same source segments to obtain shortcut rewards without performing genuine evidence seeking. 
+
+Diversity. To quantify the diversity of the quota-tion set in CoT, we adopt two complementary met-rics. Self-BLEU (Zhu et al., 2018) measures lexical overlap among generated quotations, where lower values indicate less redundancy. Distinct-n (Li et al., 2016) evaluates the proportion of unique 
+
+n-grams in the quoted content, with higher val-ues reflecting greater lexical diversity. Together, a low Self-BLEU score and a high Distinct-n score suggest that the model actively explores diverse evidence rather than repeatedly quoting identical or highly similar source spans. You will be given a claim and the source material from which 
+
+the claim is derived. 
+
+Below is the source material: 
+
+---Begin of Content ---
+
+{Source }
+
+---End of Content ---
+
+Below is the claim: 
+
+---Begin of Content ---
+
+{Claim }
+
+---End of Content ---
+
+### **Output Format** 
+
+First, provide reasoning in a step -by -step format: 
+
+## Step 1: < your first reasoning step, briefly state what you are 
+
+going to check in this step> 
+
+If this step is used to verify whether some part of the claim 
+
+contains hallucinations, you MUST follow the instructions 
+
+below: 
+
+- First, using only the source material, locate and quote the 
+
+most relevant, precise, and shortest self -contained evidence 
+
+from the source material for this verification step. Place the 
+
+evidence verbatim inside: <quote>...</quote>. 
+
+- Then, explain how the evidence supports your evaluation of 
+
+this part (supported or hallucinated). If key evidence is missing, 
+
+explicitly state the missing evidence and why it indicates 
+
+hallucination. If this part contains hallucination, list all 
+
+hallucinated text spans. 
+
+## Step 2: <your next reasoning step, also describe what you 
+
+are going to check in this step> 
+
+(For later steps, follow the same pattern.) 
+
+...(add as many steps as needed) 
+
+<answer>[Output all hallucinated spans list]</answer> 
+
+Figure 10: The CoT and CoT-Seek instruction of the news summarization task on the NewsSum dataset. 
+
+As shown in Figure 13, during RL optimiza-tion, the Self-BLEU score consistently remains low while the Distinct-n score stays high. This trend in-dicates that the model maintains a diverse quotation set throughout training. Importantly, these results suggest that the learned quoting behaviour does not collapse into repetitive patterns, but instead reflects genuine evidence seeking from different relevant source segments, thereby mitigating the risk of reward hacking through shortcut reasoning. 
+
+Relevance. We apply an LLM-as-a-judge frame-work based on Qwen2.5-14B-Instruct to assess whether the quoted evidence is semantically rel-evant to the corresponding verification claim. To validate the reliability of this judgment, we ran-domly sample 100 instances for human annotation. The inter-annotator agreement among three anno-tators reaches 0.63 (Fleiss’ κ), and the LLM judge achieves an accuracy of 92% with respect to the majority vote of human annotations. Figure 14 presents the proportion of quoted evidence judged to be relevant to the corresponding claims at each training checkpoint on the test set. The results show 32343 0 100 200 300 400 500 600  
+
+> Training Steps
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Valid Percentage
+> Valid
+> w/ penal-valid
+> w/o penal-valid
+> Valid
+> w/ penal-valid
+> w/o penal-valid 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Average Overlap
+> Overlap
+> w/ penal-overlap
+> w/o penal-overlap
+
+Figure 11: Effect of the penalty item in the RL objective on quotation validity and source overlap. 0 100 200 300 400 500 600 
+
+> Training Steps
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> 1.0
+> Average Overlap
+> Overlap
+> w/ penal-overlap
+> w/o penal-overlap
+
+Figure 12: Effect of the RL penalty on source overlap measured by longest common subsequence. 
+
+that the relevance of quoted content remains largely stable throughout RL optimization, with approxi-mately 96% of the quoted evidence being relevant to the verified claims. 
+
+I Case Study 
+
+We present three representative cases for each task in the RAGTruth benchmark, comparing our method with the CAPO baseline. The results are illustrated in Figure 15, Figure 16, and Figure 17. In all cases, hallucinated spans are highlighted in red, while quoted evidence is marked with a yellow background. Figure 15 shows a hallucinated sample that is incorrectly predicted as non-hallucinated by CAPO. During the CoT process, CAPO initially identifies potential hallucinated spans in Step #3; however, due to the absence of explicit quoted evidence, the subsequent reasoning degenerates into largely re-peating the input text and ultimately revises the final decision to non-hallucination. This inconsis-tency across reasoning steps indicates that, without grounding intermediate judgments in source evi-dence, the model can lose track of its earlier analy-sis, leading to unreliable predictions. The case also demonstrates that fabricated spans can be reliably identified through explicit source-grounded verifi-0 100 200 300 400 500 600 
+
+> Training Step
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> Self-BLEU
+> Diversity Metrics over Training Steps
+> Self-BLEU2
+> Self-BLEU3
+> Distinct-2
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> 0.9
+> Distinct-2
+
+Figure 13: Analysis of diversity of quoting behaviours, measured by Self-BLEU and Distinct-2. 0 100 200 300 400 500 600 
+
+> Training Step
+> 0.82
+> 0.84
+> 0.86
+> 0.88
+> 0.90
+> 0.92
+> 0.94
+> 0.96
+> Relevance Ratio
+> Relevance Metric Over Training Steps
+> Relevance Ratio
+
+Figure 14: Analysis of relevance of quoting behaviours. 
+
+cation. In Step #2 of RLSeek, the model locates the most relevant source segments and explicitly ver-ifies that the examined claim is neither supported nor refuted by the given passages, thereby correctly identifying it as hallucinated. LLM-as-a-Judge of evidence relevance 
+
+You are an evaluator. Task: You are given a CLAIM from a verification step and a piece of QUOTED EVIDENCE extracted from a source document. Your task is to judge whether the quoted evidence is semantically relevant to the claim. Definition of relevance: The quoted evidence is considered RELEVANT if it directly supports, contradicts, or is explic-itly used to verify the specific claim. The quoted evidence is considered IRRELEVANT if it is unrelated, too generic, or cannot be used to assess the claim. Important constraints: - Judge ONLY relevance, not cor-rectness. - Do NOT judge whether the claim is true or false. - Do NOT infer missing evidence or search for other evidence. - Base your judgment solely on the semantic rela-tionship between the given claim and the quoted evidence. - If the evidence is loosely related but does not clearly support or contradict the claim, label it as IRRELEVANT. Input: CLAIM: {claim} QUOTED EVIDENCE: {quote} Output: (RELEVANT or IRRELEVANT) 
+
+Figure 16 presents a hallucinated sample where both methods identify partial hallucination. How-ever, CAPO fails to detect a critical inconsistency between the source and the generated text, specif-32344 Source 𝑫 :
+
+“passages”: “passage 1:An ad hominem (Latin for to the man or to the person), short for argumentum ad hominem, is an attack on an argument made by attacking the character, 
+
+motive, or other attribute of the person making the argument, rather than attacking the argument directly. passage 2:Abusive ad hominem usually involves attacking the traits of an 
+
+opponent as a means to invalidate their arguments. Equating someone‘s character with the soundness of their argument is a log ica l fallacy. passage 3:Poisoning the Well Fallacy. 
+
+Poisoning the well is an ad hominem attack (see “Ad hominem,” above) on a person’s integrity or intelligence that takes place be fore the merits of a case can be considered. It 
+
+redirects a discussion to the faults of one of the parties ." 
+
+Input Text 𝑻 :
+
+Based on the provided passages, the main difference between ad hominem fallacy and poisoning the well fallacy is the timing o f t he attack. Ad hominem fallacy occurs when an 
+
+attack is made on a person‘s character, motive, or other attribute directly related to their argument, rather than attacking the argument itself. This type of attack can happen at any 
+
+point during a debate or discussion. On the other hand, poisoning the well fallacy involves making an ad hominem attack (i.e., attacking a person’s character or i nte grity) before 
+
+the merits of a case can be considered. In other words, it is an attempt to discredit a person‘s argument by attacking their per sonal integrity or intelligence before the discussion 
+
+has even begun. So, while both fallacies involve attacking a person's character rather than their argument, ad hominem fallacy happens after the argument has been presented, 
+
+while poisoning the well fallacy happens before the argument is even presented. 
+
+CAPO: (Span -F1=0) 
+
+## Step 1: Analyzing the passages for information about the difference between ad hominem fallacy and poisoning the well fall acy . The passages provide information about both 
+
+ad hominem fallacy and poisoning the well fallacy, but do not specify the timing of the attacks. The passages only describe t he nature of the attacks and do not mention anything 
+
+about the timing of the attacks.## Step 2: Comparing the given answer with the information provided in the passages . The answer contains information about the difference 
+
+between ad hominem fallacy and poisoning the well fallacy, but the timing of the attacks is not specified. The answer states tha t ad hominem fallacy occurs when an attack is 
+
+made on a person‘s character, motive, or other attribute directly related to their argument, rather than attacking the argume nt itself. This type of attack can happen at any point 
+
+during a debate or discussion.## Step 3: Identifying hallucinated spans . The hallucinated spans are \“Ad hominem fallacy occurs when an attack is made on a person’s character, 
+
+motive, or other attribute directly related to their argument, rather than attacking the argument itself. This type of attack ca n happen at any point during a debate or discussion. \”
+
+\“On the other hand, poisoning the well fallacy involves making an ad hominem attack (i.e., attacking a person‘s character or in tegrity) before the merits of a case can be 
+
+considered. In other words, it is an attempt to discredit a person’s argument by attacking their personal integrity or intell ige nce before the discussion has even begun. \”## Step 4: 
+
+Compiling the hallucination list . The hallucination list contains \“Ad hominem fallacy occurs when an attack is made on a person‘s character, motive, or other att ribute directly 
+
+related to their argument, rather than attacking the argument itself. This type of attack can happen at any point during a de bat e or discussion. \” \“On the other hand, poisoning the 
+
+well fallacy involves making an ad hominem attack (i.e., attacking a person’s character or integrity) before the merits of a cas e can be considered. In other words, it is an attempt 
+
+to discredit a person‘s argument by attacking their personal integrity or intelligence before the discussion has even begun. \”## Step 5: Formatting the final output . The final output 
+
+should be in the specified JSON format.``` json { \"hallucination list \": [] }``` 
+
+RLSeek : (Span -F1=0.62) 
+
+## Step 1: Verify the statement \"ad hominem fallacy happens after the argument has been presented, while poisoning the well fal lacy happens before the argument is even 
+
+presented. \"- **Evidence from passages:** <quote> argumentum ad hominem, is an attack on an argument made by attacking the character, motive, or other attribute of the 
+
+person making the argument </quote> <quote> Poisoning the well is an ad hominem attack (see “Ad hominem,” above) on a person’s integrity or intelligence that takes place 
+
+before the merits of a case can be considered. </quote> - **Evaluation:** The passages confirm that an ad hominem fallacy is an attack on the character, motive, or other attri bute 
+
+of the person making the argument, rather than attacking the argument directly. The passages also mention that an ad hominem att ack can take place before the merits of a case can 
+
+be considered. - **Answer:** The answer mentions that ad hominem fallacy happens after the argument has been presented, which is not supported by the passages. The passages 
+
+do not specifically mention that ad hominem fallacy happens after the argument has been presented. 
+
+## Step 2: Verify the statement \"This type of attack can happen at any point during a debate or discussion. \"- **Evidence from passages:** <quote> An ad hominem (Latin for 
+
+to the man or to the person), short for argumentum ad hominem, is an attack on an argument made by attacking the character, m oti ve, or other attribute of the person making the 
+
+argument </quote> - **Evaluation:** The passages do not specifically mention that ad hominem fallacy can happen at any point during a d ebate or discussion. This is an 
+
+additional claim not supported or refuted by the given passages. - **Answer:** The answer mentions that ad hominem fallacy can h appen at any point during a debate or 
+
+discussion, which is not supported by the passages.## Final Output``` json {\"hallucination list \": [\"happens after the argument has been presented \", \"can happen at any point 
+
+during a debate or discussion \", \"happens after the argument has been presented \"] }``` Figure 15: Case study #1 of the Proposed method and the baseline CAPO. 
+
+ically the claim about “today’s temperature in Bucharest”, as it does not explicitly ground its comparison in the source evidence. In this case, 
+
+the source text does not contain any informa-tion about Bucharest’s temperature on the spe-cific day referenced by the claim. In contrast, RLSeek follows an evidence-grounded verification process by first identifying and quoting the most relevant source segments, namely the tempera-ture of Bucharest reported for July and August ,using the <quote> tag. Although this quoted evi-dence does not directly correspond to the claimed “today’s temperature”, it provides the closest topic-aligned information available in the source. Based on this evidence, RLSeek correctly infers that the claimed temperature is neither supported nor re-futed by the given passages, and therefore identi-fies the corresponding span as hallucinated. This explicit evidence-seeking and grounding process enables more precise verification and results in a higher span-F1 score. Figure 17 illustrates a non-hallucinated sample. The most ambiguous fact concerns the songwriter information, which is expressed differently in the source as “Songwriters. DYLAN, BOB. Published by.” Without explicit evidence quoting, CAPO in-correctly flags this content as hallucinated in Step #3. In contrast, RLSeek quotes the relevant sen-tence from the source D at the first reasoning step and consistently leverages it in subsequent analysis, correctly determining that the claim is supported. Overall, these case studies demonstrate that ex-plicit evidence quoting stabilizes the reasoning pro-cess by grounding intermediate steps in verifiable source content, thereby improving overall perfor-mance. In addition, we observe that CAPO fre-quently wastes tokens by repeatedly restating the input text across reasoning steps, whereas active quoting leads to more structured and concise CoT reasoning. After reinforcement learning optimiza-tion, the reasoning length of our method becomes comparable to that of the baseline, as shown in Figure 4, without sacrificing reasoning clarity or performance. 32345 Source 𝑫 :
+
+"passages": "passage 1:Today’s and tonight’s Bucharest, Romania weather forecast, weather conditions and Doppler radar from Th e W eather Channel and Weather.com Today’s 
+
+and tonight’s Bucharest, Romania weather forecast, weather conditions and Doppler radar from The Weather Channel and Weather.com Connection restored! Show me the 
+
+weather in... city, zip, or placepassage 2:UK Weather Warnings Map; UK Flood Warnings Map; Current Weather; Highway Conditions; Highway Forecast; Lightning; Current & 
+
+Future Radar; Past & Future Radar (Precipitation) Traffic Cameras; Traffic Flow; US Highway Forecast; Satellite (Cloud Cover) pas sage 3:CLIMATE: AVERAGE MONTHLY 
+
+WEATHER IN Bucharest, Romania. Bucharest has a humid continental climate. Winters can get windy and temperatures often dip be low 0 °Celsius (32 °Fahrenheit), sometimes 
+
+even dropping to minus 20 °C (4 °F). In summer (July and August), the average temperature is around 23 °C (73 °F). Temperatures often reach 35 °C (95 °F) to 40 °C (104 °F) in 
+
+mid -summer ." 
+
+Input Text 𝑻 :
+
+Based on the provided passages, I can answer the following question: Question: What is the current temperature in Bucharest? Passage 1 provides the current weather conditions 
+
+for Bucharest, including the temperature: \"Today's temperature in Bucharest is 22 °C (72 °F), humidity is 82%, wind speed is 6 mph (9 km/h). \"Therefore, the current temperature 
+
+in Bucharest is 22 °C (72 °F). 
+
+CAPO: (Span -F1=0.45) 
+
+## Step 1: Analyzing the passages for information about the current temperature in Bucharest . The passages do not specify the current temperature in Bucharest. The passages 
+
+only provide information about the range of temperatures and do not specify the exact temperature.## Step 2: Comparing the gi ven answer with the information provided in the 
+
+passages . The answer \“Passage 1 provides the current weather conditions for Bucharest, including the temperature: \” \“Today‘s temperature in Bucharest is 22 °C (72 °F), 
+
+humidity is 82%, wind speed is 6 mph (9 km/h). \” is not mentioned in the passages. The passages only provide the range of temper atures and do not specify the exact temperature. 
+
+The humidity and wind speed is not grounded in the passages. ## Step 3: Identifying hallucinated spans . The hallucinated spans are \“humidity is 82%, wind speed is 6 mph (9 
+
+km/h). \”## Step 4: Compiling the hallucination list . The hallucination list contains \“humidity is 82%, wind speed is 6 mph (9 km/h). \”## Step 5: Formatting the final output . The 
+
+final output should be in the specified JSON format.``` json { \"hallucination list \": [\"humidity is 82%, wind speed is 6 mph (9 km/h). \"] }``` 
+
+RLSeek : (Span -F1=0.73) 
+
+## Step 1: Verify the claim that \"Today's temperature in Bucharest is 22 °C (72 °F), humidity is 82%, wind speed is 6 mph (9 km/h). \"- **Evidence from passages:** <quote> 
+
+Today’s and tonight’s Bucharest, Romania weather forecast, weather conditions and Doppler radar from The Weather Channel and Weather.com </quote> <quote> In summer (July 
+
+and August), the average temperature is around 23 °C (73 °F). Temperatures often reach 35 °C (95 °F) to 40 °C (104 °F) in mid -summer. </quote> 
+
+- **Evaluation:** The passages do not mention anything about the current temperature in Bucharest being 22 °C (72 °F) or the humidity being 82% or the wind speed being 6 mph 
+
+(9 km/h). These are not supported or refuted by the given passages. They appear to be hallucinations. 
+
+## Final Output``` json {\"hallucination list \": [\"humidity is 82%, wind speed is 6 mph (9 km/h) \", \"Today's temperature in Bucharest is 22 °C (72 °F) \"] }" Figure 16: Case study #2 of the Proposed method and the baseline CAPO. 
+
+J Use of AI Assistants 
+
+We use ChatGPT to assist with writing clarity and presentation. 3
+
+3https://chatgpt.com/ 32346 Source 𝑫 :
+
+"passages": "passage 1:In 1963, the Greenbriar Boys recorded He Was a Friend of Mine with singer Dian James on their Elektra R eco rds album Dian & the Greenbriar Boys. The 
+
+Briarwood Singers, a five -piece folk group, released a version of the song that reached #126 on the Billboard charts in December 1963. Bobby Bare also recorded He Was a 
+
+Friend of Mine in 1964, in memory of air crash victim Jim Reeves. That same year, Petula Clark released a French version of t he song under the title Toi qui m'as fait pleurer 
+
+(=You, who have made me cry), with Bobby Bare credited as writer. passage 2:He was a friend of mine he was a friend of mine. He died without a penny he didn't have a dime he 
+
+was a friend of mine. He died neath the midnight sun he died neath the midnight sun. passage 3:And I never been quite satisfi ed. And he was a friend of mine. He never done no 
+
+wrong. He never done no wrong. A thousand miles from home. And he never harmed no one. And he was a friend of mine. He was a fri end of mine. He was a friend of mine. 
+
+Every time I hear his name. Lord, I just can't keep from cryin '. 'Cause he was a friend of mine. Songwriters. DYLAN, BOB. Published by. "
+
+Input Text 𝑻 :
+
+Based on the given passages, \"He Was a Friend of Mine \" is a song that has been recorded by various artists such as the Greenbr iar Boys, Bobby Bare, and Petula Clark. It was 
+
+also written by Bob Dylan. 
+
+CAPO: (Span -F1=0) 
+
+## Step 1: Analyze the answer for accuracy in terms of the passages provided. The answer states: Based on the given passages, \“He Was a Friend of Mine \” is a song that has 
+
+been recorded by various artists such as the Greenbriar Boys, Bobby Bare, and Petula Clark. It was also written by Bob Dylan. ## Step 2: Compare the answer with the passages. 
+
+Passage 1: In 1963, the Greenbriar Boys recorded He Was a Friend of Mine with singer Dian James on their Elektra Records albu m D ian & the Greenbriar Boys. the Briarwood 
+
+Singers, a five -piece folk group, released a version of the song that reached #126 on the Billboard charts in December 1963. Bob by Bare also recorded He Was a Friend of Mine 
+
+in 1964, in memory of air crash victim Jim Reeves. That same year, Petula Clark released a French version of the song under t he title Toi qui m‘as fait pleurer (=You, who have 
+
+made me cry), with Bobby Bare credited as writer.## Step 3: Identify the hallucinations. The answer includes information that is not mentioned in the passages, such as the list of 
+
+artists who recorded the song and the information about the song’s writer.## Step 4: Compile the hallucination list. The hallucination list should include the following:1. \“the 
+
+Greenbriar Boys, Bobby Bare, and Petula Clark \”2. \“the song was also written by Bob Dylan \”## Step 5: Output the hallucination list in JSON format. hallucination list: [ \"it was 
+
+also written by Bob Dylan \"]The final JSON output is:``` json { \"hallucination list \": ["it was also written by Bob Dylan"] }``` 
+
+RLSeek : (Span -F1=1) 
+
+## Step 1: Verify the claim that \"He Was a Friend of Mine \" was written by Bob Dylan. - **Evidence from passages:** <quote> 'Cause he was a friend of mine. Songwriters. 
+
+DYLAN, BOB. Published by </quote> - **Evaluation:** The passages confirm that Bob Dylan was one of the songwriters for \"He Was a Friend of Mine. \" Theref ore, the 
+
+statement \"It was also written by Bob Dylan \" is supported.## Step 2: Verify the claim that \"He Was a Friend of Mine \" was rec orded by various artists such as the Greenbriar 
+
+Boys, Bobby Bare, and Petula Clark. - **Evidence from passages:** <quote> In 1963, the Greenbriar Boys recorded He Was a Friend of Mine with singer Dian James on their 
+
+Elektra Records album Dian & the Greenbriar Boys. The Briarwood Singers, a five -piece folk group, released a version of the song that reached #126 on the Billboard charts in 
+
+December 1963. Bobby Bare also recorded He Was a Friend of Mine in 1964, in memory of air crash victim Jim Reeves. That same yea r, Petula Clark released a French version 
+
+of the song under the title Toi qui m'as fait pleurer (=You, who have made me cry), with Bobby Bare credited as writer. </quote> - **Evaluation:** The passages confirm that \"He 
+
+Was a Friend of Mine \" was recorded by the Greenbriar Boys, Bobby Bare, and Petula Clark. Therefore, the statement is supported. ## Final Output``` json {\"hallucination list \": [] }Figure 17: Case study #3 of the Proposed method and the baseline CAPO. 32347
