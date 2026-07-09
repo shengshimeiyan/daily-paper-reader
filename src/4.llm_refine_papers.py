@@ -27,7 +27,7 @@ DEFAULT_FILTER_MODEL = (
     or "deepseek-v4-flash"
 )
 DEFAULT_DEEPSEEK_BASE_URL = os.getenv("DEEPSEEK_BASE_URL") or os.getenv("SUMMARY_BASE_URL") or "https://api.deepseek.com"
-DEFAULT_FILTER_CONCURRENCY = 4
+DEFAULT_FILTER_CONCURRENCY = int(os.getenv("DPR_LLM_FILTER_CONCURRENCY", "4"))
 MAX_FILTER_RETRIES = 3
 
 

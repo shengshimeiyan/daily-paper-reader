@@ -60,6 +60,7 @@ jobs:
       RERANK_MAX_DOCUMENTS_PER_REQUEST: "20"
       DPR_EMBED_API_TIMEOUT: "60"
       DPR_LLM_MAX_OUTPUT_TOKENS: "131072"
+      DPR_LLM_FILTER_CONCURRENCY: "2"
       DPR_EMBED_API_URL: ${{ secrets.DPR_EMBED_API_URL || 'https://zwwen.online/embed' }}
       DPR_EMBED_API_KEY: ${{ secrets.DPR_EMBED_API_KEY }}
       LLM_PRIMARY_BASE_URL: ${{ secrets.LLM_PRIMARY_BASE_URL }}
@@ -250,7 +251,7 @@ jobs:
           if [ -n "$PROFILE_TAG" ]; then
             ARGS+=(--profile-tag "$PROFILE_TAG")
           fi
-          python src/main.py "${ARGS[@]}" --no-skip-fetch --embedding-device cpu --embedding-batch-size 8 --filter-concurrency 2
+          python src/main.py "${ARGS[@]}" --no-skip-fetch --embedding-device cpu --embedding-batch-size 8
 
           # 让前端可以在不配置 GitHub Token 的情况下直接读取配置（只读快照）
           cp -f config.yaml docs/config.yaml
