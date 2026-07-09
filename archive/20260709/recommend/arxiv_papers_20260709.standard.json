@@ -1,0 +1,445 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-09T22:10:14.558383+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 4,
+    "deep_cap": 6,
+    "deep_selected": 4,
+    "quick_candidates": 7,
+    "quick_skim_target": 11,
+    "quick_selected": 7
+  },
+  "deep_dive": [
+    {
+      "id": "2607.07380v1",
+      "source": "arxiv",
+      "title": "Interpretable Uncertainty for Adaptive Retrieval and Reasoning in Question Answering",
+      "abstract": "Large language models (LLMs) achieve a strong performance in question answering (QA), but remain prone to hallucinations and suffer from limited transparency. Retrieval-augmented generation (RAG) can improve factuality, yet decisions about when and how to retrieve from external resources are typically based on opaque policies or computationally inefficient multi-step prompting procedures. We propose an uncertainty-aware framework for adaptive QA based on explicit signals derived from LLM internal representations. We distinguish between knowledge insufficiency and knowledge ambiguity or conflict, and efficiently estimate these from hidden states in a single forward pass. These signals guide system behaviour: RAG is triggered when knowledge is insufficient, while additional reasoning is applied when ambiguity or conflict is high. By grounding adaptive decisions in decomposed and efficiently estimable uncertainty signals, this approach provides a transparent and practical alternative to existing retrieval and reasoning strategies supporting the design of interpretable user-facing tools.",
+      "authors": [
+        "Ritajit Dey",
+        "Iadh Ounis",
+        "Graham McDonald"
+      ],
+      "primary_category": "cs.IR",
+      "categories": [
+        "cs.IR"
+      ],
+      "published": "2026-07-08T13:12:39+00:00",
+      "link": "https://arxiv.org/pdf/2607.07380v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Mitigates hallucinations via uncertainty-aware RAG",
+      "llm_evidence_cn": "通过不确定性感知的RAG减轻幻觉",
+      "llm_evidence": "通过不确定性感知的RAG减轻幻觉",
+      "canonical_evidence": "通过不确定性感知的RAG减轻幻觉",
+      "llm_tldr_en": "Proposes an uncertainty-aware framework for adaptive QA that estimates knowledge insufficiency and ambiguity from LLM hidden states to trigger RAG, thereby mitigating hallucinations and improving factuality.",
+      "llm_tldr_cn": "针对大语言模型在问答中易产生幻觉且缺乏透明度的问题，提出一种基于内部表示的不确定性感知框架。该框架区分知识不足与知识冲突，并在单次前向传播中高效估计，以此指导RAG触发时机。实验证明该方法有效减少了幻觉，提升了问答的事实性与效率。",
+      "llm_tldr": "针对大语言模型在问答中易产生幻觉且缺乏透明度的问题，提出一种基于内部表示的不确定性感知框架。该框架区分知识不足与知识冲突，并在单次前向传播中高效估计，以此指导RAG触发时机。实验证明该方法有效减少了幻觉，提升了问答的事实性与效率。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.07507v1",
+      "source": "arxiv",
+      "title": "HIVE: Understanding Post-Hallucination Reasoning in Vision Language Models",
+      "abstract": "Hallucinations in vision language models (VLMs) are commonly treated as semantic errors, yet they often arise from partial or ambiguous visual evidence. Prior work mainly focuses on detecting or suppressing hallucinations at generation time, leaving the subsequent reasoning stage largely unexplored. In this work, we study Post Hallucination Reasoning (PHR), the stage in which hallucinated semantics enter the model's inference context and influence downstream predictions. To systematically investigate PHR, we introduce HIVE, Hallucination Inference and Verification Engine, an evaluation infrastructure that enables controlled comparisons between faithful and hallucinated captions. Across nine tasks and nine models, we observe structured modality dependent patterns: hallucinated captions often improve accuracy on vision language tasks, while text only tasks exhibit limited or unstable effects. Further analyses show that hallucinated cues broaden semantic coverage and reshape reasoning dynamics while preserving stable inference. These findings highlight that hallucinated semantics may influence downstream reasoning once they enter the model's inference context. Understanding this post hallucination stage is important for improving the reliability and interpretability of multimodal reasoning systems. Code is publicly available at https://github.com/hefengcs/HIVE.",
+      "authors": [
+        "Feng He",
+        "Zhenting Wang",
+        "Qifan Wang",
+        "Qiang Guan",
+        "Dongfang Liu",
+        "Ruixiang Tang",
+        "Qiankun Li"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-07-08T15:02:11+00:00",
+      "link": "https://arxiv.org/pdf/2607.07507v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Studies hallucinations in VLMs and introduces HIVE for evaluating post-hallucination reasoning",
+      "llm_evidence_cn": "研究视觉语言模型中的幻觉并引入HIVE评估幻觉后推理",
+      "llm_evidence": "研究视觉语言模型中的幻觉并引入HIVE评估幻觉后推理",
+      "canonical_evidence": "研究视觉语言模型中的幻觉并引入HIVE评估幻觉后推理",
+      "llm_tldr_en": "This paper investigates Post Hallucination Reasoning (PHR) in Vision Language Models, where hallucinated semantics influence downstream predictions, and introduces HIVE, an evaluation infrastructure for controlled comparisons between faithful and hallucinated captions.",
+      "llm_tldr_cn": "本文研究了视觉语言模型中的幻觉后推理（PHR）现象，即幻觉语义进入推理上下文并影响下游预测。针对现有工作主要关注生成时幻觉的检测与抑制，本文提出了HIVE评估基础设施，能够在忠实描述与幻觉描述之间进行受控比较，揭示了结构化的模态依赖性，为理解和检测大模型幻觉提供了新视角。",
+      "llm_tldr": "本文研究了视觉语言模型中的幻觉后推理（PHR）现象，即幻觉语义进入推理上下文并影响下游预测。针对现有工作主要关注生成时幻觉的检测与抑制，本文提出了HIVE评估基础设施，能够在忠实描述与幻觉描述之间进行受控比较，揭示了结构化的模态依赖性，为理解和检测大模型幻觉提供了新视角。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "hallucination in large language models",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.07527v1",
+      "source": "arxiv",
+      "title": "A Unified Detection Framework for AI-Related Content and Artifacts",
+      "abstract": "Artificial intelligence (AI) is a double-edged sword: while it has achieved remarkable success across a wide range of domains, its deployment also calls for effective oversight and regulation, for which the detection of AI-related content and artifacts is perhaps the most direct and cost-effective approach. To this end, we propose a unified detection framework based on Mahalanobis distance scores (MDS), applicable to several important settings, including the detection of large language model (LLM) generated text, hallucination, watermark, and adversarial examples. A key component of the proposed method is to accurately characterize the positive class--such as human-generated text, factual statements, unwatermarked text, or non-adversarial samples--which requires an efficient and robust estimator of the covariance matrix of deep representations of positive samples before computing the MDS. Since the positive samples typically consist of multiple classes, and these classes may exhibit both homogeneity and heterogeneity, we develop joint estimation methods for both the casewise and cellwise minimum covariance determinant (MCD) estimators. We provide efficient optimization algorithms for both estimators and prove their convergence. We provide a reasonable definition of the breakdown point for the joint estimators and prove their corresponding high breakdown point properties. Empirical evaluations confirm the effectiveness of the proposed detection framework.",
+      "authors": [
+        "Xifeng Zhang",
+        "Tao Hu",
+        "Yijie Peng",
+        "Wan Tian"
+      ],
+      "primary_category": "stat.ML",
+      "categories": [
+        "stat.ML",
+        "cs.LG"
+      ],
+      "published": "2026-07-08T15:21:07+00:00",
+      "link": "https://arxiv.org/pdf/2607.07527v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Unified detection framework includes hallucination detection",
+      "llm_evidence_cn": "统一检测框架包含幻觉检测",
+      "llm_evidence": "统一检测框架包含幻觉检测",
+      "canonical_evidence": "统一检测框架包含幻觉检测",
+      "llm_tldr_en": "Proposes a unified detection framework based on Mahalanobis distance scores to detect AI-generated text, hallucinations, watermarks, and adversarial examples by accurately characterizing the positive class.",
+      "llm_tldr_cn": "针对AI内容与产物监管的需求，提出基于马氏距离分数的统一检测框架。该方法通过准确刻画正类特征（如人类文本、事实陈述），实现对LLM生成文本、幻觉、水印和对抗样本的统一检测。该框架为AI生成内容的监督与事实一致性检测提供了高效通用的解决方案。",
+      "llm_tldr": "针对AI内容与产物监管的需求，提出基于马氏距离分数的统一检测框架。该方法通过准确刻画正类特征（如人类文本、事实陈述），实现对LLM生成文本、幻觉、水印和对抗样本的统一检测。该框架为AI生成内容的监督与事实一致性检测提供了高效通用的解决方案。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.07670v1",
+      "source": "arxiv",
+      "title": "Does Bielik Know What It Doesn't Know? Activation Dispersion Separates Entity Familiarity from Factual Reliability Across Model Scale",
+      "abstract": "Large language models hallucinate most about entities they have never seen. We ask whether a model's activations betray entity familiarity before a single answer token is generated, and whether that signal predicts the factual reliability of the answers. On four Polish Bielik models (1.5B-11B parameters), we probe four entity domains (athletes, cities, writers, musicians), each with 42 well-known, 42 obscure-but-real, and 42 fabricated entities addressed by a one-sentence question (504 prompts per model). Two unsupervised, single-forward-pass dispersion measures over post-SwiGLU MLP activations, inverse participation ratio and spectral entropy, separate known from fabricated entities at AUROC 0.95-1.00 across all domains and scales; a supervised linear probe reaches 0.99-1.00. Both clear selection-aware permutation floors of about 0.70-0.74 (empirical p<=1e-3), survive held-out layer selection (0.93-0.99), and persist on real names (known vs. obscure-but-real: 0.96-1.00). The signal transfers across entity types (mean off-diagonal AUROC 0.92-0.99); a matched-template counterfactual shows the only large drops are template-caused, not entity-type effects, and the signal is diffuse across heads. This representational signal is already at ceiling at 1.5B, whereas behavioral factual reliability scales sharply: 0, 2, 10, and 19 of 42 known athletes are answered fully correctly by the 1.5B, 4.5B, 7B, and 11B models under a strict judge. Within known entities, separating correct from hallucinated answers is much harder (probe 0.93; dispersion no better than a first-token-entropy baseline). A five-sample semantic-entropy baseline reaches only 0.71-0.83 at 5x the inference cost. Despite this internal awareness, the models almost never abstain: an audit of 2,520 answers finds 2 refusals and 1 hedge. Entity familiarity and factual reliability are distinct phenomena on different scaling curves.",
+      "authors": [
+        "Grzegorz Brzezinka"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.LG"
+      ],
+      "published": "2026-07-08T17:24:43+00:00",
+      "link": "https://arxiv.org/pdf/2607.07670v1",
+      "tags": [
+        "keyword:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Predicting factual reliability and hallucination from LLM activations",
+      "llm_evidence_cn": "从大模型激活预测事实可靠性与幻觉",
+      "llm_evidence": "从大模型激活预测事实可靠性与幻觉",
+      "canonical_evidence": "从大模型激活预测事实可靠性与幻觉",
+      "llm_tldr_en": "This paper investigates whether LLM internal activations can signal entity familiarity and predict factual reliability before generation, finding that unsupervised dispersion measures effectively separate known from fabricated entities to detect hallucinations.",
+      "llm_tldr_cn": "大语言模型经常对未见过的实体产生幻觉。本文探究模型的激活是否能在生成前揭示实体熟悉度并预测答案的事实可靠性。实验表明，基于MLP激活的无监督分散度度量能有效区分已知与虚构实体，为检测大模型幻觉提供了新方法。",
+      "llm_tldr": "大语言模型经常对未见过的实体产生幻觉。本文探究模型的激活是否能在生成前揭示实体熟悉度并预测答案的事实可靠性。实验表明，基于MLP激活的无监督分散度度量能有效区分已知与虚构实体，为检测大模型幻觉提供了新方法。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.00685v1",
+      "source": "arxiv",
+      "title": "M2Note: Continual Evolution of Vision Language Models via Mistake Notebook Learning",
+      "abstract": "Vision Language Models (VLMs) have demonstrated remarkable capabilities in multimodal reasoning tasks, yet they still suffer from recurring failures, such as skipping key visual checks, misapplying domain rules, and hallucinating unsupported concepts. Most existing solutions rely on supervised fine-tuning (SFT) and reinforcement learning (RL), which are expensive to iterate and can be brittle under distribution shift. To this end, we propose Multimodal Mistake Notebook Learning (M2Note), a training-free continual evolution framework that externalizes learning into an editable memory. M2Note transforms failed trajectories into compact subject-guidance notes: the subject summarizes the underlying domain and concept, while the guidance provides actionable verification steps that can be reused in future inference. At test time, M2Note retrieves relevant notes via multimodal retrieval-augmented generation (RAG) and appends them to the model context, steering reasoning away from previously observed pitfalls. To stabilize continual evolution, we adopt batch-level post-verification with rollback, which commits notebook edits only if they improve performance on the same batch, reducing noisy updates and preventing regressions. M2Note supports both self-evolving, where the same VLM acts as solver and supervisor, and cross-model evolving, where a stronger supervisor guides a weaker solver, enabling capability transfer without weight updates. Experiments on six multimodal reasoning benchmarks show consistent improvements across domains and backbones, while achieving strong cost and sample efficiency and remaining complementary to Chain-of-Thought (CoT) prompting.",
+      "authors": [
+        "Haiwen Li",
+        "Jing Tang",
+        "Rui Chen",
+        "Lei Sun",
+        "Xiangxiang Chu"
+      ],
+      "primary_category": "cs.MA",
+      "categories": [
+        "cs.MA"
+      ],
+      "published": "2026-07-01T09:30:10+00:00",
+      "link": "https://arxiv.org/pdf/2607.00685v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Mitigating hallucinations in VLMs via mistake notebook",
+      "llm_evidence_cn": "通过错误笔记本缓解视觉语言模型幻觉",
+      "llm_evidence": "通过错误笔记本缓解视觉语言模型幻觉",
+      "canonical_evidence": "通过错误笔记本缓解视觉语言模型幻觉",
+      "llm_tldr_en": "Vision Language Models suffer from recurring failures like hallucinating unsupported concepts. M2Note is a training-free framework that externalizes learning into an editable memory, transforming failed trajectories into notes to mitigate future hallucinations.",
+      "llm_tldr_cn": "视觉语言模型常出现幻觉等重复性失败，而现有微调方法成本高且脆弱。本文提出多模态错误笔记本学习框架，将学习外化为可编辑记忆，把失败轨迹转化为紧凑的指导笔记。该免训练方法有效缓解了幻觉等重复性错误，提升了模型在分布偏移下的鲁棒性。",
+      "llm_tldr": "视觉语言模型常出现幻觉等重复性失败，而现有微调方法成本高且脆弱。本文提出多模态错误笔记本学习框架，将学习外化为可编辑记忆，把失败轨迹转化为紧凑的指导笔记。该免训练方法有效缓解了幻觉等重复性错误，提升了模型在分布偏移下的鲁棒性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.02182v1",
+      "source": "arxiv",
+      "title": "Bayesian Sparse Low-Rank Adaptation for Large Language Model Uncertainty Estimation",
+      "abstract": "Large language models (LLMs) exhibit remarkable reasoning capabilities, but their task-specific fine-tuning is notoriously plagued by overconfidence, severely hindering trustworthy deployment. We propose Data-Adaptive Lower-Rank Adaptation (DALorRA), a simple and effective variational Bayesian sparse framework that shifts the paradigm of uncertainty quantification from the dense parameter space to the lightweight rank level of low-rank adaptation (LoRA). With the insight that LoRA essentially aggregates multiple rank-one components that may provide superfluous model capacity, DALorRA imposes stochastic masking on rank dimensions, enabling Bayesian regularization of model capacity during training and ensemble-like calibration during inference. Extensive experiments demonstrate DALorRA's excellent calibration of LLMs without compromising reasoning accuracy.",
+      "authors": [
+        "Jijie Zhang",
+        "Zhe Ren",
+        "Quan Zhang",
+        "Dandan Guo"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CL"
+      ],
+      "published": "2026-07-02T13:52:12+00:00",
+      "link": "https://arxiv.org/pdf/2607.02182v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Uncertainty estimation for LLMs",
+      "llm_evidence_cn": "大语言模型不确定性估计",
+      "llm_evidence": "大语言模型不确定性估计",
+      "canonical_evidence": "大语言模型不确定性估计",
+      "llm_tldr_en": "LLMs fine-tuning suffers from overconfidence, hindering trustworthy deployment. We propose DALorRA, a variational Bayesian sparse framework that quantifies uncertainty at the LoRA rank level via stochastic masking, enabling better calibration and uncertainty estimation.",
+      "llm_tldr_cn": "大语言模型在特定任务微调时常常面临过度自信问题，严重阻碍了其可信部署。本文提出DALorRA变分贝叶斯稀疏框架，通过在低秩适应的秩级别施加随机掩码，将不确定性量化从密集参数空间转移到轻量级秩空间，从而在训练时实现贝叶斯正则化并在推理时提供类似集成的校准，有效缓解过度自信并提升不确定性估计的可靠性。",
+      "llm_tldr": "大语言模型在特定任务微调时常常面临过度自信问题，严重阻碍了其可信部署。本文提出DALorRA变分贝叶斯稀疏框架，通过在低秩适应的秩级别施加随机掩码，将不确定性量化从密集参数空间转移到轻量级秩空间，从而在训练时实现贝叶斯正则化并在推理时提供类似集成的校准，有效缓解过度自信并提升不确定性估计的可靠性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.02374v1",
+      "source": "arxiv",
+      "title": "DRIFTLENS: Measuring Memory-Induced Reasoning Drift in Personalized Language Models",
+      "abstract": "Personalization changes what a model says to a user; we show that it can also change the reasoning trajectory used to justify the response. Modern LLMs personalize interactions by storing user attributes, preferences, and prior context, then injecting this information into future prompts. We study whether such memory reshapes reasoning on open-ended questions where no single ground-truth answer exists. To quantify this effect, we introduce DRIFTLENS, a ground-truth-free framework that maps each expressed reasoning step to a value category and measures divergence between a question's no-memory trajectory and its trajectory under injected user-attribute memory. We first validate that DRIFTLENS distinguishes content-free pragmatic noise from substantive reasoning changes. Across four LLMs and 10 user-attribute categories, including age, occupation, and disability, user-attribute memory induces medium-to-large reasoning drift above each model's pragmatic-noise floor, even when final answers remain fluent, on-topic, and plausible. We then evaluate GRPO- and DPO-based post-training methods for reducing drift. Both reduce drift, but neither uniformly dominates; effects on downstream capability, helpfulness, and instruction following are model-and reward-dependent. These results suggest that memory-induced reasoning drift is a measurable and only partly mitigated failure mode of personalized language models.",
+      "authors": [
+        "Xi Fang",
+        "Weijie Xu",
+        "Yingqiang Ge",
+        "Yuhui Xu",
+        "Stephanie Eckman",
+        "Chandan K. Reddy"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-02T16:15:25+00:00",
+      "link": "https://arxiv.org/pdf/2607.02374v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Measuring reasoning drift in personalized LLMs",
+      "llm_evidence_cn": "测量个性化大模型中的推理漂移",
+      "llm_evidence": "测量个性化大模型中的推理漂移",
+      "canonical_evidence": "测量个性化大模型中的推理漂移",
+      "llm_tldr_en": "Personalization in LLMs via memory injection can alter reasoning trajectories, leading to factual drift. We introduce DRIFTLENS, a ground-truth-free framework that maps reasoning steps to value categories and measures divergence caused by user-attribute memory, effectively detecting reasoning inconsistencies.",
+      "llm_tldr_cn": "个性化大语言模型通过注入记忆改变了模型的回复内容，甚至可能改变其推理轨迹，导致事实漂移。本文提出DRIFTLENS框架，在无真实标签的情况下，将推理步骤映射到价值类别并测量无记忆轨迹与注入记忆轨迹间的差异，从而量化记忆引起的推理漂移，为检测个性化模型中的事实不一致性提供了新方法。",
+      "llm_tldr": "个性化大语言模型通过注入记忆改变了模型的回复内容，甚至可能改变其推理轨迹，导致事实漂移。本文提出DRIFTLENS框架，在无真实标签的情况下，将推理步骤映射到价值类别并测量无记忆轨迹与注入记忆轨迹间的差异，从而量化记忆引起的推理漂移，为检测个性化模型中的事实不一致性提供了新方法。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.03640v1",
+      "source": "arxiv",
+      "title": "Revealing Hidden Model Behaviors with Task-Specific Self-Reports",
+      "abstract": "Fine-tuning can give a language model a hidden behavior--it may give false answers under a narrow condition, or give harmful advice only when a prompt touches a particular topic. We introduce the Stabilized Adapter for self-Report (SAR), a lightweight LoRA adapter that makes a fine-tuned model describe its own hidden behavior in plain language, using only the model and the dataset it was trained on. Across seven implanted behaviors (plus a no-behavior control), SAR detects the hidden behavior in every one--even when the model has generalized into broad misalignment that the training data alone does not predict. Introspection Adapters (IA), the closest existing baseline, detects some behaviors from our suite but misses others entirely--and where it misses, it hallucinates, consistently reporting wrong behaviors. SAR retains positive signal on every setting where IA fails and halves the rate of hallucinations. This makes it much easier for practitioners to audit their models and obtain reliable answers to \"what did my model actually learn?\" type of questions.",
+      "authors": [
+        "Taras Kutsyk",
+        "Bartosz Zieliński"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-07-03T23:41:25+00:00",
+      "link": "https://arxiv.org/pdf/2607.03640v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Detecting false answers/hidden behaviors in LLMs",
+      "llm_evidence_cn": "检测大模型中的错误回答与隐藏行为",
+      "llm_evidence": "检测大模型中的错误回答与隐藏行为",
+      "canonical_evidence": "检测大模型中的错误回答与隐藏行为",
+      "llm_tldr_en": "The paper introduces SAR, a lightweight LoRA adapter that enables fine-tuned language models to report their own hidden behaviors, such as giving false answers, effectively detecting misalignment even when training data doesn't predict it.",
+      "llm_tldr_cn": "微调可能使语言模型产生隐藏行为，如在特定条件下给出错误答案。本文提出了一种轻量级LoRA适配器SAR，使模型能够用自然语言描述自身的隐藏行为。实验表明，SAR能成功检测所有植入的隐藏行为，甚至在模型泛化为广泛不对齐时依然有效，为检测大模型幻觉和不对齐行为提供了新方法。",
+      "llm_tldr": "微调可能使语言模型产生隐藏行为，如在特定条件下给出错误答案。本文提出了一种轻量级LoRA适配器SAR，使模型能够用自然语言描述自身的隐藏行为。实验表明，SAR能成功检测所有植入的隐藏行为，甚至在模型泛化为广泛不对齐时依然有效，为检测大模型幻觉和不对齐行为提供了新方法。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.03325v1",
+      "source": "arxiv",
+      "title": "From Judgments to Issues: Structured Extraction of Legal Reasoning with Citation-Hallucination Control",
+      "abstract": "We present an automated pipeline that decomposes Italian tax-court judgments into individual legal issues and extracts, for each issue, a structured XML representation grounded in the IRAC framework and the legal syllogism. The pipeline targets a corpus of approximately $330{,}000$ first- and second-instance decisions of the Italian tax courts and is built around a capable yet cost-efficient general-purpose model (DeepSeek V3), a choice driven by the need to process several hundred thousand documents at a sustainable cost. To address the well-documented unreliability of large language models on legal citations, we couple the extraction step with an automatic hallucination-detection filter that compares the references produced by the model with those identified in the judgment text by a dedicated parser (Linkoln), normalised to standard identifiers (URN-NIR, ECLI, CELEX). We validate the pipeline on $50$ judgments annotated by two PhDs in tax law, computing inter-annotator agreement and LLM-vs-expert agreement on both issue extraction and legal citations, together with a stand-alone evaluation of the hallucination filter. To the best of our knowledge, this is the first issue-level, expert-validated structured extraction pipeline with hallucination control for Italian tax-court decisions, and it provides a concrete starting point for downstream applications such as issue-level retrieval, citation-network analysis, and the construction of large-scale datasets of legal reasoning.",
+      "authors": [
+        "Giovanni Piccioli",
+        "Alessia Fidelangeli",
+        "Piera Santin",
+        "Pierpaolo Vivo"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.IR"
+      ],
+      "published": "2026-07-03T13:41:08+00:00",
+      "link": "https://arxiv.org/pdf/2607.03325v1",
+      "tags": [
+        "keyword:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Automatic hallucination-detection filter for LLM legal citations",
+      "llm_evidence_cn": "针对大模型法律引用的自动幻觉检测过滤器",
+      "llm_evidence": "针对大模型法律引用的自动幻觉检测过滤器",
+      "canonical_evidence": "针对大模型法律引用的自动幻觉检测过滤器",
+      "llm_tldr_en": "This paper presents an automated pipeline for extracting structured legal reasoning from court judgments, incorporating an automatic hallucination-detection filter to address the unreliability of LLMs on legal citations.",
+      "llm_tldr_cn": "大语言模型在法律引用上存在不可靠性。本文提出了一种自动化流水线，用于从法院判决中提取结构化法律推理，并引入了自动幻觉检测过滤器来比对引用，有效控制了法律文本生成中的幻觉问题。",
+      "llm_tldr": "大语言模型在法律引用上存在不可靠性。本文提出了一种自动化流水线，用于从法院判决中提取结构化法律推理，并引入了自动幻觉检测过滤器来比对引用，有效控制了法律文本生成中的幻觉问题。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.07707v1",
+      "source": "arxiv",
+      "title": "Co-LMLM: Continuous-Query Limited Memory Language Models",
+      "abstract": "Limited memory language models (LMLMs) externalize factual knowledge during pretraining to a knowledge base (KB), rather than memorizing it in their weights. During generation, the model then fetches knowledge from the KB as needed. This recently introduced paradigm provides multiple advantages, including knowledge control capabilities that remain beyond conventional LLMs. We propose continuous-query LMLM (CO-LMLM), where the KB pairs continuous keys with textual knowledge values, a significant departure from prior reliance on relational KB and queries. CO-LMLM generates flexible vector queries at minimal cost, while still integrating human-readable and attributable retrieved knowledge into its generation. We pair this design with an annotation pipeline that tags free-form factual spans in arbitrary text, removing prior work's restriction to Wikipedia. Across pretraining on Wikipedia and FineWeb-Edu and at multiple model scales, CO-LMLM outperforms prior LMLMs and vanilla LLMs in both perplexity and factual precision. At 360M scale, this includes lower perplexity than models pretrained on 40x more data, and SimpleQA-verified performance that is in line with gpt-4o-mini and higher than Claude Sonnet 4.5.",
+      "authors": [
+        "Yair Feldman",
+        "Linxi Zhao",
+        "Nathan Godey",
+        "Dongyoung Go",
+        "Yilun Hua",
+        "Kilian Q. Weinberger",
+        "Jennifer J. Sun",
+        "Yoav Artzi"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-07-08T17:59:45+00:00",
+      "link": "https://arxiv.org/pdf/2607.07707v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Externalizing knowledge to KB for factual consistency",
+      "llm_evidence_cn": "将知识外化至知识库以保障事实一致性",
+      "llm_evidence": "将知识外化至知识库以保障事实一致性",
+      "canonical_evidence": "将知识外化至知识库以保障事实一致性",
+      "llm_tldr_en": "Limited Memory Language Models externalize factual knowledge to a knowledge base to avoid memorization. Co-LMLM pairs continuous keys with textual values, generating flexible vector queries to fetch attributable knowledge, enhancing factual consistency and knowledge control.",
+      "llm_tldr_cn": "有限记忆语言模型将事实知识外化到知识库中以避免权重记忆，从而缓解幻觉。本文提出连续查询有限记忆语言模型，将连续键与文本知识值配对，生成灵活的向量查询以获取可归因的检索知识。该设计增强了生成的事实一致性与知识控制能力。",
+      "llm_tldr": "有限记忆语言模型将事实知识外化到知识库中以避免权重记忆，从而缓解幻觉。本文提出连续查询有限记忆语言模型，将连续键与文本知识值配对，生成灵活的向量查询以获取可归因的检索知识。该设计增强了生成的事实一致性与知识控制能力。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "factual consistency in text generation",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "biorxiv-10-64898-2026-03-19-713030-v3",
+      "source": "biorxiv",
+      "title": "TogoMCP: Natural Language Querying of Life-Science Knowledge Graphs via Schema-Guided LLMs and the Model Context Protocol",
+      "abstract": "Querying the RDF Portal knowledge graph maintained by DBCLS--which aggregates approximately 60 life-science databases--requires proficiency in both SPARQL and database-specific RDF schemas, placing this resource beyond the reach of most researchers. Large Language Models (LLMs) can, in principle, translate natural-language questions into executable SPARQL, but without schema-level context, they frequently fabricate non-existent predicates or fail to resolve entity names to database-specific identifiers. We present TogoMCP, a system that recasts the LLM as a protocol-driven inference engine orchestrating specialized tools via the Model Context Protocol (MCP). Two mechanisms are essential to its design: (i) the MIE (Metadata-Interoperability-Exchange) file, a concise YAML document that dynamically supplies the LLM with each target databases structural and semantic context at query time; and (ii) a two-stage workflow separating entity resolution via external REST APIs from schema-guided SPARQL generation. On a benchmark of 50 biologically grounded questions spanning five types and 23 databases, TogoMCP achieved a large improvement over an unaided baseline (Cohens d = 1.82, Wilcoxon p < 0.001), with win rates exceeding 80% for question types with precise, verifiable answers. An ablation study shows that all component configurations deliver significant improvements, with MIE schema files providing the largest marginal contribution on mean per-question score ({Delta} = +0.50 relative to a no-MIE condition, two-sided Wilcoxon p = 0.067; 90% bootstrap CI [+0.04, +0.94] excludes zero); a one-line instruction to load the relevant MIE file recovers the same mean improvement as a full procedural protocol, while the protocol additionally reduces downside risk (loss rate 1.6% vs. 4.8%, Fisher p = 0.036). These results suggest a general design principle: concise, dynamically delivered schema context is more valuable than complex orchestration logic for mean-score performance, while procedural guidance plays a complementary role in narrowing variance.\n\nDatabase URL: https://togomcp.rdfportal.org/",
+      "authors": [
+        "Kinjo, A. R.",
+        "Yamamoto, Y.",
+        "Bustamante-Larriet, S.",
+        "Labra-Gayo, J. E.",
+        "Fujisawa, T."
+      ],
+      "primary_category": "bioinformatics",
+      "categories": [
+        "bioinformatics"
+      ],
+      "published": "2026-07-06T00:00:00+00:00",
+      "link": "https://www.biorxiv.org/content/10.64898/2026.03.19.713030v3.full.pdf",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Mitigating fabricated predicates in LLM SPARQL generation",
+      "llm_evidence_cn": "缓解大模型生成SPARQL时的谓词捏造",
+      "llm_evidence": "缓解大模型生成SPARQL时的谓词捏造",
+      "canonical_evidence": "缓解大模型生成SPARQL时的谓词捏造",
+      "llm_tldr_en": "LLMs translating natural language to SPARQL often fabricate non-existent predicates. TogoMCP uses the Model Context Protocol to orchestrate specialized tools, mitigating hallucinations and improving query accuracy for life-science knowledge graphs.",
+      "llm_tldr_cn": "大语言模型在将自然语言转换为SPARQL时经常捏造不存在的谓词。本文提出TogoMCP系统，利用模型上下文协议将大模型重构为协议驱动的推理引擎，协调专业工具。该方法有效缓解了谓词捏造等幻觉问题，提升了生命科学知识图谱查询的准确性。",
+      "llm_tldr": "大语言模型在将自然语言转换为SPARQL时经常捏造不存在的谓词。本文提出TogoMCP系统，利用模型上下文协议将大模型重构为协议驱动的推理引擎，协调专业工具。该方法有效缓解了谓词捏造等幻觉问题，提升了生命科学知识图谱查询的准确性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "extractor": "papercropper",
+  "figures": [
+    {
+      "url": "assets/figures/biorxiv/biorxiv-10-64898-2026-03-19-713030-v3/fig-001.webp",
+      "caption": "",
+      "page": 0,
+      "index": 1,
+      "width": 1752,
+      "height": 1488,
+      "label": "Figure"
+    }
+  ]
+}
