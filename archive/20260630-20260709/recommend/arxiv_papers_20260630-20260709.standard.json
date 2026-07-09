@@ -1,0 +1,460 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-09T01:52:25.353944+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 4,
+    "deep_cap": 6,
+    "deep_selected": 4,
+    "quick_candidates": 7,
+    "quick_skim_target": 11,
+    "quick_selected": 7
+  },
+  "deep_dive": [
+    {
+      "id": "2606.31307v1",
+      "source": "arxiv",
+      "title": "When the Database Fails: Prompting LLM Dialogue Agents for Safe Recovery in Task-Oriented Dialogue",
+      "abstract": "Large language models used in task-oriented dialogue often produce fluent but unsafe responses when backend database calls fail, return empty results, or surface mismatched information, inventing venues, confirmations, or booking details not grounded in the database. We study a lightweight prompting-based recovery approach that improves robustness without retraining or additional model calls. We compare three response strategies, including a guided recovery prompt conditioned on structured database status, across six open-weight model families (DeepSeek-R1, Gemma-2, Llama-3, Mistral, Phi-3, and Qwen-2.5) and four database conditions: empty result, wrong-domain retrieval, API error, and clean retrieval. Using fault-injected benchmarks built on two structurally different datasets, MultiWOZ 2.2 (5 domains) and SGD (20 domains), we find that naive agents hallucinate on 30.5% of failure turns on MultiWOZ and 20.9% on SGD. Our Guided-Retry strategy reduces hallucination by 50% on MultiWOZ (30.5 to 15.3%) and by 42% on SGD (20.9 to 12.2%) without retraining. However, residual hallucination remains substantial (6-37% across models), with wrong-domain failures the hardest case. Results are consistent across both datasets and all six model families, and human annotation shows substantial agreement while supporting the validity of the automatic commitment-safety metric.",
+      "authors": [
+        "Mohammad Alijanpour Shalmani",
+        "Alale Rezvani Boroujeni",
+        "Jiann Shiun Yuan"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-06-30T08:18:11+00:00",
+      "link": "https://arxiv.org/pdf/2606.31307v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Mitigating ungrounded LLM responses",
+      "llm_evidence_cn": "缓解大模型无根据响应",
+      "llm_evidence": "缓解大模型无根据响应",
+      "canonical_evidence": "缓解大模型无根据响应",
+      "llm_tldr_en": "This paper addresses LLM hallucinations in task-oriented dialogue when databases fail, proposing a lightweight prompting-based recovery approach that improves robustness and prevents models from inventing ungrounded details.",
+      "llm_tldr_cn": "针对任务导向对话中后端数据库调用失败时大语言模型容易编造无根据细节的问题，本文研究了一种轻量级的基于提示的恢复方法。该方法通过基于结构化数据库状态的条件引导恢复提示，在无需重新训练或额外模型调用的情况下提升了模型鲁棒性。实验证明该方法有效减少了模型的不安全幻觉响应。",
+      "llm_tldr": "针对任务导向对话中后端数据库调用失败时大语言模型容易编造无根据细节的问题，本文研究了一种轻量级的基于提示的恢复方法。该方法通过基于结构化数据库状态的条件引导恢复提示，在无需重新训练或额外模型调用的情况下提升了模型鲁棒性。实验证明该方法有效减少了模型的不安全幻觉响应。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.00060v1",
+      "source": "arxiv",
+      "title": "Synergistic Perception-Reasoning Governance: Grounding Medical MLLMs with Verifiable Anatomical Evidence",
+      "abstract": "Multimodal large language models (MLLMs) show strong promise for clinical VQA and radiology report generation, yet inference-time hallucinations still undermine trustworthy use: models can produce fluent conclusions that conflict with imaging evidence. Existing mitigation strategies typically rely on additional training, external retrieval/knowledge bases, or multi-stage post-hoc verification, which increases cost and pipeline complexity and often generalizes poorly across models and tasks.To address this, we propose a holistic, training-free evidence-injection framework that systematically mitigates hallucinations through dual-side evidence injection. By leveraging ROI priors acquired using MedSAM in our implementation, we recalibrate the visual perception trajectory via ROI-guided activation modulation while anchoring the textual reasoning trajectory by mapping anatomical coordinates into discrete semantic tokens as verifiable external memory. Then we introduce a task-aware dynamic router to select modality-specific interventions based on task semantics, balancing perceptual grounding and linguistic fluency. We conduct systematic evaluations on 2 tasks and 5 datasets using \\texttt{LLaVA-1.5-7B}, \\texttt{LLaVA-Med-1.5-7B}, \\texttt{Qwen3-VL-8B/32B}, and \\texttt{InternVL-3.5-8B/38B}. Controlled ablations and visualizations further validate the framework, which consistently outperforms baselines across medical benchmarks, improving close-ended accuracy by up to $\\sim\\mathbf{6}\\%\\uparrow$ and reducing open-ended hallucinations by $\\sim\\mathbf{35}\\%\\downarrow$. The code has been made available on GitHub: \\href{https://github.com/Henry991115/SPRG}{\\textcolor{blue}{https://github.com/Henry991115/SPRG}}.",
+      "authors": [
+        "Rui Hao",
+        "Qiankun Li",
+        "Junyuan Mao",
+        "Linghao Meng",
+        "Dirui Xie",
+        "Dayu Tan",
+        "Zhigang Zeng"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-06-30T08:07:25+00:00",
+      "link": "https://arxiv.org/pdf/2607.00060v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Mitigating hallucinations via training-free evidence injection",
+      "llm_evidence_cn": "通过免训练证据注入缓解幻觉",
+      "llm_evidence": "通过免训练证据注入缓解幻觉",
+      "canonical_evidence": "通过免训练证据注入缓解幻觉",
+      "llm_tldr_en": "Addressing inference-time hallucinations in medical MLLMs, this paper proposes a holistic, training-free evidence-injection framework that leverages ROI priors to systematically mitigate hallucinations, improving trustworthiness without extra training costs.",
+      "llm_tldr_cn": "医学多模态大模型在生成流畅结论时常产生与影像证据冲突的幻觉，而现有的缓解策略通常依赖额外训练或多阶段验证，成本高且泛化能力差。为此，本文提出了一种整体的、免训练的证据注入框架，通过双侧证据注入系统性地缓解幻觉。该方法利用MedSAM获取感兴趣区域先验，将解剖学证据直接融入模型推理过程。实验表明，该框架在不增加训练成本的前提下，有效提升了模型输出的可信度与证据一致性。",
+      "llm_tldr": "医学多模态大模型在生成流畅结论时常产生与影像证据冲突的幻觉，而现有的缓解策略通常依赖额外训练或多阶段验证，成本高且泛化能力差。为此，本文提出了一种整体的、免训练的证据注入框架，通过双侧证据注入系统性地缓解幻觉。该方法利用MedSAM获取感兴趣区域先验，将解剖学证据直接融入模型推理过程。实验表明，该框架在不增加训练成本的前提下，有效提升了模型输出的可信度与证据一致性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.04163v1",
+      "source": "arxiv",
+      "title": "SeeMe: Mitigating Hallucinations in Large Vision-Language Models through Effective Visual Token Engineering",
+      "abstract": "Large Vision-Language Models (LVLMs) have achieved remarkable progress in visual understanding tasks such as image captioning and visual question answering. However, they remain susceptible to hallucinations, generating content that is inconsistent with the actual visual input. Existing methods primarily intervene at the decoding stage, while overlooking a critical source of hallucinations: irrelevant or noisy visual tokens that mislead the decoding process. To address this issue, we propose SeeMe, a training-free framework that introduces the concept of feature engineering from traditional machine learning into LVLMs. SeeMe restructures visual tokens through a three-stage token engineering process to suppress hallucination sources while preserving informative visual evidence. Experiments on MME, POPE, and AMBER benchmarks across four LVLMs demonstrate that SeeMe consistently reduces hallucinations and improves output consistency, providing a novel perspective for mitigating hallucinations in LVLMs.",
+      "authors": [
+        "Kai Tang",
+        "Jinhao You",
+        "Bohua Zhang",
+        "Yichen Guo",
+        "Yiding Sun",
+        "Dongxu Zhang",
+        "Chenxi Li",
+        "Xiande Huang",
+        "Shanghang Zhang"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-07-05T08:07:51+00:00",
+      "link": "https://arxiv.org/pdf/2607.04163v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Mitigating hallucinations in LVLMs",
+      "llm_evidence_cn": "缓解视觉语言模型幻觉",
+      "llm_evidence": "缓解视觉语言模型幻觉",
+      "canonical_evidence": "缓解视觉语言模型幻觉",
+      "llm_tldr_en": "To address hallucinations in Large Vision-Language Models caused by noisy visual tokens, this paper proposes SeeMe, a training-free framework that restructures visual tokens through a three-stage token engineering process to suppress hallucinations.",
+      "llm_tldr_cn": "针对大型视觉语言模型中因无关或噪声视觉词元误导解码过程而导致的幻觉问题，本文提出了SeeMe免训练框架。该框架将传统机器学习中的特征工程概念引入LVLMs，通过三阶段词元工程过程重构视觉词元。实验表明，该方法能有效抑制幻觉生成，为缓解多模态模型幻觉提供了新思路。",
+      "llm_tldr": "针对大型视觉语言模型中因无关或噪声视觉词元误导解码过程而导致的幻觉问题，本文提出了SeeMe免训练框架。该框架将传统机器学习中的特征工程概念引入LVLMs，通过三阶段词元工程过程重构视觉词元。实验表明，该方法能有效抑制幻觉生成，为缓解多模态模型幻觉提供了新思路。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.05978v1",
+      "source": "arxiv",
+      "title": "Propose and Attend: Training-free MLLM Grounding Confidence via Multi-Token Localized Attention",
+      "abstract": "Multimodal large language models can emit localized predictions, bounding boxes for objects and temporal windows for video and audio events, but they hallucinate these regions prolifically. The model's own token log-probabilities are nearly uninformative: they conflate grounding quality with input ambiguity, and coordinate tokens become near-deterministic once the model commits. We propose Multi-Token Localized Attention (MTLA): a training-free, post-hoc score that measures how strongly a prediction's tokens attend to the region they claim. Prior attention-based detectors, which sum attention over the entire input modality and read a single response token, are weaker special cases; we show that summing only within the claimed region and aggregating across all prediction tokens recovers a stronger grounding signal. The same recipe applies almost trivially to other modalities and tasks: object detection in images and temporal localization in video and audio. Across multiple MLLM families and three modalities, MTLA improves hallucination AUROC by +7 to +38 over the best prior training-free baseline. Used as a confidence score for re-ranking, it nearly doubles the zero-shot COCO detection AP of an open-source 8B generalist (from 20.4 to 37.0), narrowing the gap to supervised detectors without any task-specific training.",
+      "authors": [
+        "Daniel Shalam",
+        "Emanuel Ben Baruch",
+        "Avi Ben Cohen",
+        "Tal Remez"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-07-07T08:10:57+00:00",
+      "link": "https://arxiv.org/pdf/2607.05978v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "hallucination detection in multimodal LLMs",
+      "llm_evidence_cn": "多模态大模型幻觉检测",
+      "llm_evidence": "多模态大模型幻觉检测",
+      "canonical_evidence": "多模态大模型幻觉检测",
+      "llm_tldr_en": "Proposes Multi-Token Localized Attention (MTLA), a training-free score to detect hallucinated localized predictions in multimodal LLMs by measuring attention to claimed regions.",
+      "llm_tldr_cn": "多模态大语言模型在生成局部预测（如边界框和时间窗口）时经常产生幻觉，且模型自身的token对数概率无法有效反映接地质量，容易混淆输入歧义与接地质量。本文提出多token局部注意力（MTLA）方法，这是一种免训练的事后评分机制，通过计算预测token对所声称区域的注意力强度来评估置信度。实验表明，该方法在检测多模态大模型幻觉区域方面优于现有基线，为多模态大模型的接地置信度评估提供了有效工具。",
+      "llm_tldr": "多模态大语言模型在生成局部预测（如边界框和时间窗口）时经常产生幻觉，且模型自身的token对数概率无法有效反映接地质量，容易混淆输入歧义与接地质量。本文提出多token局部注意力（MTLA）方法，这是一种免训练的事后评分机制，通过计算预测token对所声称区域的注意力强度来评估置信度。实验表明，该方法在检测多模态大模型幻觉区域方面优于现有基线，为多模态大模型的接地置信度评估提供了有效工具。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.01690v1",
+      "source": "arxiv",
+      "title": "Epistemic Goggles: A Pretrained Module that Induces an Epistemic Frame via Gradient Editing",
+      "abstract": "Finetuning a language model on documents that are explicitly annotated as fictional results in a model that still actually believes the documents' core claims, an effect known as Negation Neglect. In our evaluations, models trained on documents prefixed and suffixed with such annotations correctly identify the relevant claims as fictional only about 9% of the time. To address this, we introduce Goggles, a learned module that intervenes on the finetuning gradient rather than the data. During supervised finetuning, a Goggles module edits the gradients an LLM LoRA receives, imparting a chosen epistemic frame (the stance the model takes toward the nature of what it reads) to whatever the documents teach. A Goggles instance is trained once for a given base model, frame, and LoRA configuration, then applied frozen to documents it was never trained on. Trained through Goggles on those same documents, now carrying no fictional annotation, the model flags the content as fictional roughly 91% of the time, while preserving capability (GPQA and TruthfulQA match or exceed baseline). The same architecture supports other frames: a Goggles instance can be trained to treat documents as \"part of an AI safety evaluation by Redwood Research\" rather than simply as fiction. The imparted frame persists under continued finetuning that pushes back toward the claim, where prior interventions revert. Goggles suggests a path toward training language models on known-misaligned data without absorbing the behaviors that data demonstrates.",
+      "authors": [
+        "Joshua Penman"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CL",
+        "cs.LG"
+      ],
+      "published": "2026-07-02T04:31:41+00:00",
+      "link": "https://arxiv.org/pdf/2607.01690v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Mitigating belief in fictional claims via epistemic frame",
+      "llm_evidence_cn": "通过认知框架缓解对虚构内容的错误相信",
+      "llm_evidence": "通过认知框架缓解对虚构内容的错误相信",
+      "canonical_evidence": "通过认知框架缓解对虚构内容的错误相信",
+      "llm_tldr_en": "Language models finetuned on fictional documents still believe their claims due to Negation Neglect. We propose Goggles, a module that edits LoRA gradients during finetuning to impart an epistemic frame, successfully preventing the model from believing fictional claims and improving factual grounding.",
+      "llm_tldr_cn": "语言模型在微调带有虚构标注的文档时，往往仍会相信其核心主张，这种现象被称为否定忽视。为了解决这一问题，本文提出了Goggles模块，该模块在监督微调过程中对LLM LoRA接收的梯度进行干预，从而赋予模型特定的认知框架。实验表明，该方法能有效纠正模型对虚构内容的错误信念，使其正确识别声明的虚构性，为缓解大模型事实性幻觉提供了新的梯度编辑思路。",
+      "llm_tldr": "语言模型在微调带有虚构标注的文档时，往往仍会相信其核心主张，这种现象被称为否定忽视。为了解决这一问题，本文提出了Goggles模块，该模块在监督微调过程中对LLM LoRA接收的梯度进行干预，从而赋予模型特定的认知框架。实验表明，该方法能有效纠正模型对虚构内容的错误信念，使其正确识别声明的虚构性，为缓解大模型事实性幻觉提供了新的梯度编辑思路。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.00083v1",
+      "source": "arxiv",
+      "title": "Harnessing the Latent Space: From Steering Vectors to Model Calibrators for Control and Trust",
+      "abstract": "Language models have changed from unreliable text generators to highly-capable large models with trillions of parameters. Capability increases come hand-in-hand with increases in scale, making understanding the internal representations of models more challenging. Since millions of users increasing rely on language models to interact with external tools or make decisions in medium or high-stakes scenarios, we need to establish control over model behavior and know when to trust model outputs. In this paper, we discuss our contributions on harnessing the latent spaces by proposing steering vectors for control and developing latent space-based model calibrators for trust. Together, our contributions help demystify the latent spaces of language models and offer new insights into how to harness model internals to build more trustworthy language technology.",
+      "authors": [
+        "Nishant Subramani"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-06-30T19:21:46+00:00",
+      "link": "https://arxiv.org/pdf/2607.00083v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Model calibrators for trust and hallucination detection",
+      "llm_evidence_cn": "用于信任和幻觉检测的模型校准器",
+      "llm_evidence": "用于信任和幻觉检测的模型校准器",
+      "canonical_evidence": "用于信任和幻觉检测的模型校准器",
+      "llm_tldr_en": "As language models scale, understanding their internal representations to control behavior and trust outputs becomes critical. We propose methods to harness latent spaces by introducing steering vectors for behavioral control and latent space-based model calibrators to assess trustworthiness. These contributions help demystify model internals, enabling better control and hallucination detection.",
+      "llm_tldr_cn": "随着语言模型参数量激增，理解其内部表征以控制行为和判断输出可信度变得极具挑战。本文提出了利用潜空间的方法，通过引入控制向量实现对模型行为的控制，并开发了基于潜空间的模型校准器来评估输出的可信度。这些贡献不仅揭示了模型的潜空间机制，还为在高风险场景中建立模型信任提供了工具，对检测和缓解大模型幻觉具有重要的方法学借鉴意义。",
+      "llm_tldr": "随着语言模型参数量激增，理解其内部表征以控制行为和判断输出可信度变得极具挑战。本文提出了利用潜空间的方法，通过引入控制向量实现对模型行为的控制，并开发了基于潜空间的模型校准器来评估输出的可信度。这些贡献不仅揭示了模型的潜空间机制，还为在高风险场景中建立模型信任提供了工具，对检测和缓解大模型幻觉具有重要的方法学借鉴意义。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.01707v1",
+      "source": "arxiv",
+      "title": "LASER: A Corrective Lens for LVLMs via Visual Attention Preservation and Sink Suppression",
+      "abstract": "Large vision-language models (LVLMs) exhibit strong reasoning ability but suffer from visual forgetting during long-horizon decoding, where attention progressively drifts away from visual evidence. Existing methods largely treat this issue as a late-stage attention decay problem or attempt to mitigate it through heuristic reminders or post-hoc attention lifting. Through systematic empirical analysis, we find that performance degradation under visual forgetting is largely driven by two overlooked factors: early-stage attention decay disrupts evidence acquisition, and attention concentration on a subset of task-irrelevant visual sink tokens. Motivated by these insights, we propose LASER, a post-training framework that regulates both the visual attention trajectory and intra-visual token attention distribution during reasoning. Technically, LASER introduces two complementary rewards: a Visual Grounding Reward, which encourages the model to maintain attention on semantically salient visual tokens throughout decoding, and a Sink Suppression Reward, which penalizes excessive attention concentration on visual sink tokens. Together, these rewards preserve early-stage grounding while preventing attention collapse onto uninformative regions. Extensive experiments on eight benchmark datasets demonstrate that LASER consistently outperforms strong baselines, validating attention-aware training as an effective remedy for visual forgetting.",
+      "authors": [
+        "Bowen Yuan",
+        "Zijian Wang",
+        "Yadan Luo",
+        "Shijie Wang",
+        "Zi Huang"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-07-02T04:59:56+00:00",
+      "link": "https://arxiv.org/pdf/2607.01707v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "mitigating visual forgetting/hallucination in LVLMs",
+      "llm_evidence_cn": "缓解视觉语言模型中的视觉遗忘/幻觉",
+      "llm_evidence": "缓解视觉语言模型中的视觉遗忘/幻觉",
+      "canonical_evidence": "缓解视觉语言模型中的视觉遗忘/幻觉",
+      "llm_tldr_en": "LVLMs suffer from visual forgetting during long-horizon decoding where attention drifts from visual evidence; we propose LASER, a post-training framework regulating early attention decay and sink tokens to mitigate hallucinations.",
+      "llm_tldr_cn": "大型视觉语言模型在长序列解码中存在视觉遗忘，注意力偏离视觉证据从而导致幻觉。本文提出LASER后训练框架，调节早期注意力衰减并抑制任务无关的视觉汇聚标记。实验表明LASER有效缓解了视觉遗忘问题，提升了模型对视觉证据的依赖，调节注意力机制可显著缓解视觉语言模型中的幻觉问题。",
+      "llm_tldr": "大型视觉语言模型在长序列解码中存在视觉遗忘，注意力偏离视觉证据从而导致幻觉。本文提出LASER后训练框架，调节早期注意力衰减并抑制任务无关的视觉汇聚标记。实验表明LASER有效缓解了视觉遗忘问题，提升了模型对视觉证据的依赖，调节注意力机制可显著缓解视觉语言模型中的幻觉问题。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.01523v1",
+      "source": "arxiv",
+      "title": "Multi-Head Recurrent Memory Agents",
+      "abstract": "Recurrent memory agents extend LLMs to arbitrarily long contexts by iteratively consolidating input into a fixed-size memory window. Despite their scalability, these agents exhibit a well-documented reliability problem: end-to-end performance degrades systematically as context length grows. We diagnose this failure by decomposing performance into two factors--memory capture and memory retention--and quantitatively confirm that retention is the dominant bottleneck. Retention collapses because existing designs maintain memory as a monolithic text block, forcing every update to risk overwriting previously retained content. Motivated by this diagnosis, we propose Multi-Head Recurrent Memory (MHM), a general, training-free framework that partitions memory into independent heads governed by a stage-wise select-then-update strategy. At each step, exactly one head is selected for update while the remaining heads are structurally shielded from overwriting, shifting the burden of retention from model behavior to architectural design. As a lightweight instantiation, we introduce Least-Recently-Updated MHM (MHM-LRU), which guarantees uniform head utilization with zero additional token overhead. Extensive experiments on long-context benchmarks show that MHM-LRU substantially improves both retention and end-to-end accuracy across the 100K--1M token range, where baselines degrade sharply. On RULER-HQA at 896K tokens, MHM-LRU improves the memory retention rate from less than 30% to 73.96%. These gains generalize across model families, scales, and task types, positioning architectural optimization as a practical and cost-efficient path toward reliable long-context recurrent memory.",
+      "authors": [
+        "Jiatong Li",
+        "Samuel Yeh",
+        "Sharon Li"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CL"
+      ],
+      "published": "2026-07-01T22:38:54+00:00",
+      "link": "https://arxiv.org/pdf/2607.01523v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "memory retention bottleneck in long context LLMs",
+      "llm_evidence_cn": "长上下文大模型中的记忆保留瓶颈",
+      "llm_evidence": "长上下文大模型中的记忆保留瓶颈",
+      "canonical_evidence": "长上下文大模型中的记忆保留瓶颈",
+      "llm_tldr_en": "Recurrent memory agents suffer from memory retention bottlenecks in long contexts, causing performance degradation; we propose Multi-Head Recurrent Memory (MHM) to partition memory and prevent overwriting, improving reliability.",
+      "llm_tldr_cn": "循环记忆智能体在处理长上下文时存在记忆保留瓶颈，导致性能系统性下降。本文提出多头循环记忆（MHM）框架，将记忆划分为独立头以防止内容覆盖。实验证实记忆保留是主要瓶颈，MHM有效缓解了长上下文性能退化，提升了长上下文语言模型的可靠性和事实一致性。",
+      "llm_tldr": "循环记忆智能体在处理长上下文时存在记忆保留瓶颈，导致性能系统性下降。本文提出多头循环记忆（MHM）框架，将记忆划分为独立头以防止内容覆盖。实验证实记忆保留是主要瓶颈，MHM有效缓解了长上下文性能退化，提升了长上下文语言模型的可靠性和事实一致性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "hallucination in long context language models",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.02668v1",
+      "source": "arxiv",
+      "title": "Improving LLMs via Validator-to-Generator Alignment",
+      "abstract": "Large language models are inconsistent: varying prompts or including unrelated information can lead to unexpected changes in model outputs. The generator-validator (G-V) gap is one manifestation of this phenomenon, where LLMs generate responses that they then deem as invalid if re-queried to validate them. In this work, we introduce a new formulation of G-V consistency that involves a principled correction for utterance frequency. Specifically, generators often assign low likelihood to valid strings simply because those strings are a priori unlikely, which makes naive notions of G-V consistency unworkable. We show that under a natural model of rational agents answering questions with multiple answers, consistency of the validator with a frequency-corrected generator score emerges naturally. Our method, \\emph{\\FCPAname} (\\FCPA), is a training objective implementing frequency-corrected G-V consistency for real-world LLMs. Our experimental results show that training with \\FCPA{} substantially improves both G-V consistency and generator performance over prior methods, with gains of up to $+27$pp in Pearson correlation on IFEval and HumanEval, while preserving validator quality across all evaluated tasks.",
+      "authors": [
+        "Juan Diego Rodriguez",
+        "Jocelyn Zhang",
+        "Katrin Erk",
+        "Greg Durrett"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-07-02T18:00:39+00:00",
+      "link": "https://arxiv.org/pdf/2607.02668v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "generator-validator gap for detecting invalid outputs",
+      "llm_evidence_cn": "用于检测无效输出的生成器-验证器差距",
+      "llm_evidence": "用于检测无效输出的生成器-验证器差距",
+      "canonical_evidence": "用于检测无效输出的生成器-验证器差距",
+      "llm_tldr_en": "LLMs often generate responses they later deem invalid, known as the generator-validator gap; we introduce a frequency-corrected formulation of G-V consistency to better detect and align invalid generations.",
+      "llm_tldr_cn": "大语言模型存在生成器-验证器差距，常生成其自身判定为无效的响应，这是幻觉的一种表现。本文引入包含话语频率原则性校正的生成器-验证器一致性新公式。实验表明频率校正后的生成器得分与验证器一致性表现更优，对齐验证器与生成器有助于检测和减少模型生成无效内容。",
+      "llm_tldr": "大语言模型存在生成器-验证器差距，常生成其自身判定为无效的响应，这是幻觉的一种表现。本文引入包含话语频率原则性校正的生成器-验证器一致性新公式。实验表明频率校正后的生成器得分与验证器一致性表现更优，对齐验证器与生成器有助于检测和减少模型生成无效内容。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.05721v1",
+      "source": "arxiv",
+      "title": "SpanUQ: Span-Level Uncertainty Quantification for Large Language Model Generation",
+      "abstract": "Uncertainty estimation is essential not only for the trustworthy deployment of large language models (LLMs) but also as a foundation for self-refinement in LLM generation. However, existing approaches operate at suboptimal granularities: token-level scores lack semantic coherence, while sequence-level scores fail to localize errors. We formalize Span-Level Uncertainty Estimation (SLUE), a new task that targets the natural granularity for uncertainty: semantically coherent text spans, each conveying a single assessable unit of meaning. To address this task, we introduce SPANUQ, a lightweight probe that distills the uncertainty knowledge from expensive multi-sample inference into a single forward pass over LLM hidden states. SPANUQ employs a DETR-style span decoder to simultaneously detect spans and estimate their uncertainty via a Mixture of Beta distribution, trained with a principled combination of Beta NLL regression and contrastive ranking objectives. We construct SPANUQ-BENCH, the first span-level uncertainty benchmark comprising 20K prompts, 293K annotated spans, and continuous soft labels derived from multi-sample claim verification. Experiments on five LLM backbones show that SPANUQ consistently achieves the best span-level uncertainty quality, outperforming the strongest probe baseline and all sampling-based methods while being 10-20x faster. Its DETR-based span detector attains 0.910 F1, surpassing the best heuristic by 39.4%, enabling precise error localization that sequence-level methods cannot provide. The framework generalizes across five LLMs spanning two model families.",
+      "authors": [
+        "Yimeng Zhang",
+        "Yingying Zhuang",
+        "Ziyi Wang",
+        "Yuxuan Lu",
+        "Pei Chen",
+        "Aman Gupta",
+        "Zhe Su",
+        "Ming Tan",
+        "Zhilin Zhang",
+        "Qun Liu",
+        "Manikandarajan Ramanathan",
+        "Rajashekar Maragoud",
+        "Edward Vul",
+        "Jing Huang",
+        "Dakuo Wang"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-07-07T01:09:46+00:00",
+      "link": "https://arxiv.org/pdf/2607.05721v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Span-level uncertainty quantification for detecting LLM errors",
+      "llm_evidence_cn": "用于检测大模型错误的跨度级不确定性量化",
+      "llm_evidence": "用于检测大模型错误的跨度级不确定性量化",
+      "canonical_evidence": "用于检测大模型错误的跨度级不确定性量化",
+      "llm_tldr_en": "Existing uncertainty estimation lacks semantic coherence or error localization. This paper introduces Span-Level Uncertainty Estimation (SLUE) and SPANUQ, a lightweight probe to distill uncertainty into semantically coherent spans for better error detection.",
+      "llm_tldr_cn": "针对现有大语言模型不确定性估计在语义连贯性和错误定位能力上的不足，本文形式化了跨度级不确定性估计任务，并引入SPANUQ方法。该方法通过轻量级探针将昂贵多采样推理的不确定性知识蒸馏至单次前向传播中，实现了在语义连贯文本跨度上的高效精准错误定位，为长文本生成中的幻觉检测提供了有力工具。",
+      "llm_tldr": "针对现有大语言模型不确定性估计在语义连贯性和错误定位能力上的不足，本文形式化了跨度级不确定性估计任务，并引入SPANUQ方法。该方法通过轻量级探针将昂贵多采样推理的不确定性知识蒸馏至单次前向传播中，实现了在语义连贯文本跨度上的高效精准错误定位，为长文本生成中的幻觉检测提供了有力工具。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.06160v1",
+      "source": "arxiv",
+      "title": "LongCrafter: Towards Diverse Long-Context Understanding via Evidence-Graph-Guided Instruction Synthesis",
+      "abstract": "Synthesizing long-context supervised fine-tuning (SFT) data is a scalable way to enhance the long-context understanding of large language models (LLMs), yet existing approaches share three limitations: narrow task coverage, insufficient instruction difficulty, and a lack of faithfulness supervision. We propose \\textbf{LongCrafter}, a structured synthesis framework that couples a hierarchical task taxonomy with an evidence-grounded pipeline. The taxonomy organizes long-context understanding into local/shallow and global/deep levels and yields 32 fine-grained task types that serve as a global generative prior. Guided by this taxonomy, LongCrafter constructs task-aligned long contexts, decomposes them into explicit evidence graphs that model cross-paragraph dependencies, and generates instruction--response pairs strictly grounded in the located evidence spans, ensuring both controllable difficulty and faithful, traceable reasoning. Models fine-tuned on LongCrafter data outperform all SFT baselines and even the official post-trained models on LongBench, LongBench~v2, and LooGLE across both Qwen2.5-7B and LLaMA-3.1-8B, with the largest gains on high-difficulty tasks. Further analysis shows that LongCrafter data is more diverse and better spread across difficulty levels, and that the trained models locate evidence robustly regardless of position, effectively mitigating the ``lost in the middle'' problem.",
+      "authors": [
+        "Chenhao Yuan",
+        "Yinhao Xu",
+        "Shuwen Xu",
+        "Xizhi Yang",
+        "Jiaxiang Liu",
+        "Chenxi Zhou",
+        "Shaoping Huang",
+        "Haolin Ren",
+        "Pengfei Cao",
+        "Jun Zhao",
+        "Kang Liu"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "published": "2026-07-07T11:35:48+00:00",
+      "link": "https://arxiv.org/pdf/2607.06160v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Faithfulness supervision for long-context SFT data",
+      "llm_evidence_cn": "长上下文微调数据的忠实度监督",
+      "llm_evidence": "长上下文微调数据的忠实度监督",
+      "canonical_evidence": "长上下文微调数据的忠实度监督",
+      "llm_tldr_en": "Existing long-context SFT data synthesis methods suffer from narrow task coverage and lack faithfulness supervision. We propose LongCrafter, a framework coupling a hierarchical task taxonomy with an evidence-grounded pipeline to synthesize SFT data. This approach enhances long-context understanding while ensuring factual consistency and mitigating hallucinations in long-context LLMs.",
+      "llm_tldr_cn": "现有的长上下文监督微调数据合成方法存在任务覆盖面窄、指令难度不足以及缺乏忠实度监督等局限性。本文提出了LongCrafter结构化合成框架，该框架将层次化任务分类法与证据引导流水线相结合，构建任务对齐的长上下文并分解为显式证据图。实验结果表明，该方法不仅提升了长上下文理解的多样性，还通过忠实度监督有效缓解了长上下文大模型中的幻觉问题，增强了生成内容的事实一致性。",
+      "llm_tldr": "现有的长上下文监督微调数据合成方法存在任务覆盖面窄、指令难度不足以及缺乏忠实度监督等局限性。本文提出了LongCrafter结构化合成框架，该框架将层次化任务分类法与证据引导流水线相结合，构建任务对齐的长上下文并分解为显式证据图。实验结果表明，该方法不仅提升了长上下文理解的多样性，还通过忠实度监督有效缓解了长上下文大模型中的幻觉问题，增强了生成内容的事实一致性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "hallucination in long context language models",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}

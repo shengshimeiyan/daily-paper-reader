@@ -1,0 +1,733 @@
+Title: Multi-Head Recurrent Memory Agents
+
+URL Source: https://arxiv.org/pdf/2607.01523v1
+
+Published Time: Fri, 03 Jul 2026 00:18:12 GMT
+
+Number of Pages: 19
+
+Markdown Content:
+# Multi-Head Recurrent Memory Agents 
+
+Jiatong Li Samuel Yeh Sharon Li 
+
+Department of Computer Science, University of Wisconsin-Madison 
+
+{jli2947, samuelyeh, sharonli}@cs.wisc.edu 
+
+Abstract 
+
+Recurrent memory agents extend LLMs to arbitrarily long contexts by iteratively consolidating input into a fixed-size memory window. Despite their scalability, these agents exhibit a well-documented reliability problem: end-to-end perfor-mance degrades systematically as context length grows. We diagnose this failure by decomposing performance into two factors—memory capture and memory 
+
+retention —and quantitatively confirm that retention is the dominant bottleneck. Retention collapses because existing designs maintain memory as a monolithic text block, forcing every update to risk overwriting previously retained content. Moti-vated by this diagnosis, we propose Multi-Head Recurrent Memory (MHM) , a general, training-free framework that partitions memory into independent heads governed by a stage-wise select-then-update strategy. At each step, exactly one head is selected for update while the remaining heads are structurally shielded from overwriting, shifting the burden of retention from model behavior to architectural design. As a lightweight instantiation, we introduce Least-Recently-Updated MHM (MHM-LRU), which guarantees uniform head utilization with zero additional token overhead. Extensive experiments on long-context benchmarks show that MHM-LRU substantially improves both retention and end-to-end accuracy across the 100K–1M token range, where baselines degrade sharply. On RULER-HQA at 896K tokens, MHM-LRU improves the memory retention rate from less than 30% to 73.96% . These gains generalize across model families, scales, and task types, positioning architectural optimization as a practical and cost-efficient path toward reliable long-context recurrent memory. Our code is available here. 
+
+1 Introduction 
+
+The ability to reason over long contexts is a fundamental requirement for LLM agents operating in the real world [ 1–5 ]. Tasks such as document analysis [ 6– 9], multi-step research [ 10 –12 ], and extended dialogue [ 1, 13 ] demand that agents track and integrate information across inputs that far exceed the context window. Recurrent memory [ 14 – 16 ] addresses this challenge by processing input sequentially in chunks and iteratively compressing a long context into a fixed-size memory window. At each step, the agent reads a new context chunk and updates its memory to integrate new information with what has been retained so far. This paradigm is appealing because it places no hard limit on context length and requires no modification to the underlying LLM. In practice, however, recurrent memory agents exhibit a well-documented reliability problem: performance degrades systematically as context length grows [17, 18]. To motivate our work, we first diagnose how existing recurrent memory fails under long contexts by decomposing end-to-end performance into two factors: whether the memory ever captures the relevant information during memory update, and whether it retains that information through all subsequent memory updates. Measuring both memory capture rate and memory retention rate on a representative method MemAgent [ 17 ], we find that capture remains stable across all context lengths, while memory retention decreases sharply, falling below 30% at 896K tokens. This diagnosis        
+
+> Preprint.
+> arXiv:2607.01523v1 [cs.LG] 1 Jul 2026 Memory
+> States (t)
+> 𝐀 −1-th memory 𝐀 -th memory
+> Head
+> selection
+> Memory
+> update
+> Head-selection
+> probability Low High
+> Asymptotic uniform memory utilization
+
+Multi-head recurrent memory 
+
+> Context Chunks
+> ℎ1
+> ℎ2
+> ℎ3
+> ℎ4
+> ℎ1
+> ℎ2
+> ℎ3
+> ℎ4
+
+Figure 1: Left: An overview of the multi-head recurrent memory (MHM). Right: An overview of the memory head utilization pattern across time. In every time step, only one head is written. As time goes by, MHM achieves asymptotic uniform memory utilization. pinpoints memory retention failure as the dominant bottleneck. The root cause is architectural: existing recurrent memory designs maintain memory as a monolithic text block, so every update risks erasing key information. Information written at step t must survive (T − t) subsequent overwrites to reach the final state, an increasingly unlikely outcome as T grows. Motivated by the diagnosis, we propose Multi-Head Recurrent Memory (MHM) , a general, training-free memory framework designed to target memory retention failure. Rather than maintaining a single monolithic memory block, MHM partitions memory into multiple independent heads and governs updates through a stage-wise select-then-update strategy. At each step, one of the heads is selected for update while the remaining heads are held fixed. This shifts the burden of retention from model behavior to the architectural design: rather than relying on the model to avoid overwriting important content, MHM structurally shields the information retained in unselected heads from erasure at each step. The selection criterion is left general, accommodating any rule-based or model-based strategy, and existing single-headed methods are subsumed as the special case. As a lightweight instantiation, we showcase MHM-LRU, which selects the least-recently-updated head at each step. To diversify memory head use to persist memory retention, this rule provably guarantees uniform head utilization across heads and incurs zero additional token overhead relative to a single-headed baseline. Extensive experiments on realistic long-context benchmarks demonstrate that MHM-LRU substantially improves memory retention, outperforming baselines across all evaluated context lengths. Notably, on RULER-HQA at 896K tokens, MHM-LRU improves memory retention rate from less than 30% to 73.96 %. The retention improvements directly translate into end-to-end performance gains, where MHM-LRU’s accuracy remains strong and stable across the 100K-1M context range while baselines degrade sharply. These benefits generalize across model families, scales, and task types, positioning architectural optimization as a practical and cost-efficient path toward reliable long-context recurrent memory. Overall, the contributions of this paper are summarized as follows: 1. We identify memory retention failure as the dominant bottleneck of recurrent memory agents under extremely long contexts, supported by a quantitative capture-retention decomposition analysis. 2. We propose Multi-Head Recurrent Memory (MHM), a general and training-free memory architecture-level framework that structurally limits overwrite pressure through independent memory heads and stage-wise selective updates. 3. We extensively validate MHM on realistic long-context benchmarks, demonstrating substantial retention and accuracy improvements across context lengths, model families, and task types. 
+
+2 Preliminaries and Related Work 
+
+Long-Context LLMs. Scaling LLMs to long contexts has been pursued along two primary directions at the model level: extending the context window via positional encoding modifications [ 19 –21 ] and reducing attention complexity via sparse or linear attention mechanisms [ 22 – 24 ]. These 2advances have enabled million-token-level context windows in both open-source models such as Qwen2.5-1M [ 25 ], and proprietary systems such as Claude-Sonnet-4.6 [ 26 ] and Gemini-3.1-Pro [ 27 ]. Despite their effectiveness, native long-context LLMs remain bounded by fixed context limits or quadratic memory costs, motivating recurrent memory as a complementary paradigm that sidesteps both constraints. 
+
+Recurrent Memory Agents. The idea of recurrent memory was foreshadowed in earlier architecture-level approaches [ 28 –31 ]. However, constrained by the representational capacity of the underlying architecture, the generality of these methods are limited in a broader range of applications. It was not until the emergence of token-level recurrent memory [ 17 , 14 ] that this paradigm was concretely established. Formally, let (C, q ) denote a context-query pair where an LLM agent must produce a correct response 
+
+y. Since C may far exceed the model’s context window, the agent partitions C into an ordered chunk sequence C = ( c1, c 2, . . . , c T ) and maintains a bounded memory state mt through sequential updates. The memory agent fθ then processes these chunks sequentially, updating a bounded memory state mt at each step: 
+
+mt ← fθ (mt−1, c t, q ), t = 1 , 2, . . . , T. (1) After all chunks have been processed, the LLM agent generates its final response conditioned solely on the accumulated memory: 
+
+y ← LLM (mT , q ). (2) Because mT is the sole information carrier from the first T chunks to the final response, the fidelity of the update in Eq. (1) under growing T is the central reliability challenge of this paradigm. This paradigm has been concretely established by MemAgent [ 17 ] for long-context query answering. Subsequent work has extended it in several directions: GRU-Mem [ 32 ] introduces text-controlled gating for selective updates, while ReMemR1 [ 33 ] augments recurrent memory with a revisitable retrieval component, yet the core recurrent working memory remains a monolithic block. 
+
+Single-Headed Memory as a Structural Bottleneck. Across existing recurrent memory de-signs [ 17 , 33 , 32 ], the core recurrent memory state mt is maintained as a single monolithic text block—a design we term single-head memory. At every update step, the memory agent must overwrite this block with content derived from ct, creating an inherent tension between retaining previously captured information and incorporating new context. This tension compounds with context length: information captured at step t must survive (T − t) subsequent overwrites intact to reach mT .Under sufficiently long contexts, compression into a single representational slot makes information loss structurally inevitable. In the next section, we rigorously characterize and measure this failure, identifying it as the binding constraint on long-context performance. 
+
+3 Characterizing Recurrent Memory Failure 
+
+To motivate our memory architectural design, we first analyze how recurrent memory fails under long contexts. Incentivized by the working memory [ 34 ] and memory forgetting detection [ 35 , 36 ] in neuroscience, we decompose end-to-end performance into two memory factors: capture and retention .For a correct response, the memory must (1) capture the relevant information at some point during iterative updates, and (2) retain it through all subsequent updates until the final state mT . Failure at either stage produces a wrong answer, but the two modes need not be equally prevalent in practice. 
+
+Definition 1 (Memory Capture Rate (MCR) ). Let D = {(Ci, q i, y ∗ 
+
+> i
+
+)}Ni=1 be an evaluation dataset and M = {mi}Ni=1 the corresponding memory trajectories. The mi = {mi, 1, . . . , m i,T } denotes the memory state trajectory, where T is the total number of trajectory steps for the respective instance. We assess answer membership 1(y∗ 
+
+> i
+
+∈ mi,t ) of the ground-truth answer against the memory content at step t. MCR is defined as the fraction of queries for which the relevant information was present in memory at least once during processing: 
+
+MCR( M, D) = 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+1(y∗ 
+
+> i
+
+∈ mi,t , ∃ t ∈ [T ]) . (3) 37K 14K 28K 56K 112K 224K 448K 896K        
+
+> Context Length
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Metric Score  (%)
+> MCR MRR Acc
+> 025 50 75 100
+> MRR (%)
+> 0
+> 25
+> 50
+> 75
+> 100
+> Acc (%)
+> MemAgent
+> ReMem
+> LR ( =0.98)
+
+Figure 2: (a) MCR and MRR of MemAgent [ 17 ] (Qwen2.5-14B-Instruct) on RULER-HQA across context lengths from 7K to 896K tokens. While MCR remains stable throughout, MRR degrades sharply with context length, falling below 30% at 896K tokens. (b) MRR and Acc correlation analysis of MemAgent and ReMem [ 33 ]on RULER-HQA across context lengths from 7K to 896K tokens. The ‘LR’ denotes linear regression. End-to-end accuracy correlates strongly with MRR ( ρ = 0 .98 ), confirming that retention failure is the dominant factor. 
+
+Definition 2 (Memory Retention Rate (MRR) ). Among queries where memory capture occurred, the fraction for which the captured information survived through to the final memory state mT :
+
+MRR( M, D) = 
+
+PNi=1 1(y∗ 
+
+> i
+
+∈ mi,t , ∃ t ∈ [T − 1]) · 1(y∗ 
+
+> i
+
+∈ mi,T )
+
+PNi=1 1(y∗ 
+
+> i
+
+∈ mi,t , ∃ t ∈ [T ]) . (4) 
+
+A high MRR indicates that the memory agent is capable of retaining previously captured information when processing irrelevant context. 
+
+Retention Failure Dominates. We apply this analysis to MemAgent, a representative recurrent memory baseline built on Qwen2.5-14B-Instruct [ 37 ], on the RULER-HQA [ 38 , 39 ] benchmark. As shown in Figure 2 (left), MCR remains stable across all evaluated context lengths, indicating that the agent consistently captures relevant information regardless of input length. MRR, by contrast, degrades sharply, falling below 30% at 896K tokens. Since MCR is roughly stable, the observed accuracy degradation is almost entirely attributable to retention failure. Appending results from ReMem [ 33 ], Figure 2 (right) further confirms that end-to-end accuracy correlates strongly with MRR, with correlation coefficient ρ = 0 .98 . This isolates memory retention as the main structural bottleneck, and directly motivates the design question we address in Section 4: how to make the memory structure itself resistant to overwrite pressure. 
+
+4 Multi-Head Recurrent Memory 
+
+Motivated by our analysis, we propose Multi-Head Recurrent Memory (MHM ), a general frame-work designed to alleviate retention failure. The core insight is that retention failure is not a failure of the model but the memory structure: when a single block holds all context, every update is a potential erasure. MHM addresses this at the source by splitting memory into H mutually independent memory heads and governing updates through a selective overwrite strategy. More specifically, MHM represents the memory state as a set of H independent text blocks, mt = {m1 
+
+> t
+
+, . . . , m Ht }, where each head mht is delimited by <memory_{h}> ... </memory_{h}> tags. Each update affects only one memory head, while the remaining (H − 1) heads are structurally shielded from erasure by construction. Our design addresses two challenges: which head to select for update, and how to perform the update given the selected head. We describe the two stages below. 
+
+Selection Stage. The selection stage addresses the memory retention failure through diversified 
+
+head selection—by spreading updates across different heads over time, the agent avoids repeatedly overwriting the same head and thereby reduces the risk of erasing pivotal information. Formally, given the current memory state mt−1 = {m1
+
+> t−1
+
+, . . . , m Ht−1}, the selection stage identifies the head 4h⋆ ∈ [H] most worthy of being updated: 
+
+h⋆ = arg max  
+
+> h∈[H]
+
+rselect (h | mt−1, q, c t). (5) where rselect (h | mt−1, q, c t) is a criterion function that assigns a priority score to each head candidate. The criterion rselect can encode a wide range of selection strategies depending on the available information and computational budget. A rule-based criterion may select based on head age or a fixed schedule. A model-based criterion may assess the relevance of each head given the current chunk and query. Regardless of the specific instantiation, a well-designed criterion should satisfy a key property: diversity , ensuring that updates are spread across heads over time so that no single head bears disproportionate overwrite pressure. We will provide an ablation on different selection strategies in Section 5.3. 
+
+Update Stage. The update stage overwrites the selected head h⋆ with content derived from the current context chunk. Formally, given the current memory state mt−1, the selected head index h⋆,the query q, and the current chunk ct, the memory agent generates new head content and updates the memory state as follows: 
+
+mh⋆ 
+
+> t
+
+= fθ (mt−1, h ⋆, q, c t), mht = mht−1 ∀ h̸ = h⋆. (6) By receiving the full memory state mt−1 as context, the update allows the memory agent to reason jointly about what has already been retained across all heads and what new information from ct
+
+is worth writing. This encourages both capturing newly relevant content and avoiding redundancy with information already preserved in unselected heads. This stage-wise design subsumes existing single-headed methods as the special case H = 1 , making MHM a flexible and general framework. 
+
+A Lightweight Instantiation. As a concrete instantiation of MHM, inspired by the least-recently-used cache replacement algorithm [ 40 –42 ], we adopt a least-recently-updated (LRU) selection rule: at each step, the head that has gone the longest without an update is selected. This instantiation has two advantages. First, the selection strategy ensures diversified head selection. When all heads are initialized identically, this provides a structural guarantee that no head is updated more than once before all others are updated at least once. This ensures uniform utilization across heads and maximizes memory redundancy. Second, this method is computationally lightweight since head selection requires only a simple age comparison rather than an additional LLM inference pass, incurring no extra token overhead relative to a single-headed baseline. We refer to this instantiation as MHM-LRU . As our experiments demonstrate, the structural guarantee of uniform head utilization can substantially improve retention and end-to-end performance in long context scenarios, suggesting that the benefits of MHM do not depend on sophisticated selection strategies. Full prompt templates and implementation details are provided in Appendix A.2. 
+
+5 Experiments 
+
+5.1 Experimental Setup Baselines. We compare MHM-LRU against two latest recurrent memory baselines: (1) MemA-gent [ 17 ], which maintains a single memory head and applies a full overwrite at every update step, and (2) ReMem [ 33 ], which maintains two heterogeneous heads (an update memory and a retrieval memory) where the retrieval memory is refreshed via a rule-based callback query. GRU-Mem [ 32 ] is excluded as its implementation is not publicly available. All methods use Qwen2.5-14B-Instruct as the backbone of the recurrent memory structure. We additionally evaluate on Qwen2.5-32B-Instruct and gpt-oss-120b in the ablation study. To ensure fair comparison, the total memory capacity is kept the same across all methods : 4,096 tokens for MemAgent (one head), 2,048 per head for ReMem (two heads), and 1,024 per head for MHM-LRU (4 heads). Full decoding and evaluation settings are provided in Appendix B. 
+
+Datasets. We evaluate on two benchmarks: (1) RULER-HQA [ 17 ], a multi-hop QA dataset span-ning context lengths from 7K to 892K tokens, following the evaluation protocol of [ 17 ], and (2) BABILong [43 ], a long-context reasoning benchmark covering ten structurally distinct task types (Q1–Q10) across context lengths from 1K to 10M tokens. For BABILong, we evaluate on 57K 14K 28K 56K 112K 224K 448K 896K          
+
+> 20
+> 40
+> 60
+> 80
+> 100
+> MRR (%)
+> RULER-HQA
+> 8K 16K 32K 64K 128K 256K 512K 1M
+> 40
+> 50
+> 60
+> 70
+> 80
+> 90
+> 100
+> BABILong
+> MemAgent ReMem MHM-LRU (Ours)
+
+Figure 3: MRR results across different context lengths. The x-axis represents context length. Each data point is an average across 3 random runs with standard deviation as the error bar. Table 1: End-to-end answer accuracy ↑ (%) results on RULER-HQA. 
+
+Method Context Length 7K 14K 28K 56K 112K 224K 448K 896K 
+
+LLM 60.16 60.94 50.00 57.03 50.00 37.50 8.59 0.00 MemAgent 62.24 ±0.97 60.94 ±1.10 56.25 ±2.21 50.52 ±0.37 42.19 ±0.64 42.97 ±0.64 33.33 ±0.98 21.62 ±0.98 
+
+ReMem 64.32 ±3.51 59.64 ±0.98 50.26 ±3.68 39.06 ±2.78 29.68 ±2.78 26.56 ±1.69 16.14 ±1.33 13.80 ±0.97 
+
+MHM-LRU 66.86 ±1.69 62.76 ±1.47 59.64 ±1.33 55.21 ±1.33 50.26 ±1.47 50.26 ±2.57 48.70 ±2.88 49.74 ±1.47 
+
+context lengths from 8K to 1M tokens. For each length, we sample 128 entries via systematic sampling to ensure uniform coverage of all task types. All recurrent memory methods are run three times independently; we report the mean and standard deviation throughout. 
+
+5.2 Main Results MHM Substantially Improves Memory Retention Figure 3 shows MRR across context lengths for all methods. We observe that MHM-LRU consistently and substantially outperforms both baselines, with the gap widening at longer contexts. For example, on RULER-HQA at 896K tokens, MHM-LRU achieves an MRR of 73.96 % compared to less than 30% for MemAgent and ReMem. On BABILong at 1M tokens, MHM-LRU reaches 68.68% versus 42.96% for MemAgent. These results demonstrate the effectiveness of MHM-LRU in alleviating the memory retention issue of recurrent memories as context length increases. Moreover, at shorter context lengths (under 50K tokens), MHM-LRU achieves near-perfect retention (MRR > 99%) on both datasets, confirming that the multi-head design incurs no penalty in the common short-to-mid-length regime. Overall, the experiments demonstrate the effectiveness of MHM in addressing the retention bottleneck of current memory. Table 2: End-to-end answer accuracy ↑ (%) results on BABILong. 
+
+Method Context Length 8K 16K 32K 64K 128K 256K 512K 1M 
+
+MemAgent 58.85 ±2.66 55.99 ±2.58 53.39 ±2.42 47.14 ±0.98 44.66 ±1.64 38.02 ±2.88 32.55 ±1.61 25.26 ±0.97 
+
+ReMem 61.46 ±2.41 55.21 ±2.24 45.57 ±1.61 42.19 ±3.99 34.64 ±2.42 32.29 ±1.61 29.50 ±0.26 24.48 ±0.97 
+
+MHM-LRU 63.54 ±1.60 60.94 ±2.92 55.47 ±1.27 51.82 ±0.97 48.70 ±3.27 47.39 ±1.84 46.35 ±2.66 41.41 ±1.91 
+
+Retention Gains Translate Directly to End-to-End Performance. Table 1 and Table 2 report end-to-end accuracy across all context lengths. We observe that MHM-LRU consistently outperforms both recurrent memory baselines and the native long-context LLM across nearly all settings. The advantage is most pronounced at extreme context lengths: on RULER-HQA at 896K tokens, MHM-6LRU achieves 49.74% accuracy versus 21.62% for MemAgent and 0.00% for the LLM baseline; on BABILong at 1M tokens, 41.41% versus 25.26% for MemAgent. Crucially, MHM-LRU’s accuracy remains stable across the 100K–1M range (48.70% – 50.26% on RULER-HQA; 41.41% – 48.70% on BABILong), whereas MemAgent and ReMem degrade sharply. Taken together with the MRR results in Figure 3, these findings confirm that the retention improvements from MHM directly translate into downstream performance gains. 
+
+5.3 Ablation Studies on Key Design 
+
+We ablate two design dimensions of MHM: the number of heads and the memory selection strategy. All ablations are conducted on RULER-HQA using Qwen2.5-14B-Instruct, with per-head capacity fixed at 1,024 tokens. 1 2 4 8 16 
+
+> Number of Heads
+> 40
+> 60
+> 80
+> 100
+> MRR  (%)
+> 112K
+> 224K
+> 448K
+> 896K
+
+Figure 4: Effect of number of memory heads across context lengths. 
+
+More Memory Heads Improve Retention. We evalu-ate the impact of the number of heads H on the memory retention rate (MRR). We vary H from 1 to 16, under each context length. As shown in Figure 4, MRR shows approx-imately logistic-like improvement as the number of heads grows. For example, under context length 896K, our ap-proach improves MRR from 26.53% with one head (equiv-alent to MemAgent) to 69.89% with two heads, 74.67% with four heads, and 87.12% with eight heads, before plateauing at sixteen heads. This trend holds consistently across all evaluated context lengths. This ablation study re-veals that increasing the number of heads can significantly improve memory retention, confirming the structural ad-vantage of our design. Table 3: Ablation study of the multi-headed memory selection strategy.                                                  
+
+> Context Length Metric 112K 224K 448K 896K
+> MHM-Concur (w/o stage-wise)
+> Acc ↑(%) 46.88 42.97 35.94 33.59 MCR ↑(%) 71.09 74.22 74.22 66.41 MRR ↑(%) 72.53 73.68 56.81 54.12
+> MHM-Relevance
+> Acc ↑(%) 46.09 50.78 39.84 45.31 MCR ↑(%) 69.53 70.31 65.62 67.97 MRR ↑(%) 82.02 78.89 70.24 74.71
+> MHM-LRU
+> Acc ↑(%) 50.26 50.26 48.70 49.74 MCR ↑(%) 67.97 71.88 71.09 69.16 MRR ↑(%) 86.34 80.48 79.66 73.96
+
+Stage-wise Selection Reduces Retention Failure. 
+
+A critical design in MHM is the stage-wise head se-lection and memory update. We thus compare MHM-LRU against a variant MHM-Concur to isolate the effect of the stage-wise design. In MHM-Concur, head selection and memory update are merged into a single step: the model is asked to simultaneously de-cide which head to overwrite and produce the updated content. As shown in Table 3, while MHM-Concur achieves a notably higher MCR than the stage-wise approach, it suffers from substantially lower MRR (54.12% vs. 73.96% at context length 896K), result-ing in lower end-to-end accuracy across all context lengths. The concurrent design introduces instruction complexity that degrades the model’s ability to retain captured content: when the model must simultane-ously reason about head routing and content genera-tion, it is more likely to inadvertently erase previously retained information. In contrast, the stage-wise de-sign eliminates this conflict by dedicating separate prompts to each operation, allowing the update stage to focus entirely on capture and retention without the competing objective of head routing. 
+
+Rule-based vs. Relevance-based Selection. We compare MHM-LRU (rule-based) against another variant, MHM-Relevance, to isolate the effect of the selection criterion, holding the stage-wise design fixed. In MHM-Relevance, the model is explicitly prompted to select the head most worthy of being updated, while diversifying the head usage (details in Appendix A.4). The intuition is that the model can make relevance-aware routing decisions. Table 3 shows that, despite this appeal, MHM-Relevance usually incurs sub-optimal MCR and MRR, leading to lower end-to-end accuracy (45.31% vs. 49.74% at context length 896K). The model-driven routing has two compounding issues. First, model-based relevance assessment at each step is inherently noisy: the model cannot reliably predict which information will be needed at query time, leading to routing decisions that concentrate updates 7128K 256K 512K 1M                                                                            
+
+> QA1 1-supporting fact
+> QA2 2-supporting facts
+> QA3 3-supporting facts
+> QA4 2-arg relations
+> QA5 3-arg relations
+> QA6 yes-no questions
+> QA7 counting
+> QA8 lists-sets
+> QA9 simple negation
+> QA10 indefinite knowledge
+> 61.5 64.1 41.0 28.2
+> 9.6 5.1 2.6 0.0
+> 17.3 10.3 5.1 5.1
+> 50.0 22.2 30.6 13.9
+> 86.5 71.8 74.4 48.7
+> 48.1 43.6 28.2 38.5
+> 19.2 10.3 23.1 2.6
+> 26.9 20.5 10.3 10.3
+> 66.7 75.0 55.6 61.1
+> 61.5 59.0 56.4 46.1
+> MemAgent
+> 128K 256K 512K 1M
+> 59.0 82.0 56.4 33.3
+> 10.3 17.9 12.8 7.7
+> 10.3 5.1 5.1 7.7
+> 66.7 61.1 80.6 52.8
+> 84.6 84.6 79.5 74.4
+> 53.9 48.7 53.9 53.9
+> 30.8 20.5 28.2 15.4
+> 25.6 25.6 23.1 23.1
+> 83.3 75.0 66.7 83.3
+> 66.7 56.4 61.5 66.7
+> MHM-LRU (Ours)
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> 100 GB 1000 GB
+> Total Required VRAM (GB)
+> 60
+> 40
+> 20
+> 0
+> 20
+> Acc (%)  (7K  896K)
+> MHM (Ours)
+> MemAgent + RL
+> MemAgent
+> 1M Standard
+> Pareto frontier Dominated region
+
+Figure 5: Accuracy by task type (QA1 – QA10) and context length (128K – 1M) on BABILong. 128K 256K 512K 1M                                                                            
+
+> QA1 1-supporting fact
+> QA2 2-supporting facts
+> QA3 3-supporting facts
+> QA4 2-arg relations
+> QA5 3-arg relations
+> QA6 yes-no questions
+> QA7 counting
+> QA8 lists-sets
+> QA9 simple negation
+> QA10 indefinite knowledge
+> 61.5 64.1 41.0 28.2
+> 9.6 5.1 2.6 0.0
+> 17.3 10.3 5.1 5.1
+> 50.0 22.2 30.6 13.9
+> 86.5 71.8 74.4 48.7
+> 48.1 43.6 28.2 38.5
+> 19.2 10.3 23.1 2.6
+> 26.9 20.5 10.3 10.3
+> 66.7 75.0 55.6 61.1
+> 61.5 59.0 56.4 46.1
+> MemAgent
+> 128K 256K 512K 1M
+> 59.0 82.0 56.4 33.3
+> 10.3 17.9 12.8 7.7
+> 10.3 5.1 5.1 7.7
+> 66.7 61.1 80.6 52.8
+> 84.6 84.6 79.5 74.4
+> 53.9 48.7 53.9 53.9
+> 30.8 20.5 28.2 15.4
+> 25.6 25.6 23.1 23.1
+> 83.3 75.0 66.7 83.3
+> 66.7 56.4 61.5 66.7
+> MHM-LRU (Ours)
+> 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> 100 GB 1000 GB
+> Total Required VRAM (GB)
+> 60
+> 40
+> 20
+> 0
+> 20
+> Acc (%)  (7K  896K)
+> MHM (Ours)
+> MemAgent + RL
+> MemAgent
+> 1M Standard
+> Pareto frontier Dominated region
+
+Figure 6: VRAM cost and accuracy change on RULER-HQA. 
+
+on heads perceived as salient and starve others of updates. Second, this concentration undermines coverage diversity, reducing the breadth of information captured across heads. MHM-LRU sidesteps the issues by guaranteeing uniform head utilization without any model involvement, requires no additional inference for selection, and achieves overall better performance. 
+
+5.4 Generality Analysis 
+
+Table 4: MRR (%) of different model families and scales. Best metric value given the model and context length is 
+
+bolded .
+
+Model Memory Context Length 
+
+112K 224K 448K 896K gpt-oss-120b MemAgent 75.00 55.84 61.64 35.71 MHM-LRU 84.48 75.44 69.35 68.85 
+
+Qwen2.5-32B MemAgent 84.04 87.63 88.54 78.02 MHM-LRU 93.02 95.65 90.00 81.91 
+
+Generality Across Model Family and Scale. We evaluate MHM-LRU with two additional base models: Qwen2.5-32B-Instruct and gpt-oss-120b. We focus on the 112K–896K settings, where retention failure is most severe. Across both models, MHM-LRU maintains significantly higher and more stable MRR than MemAgent, as shown in Table 4. On gpt-oss-120b, MemAgent’s MRR falls below 40%, while MHM-LRU maintains MRR to 68.85%. On Qwen2.5-32B-Instruct, MHM-LRU’s MRR consistently achieves 90% on 112K– 448K and maintains to 81.91% on 896K. This consistent pattern across model families and scales confirms that the retention benefit of MHM does not depend on any model-specific property, but follows from the memory architectural advantage. 
+
+Generality Across Task Types. To evaluate the generality of MHM-LRU across diverse task types, we conduct experiments on BABILong, which encompasses ten structurally distinct reasoning tasks (QA1–QA10). As shown in Figure 5, MHM-LRU outperforms MemAgent across all ten task types at long contexts (1M), with particularly pronounced gains on tasks requiring relational reasoning and yes-no judgment (QA4–QA6), where MemAgent’s accuracy degrades sharply with context length. This pattern aligns with our retention analysis: tasks involving multi-step relational chains are most susceptible to memory retention failure, making them the primary beneficiaries of MHM’s structural redundancy. These results confirm that MHM-LRU’s advantage is not task-specific but reflects a systematic improvement that generalizes across task types. Table 5: Time and output token costs of recurrent memory agents on RULER-HQA. For each method, the test is run on an NVIDIA A100 80GB, with four parallel threads. 
+
+Metric | Method 7K 14K 28K 56K 112K 224K 448K 896K 
+
+Time / Sample (sec) MemAgent 2.8 5.1 9.2 17.3 31.5 59.1 114.3 224.9 MHM-LRU 1.9 3.3 6.5 13.0 25.9 53.4 117.1 239.1 Tokens / Sample MemAgent 330.6 535.8 916.2 1705.6 2834.4 4943.4 9340.6 18013.9 MHM-LRU 142.8 214.4 419.5 898.9 1875.7 3814.0 9038.6 18085.5 
+
+Computational Efficiency. Figure 6 plots accuracy degradation (7K to 896K) against total VRAM cost for all methods. We additionally include MemAgent+RL (RL-MemAgent [ 17 ]), a reinforcement learning post-trained variant of MemAgent that requires significantly more VRAM due to the 8Item ID: 61 Steps: [70,96) Total Steps: 96                                                     
+
+> Query : What is the bathroom south of? Answer : office
+> MHM-LRU
+> MemAgent
+> Memory capture Retention failure Ineffective memory
+> Output : T here is not enough
+> information to determine what
+> is south of the bathroom.
+> Output : Therefore, the
+> answer is the office.
+> Chunk step ( t)
+> 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95
+> 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95
+> Memory
+> Head 1
+> Head 2
+> Head 3
+> Head 4
+
+Figure 7: A case study of memory trajectory on BABILong-512K. The task type is QA4: 2-arg relations. overhead of RL training. MHM-LRU lies on the Pareto frontier between these two extremes: it recovers a substantial fraction of the accuracy gain achieved by MemAgent+RL at no additional memory overhead beyond vanilla MemAgent. This is notable because MHM-LRU requires neither model weight access nor task-specific training, and the gain comes entirely from the architectural design with multiple heads. This positions architectural optimization as a practical and resource-efficient path toward reliable long-context recurrent memory, particularly in settings where model retraining or large VRAM budgets are unavailable. We further evaluate the time and output token costs of different recurrent memory methods under long contexts, as shown in Table 5. MHM-LRU is consistently faster than MemAgent at short-to-mid context lengths (e.g., 25.9s vs. 31.5s at 112K), with negligible overhead at extreme lengths. Similarly, MHM-LRU consumes substantially fewer output tokens at shorter contexts (142.8 vs. 330.6 at 7K), converging to parity with MemAgent only at 896K. Both effects reflect a spontaneous amortization property of MHM: by writing to a single head per step, the LLM naturally generates fewer tokens per update, amortizing the cost of memory maintainance. These results confirm that MHM-LRU achieves its retention and accuracy gains at no meaningful increase in computational cost. 
+
+5.5 Memory Dynamics Case Study 
+
+To concretely illustrate how MHM-LRU alleviates retention failure, Figure 7 presents a representative memory trajectory on a BABILong-512K sample from the 2-arg relations task. The query asks “What is the bathroom south of?” (ground truth: “office”), with relevant chunks falling within steps [70, 96). MemAgent captures the answer from step 74 onward but overwrites it during the final updates (steps 91–95), yielding the incorrect response “There is not enough information to determine what is south of the bathroom.”, which is a representative instance of retention failure. MHM-LRU, in contrast, captures the answer at step 74 and then spontaneously propagates it to the remaining heads in subsequent updates, maintaining multiple redundant copies that persist through step 95 and yielding the correct answer “Therefore, the answer is the office.” This emergent backup behavior concretely demonstrates how partitioning memory into independent heads converts the stochastic overwrite risk of a monolithic block into an architectural retention guarantee. 
+
+6 Conclusion and Limitation 
+
+We presented Multi-Head Recurrent Memory (MHM), a new framework for improving the reliability of recurrent memory agents under long contexts. Through a diagnostic analysis of memory dynamics, we identified retention failure as the dominant bottleneck of long-context performance. Motivated by this diagnosis, MHM is designed to address the memory retention failure through multiple memory heads and the stage-wise memory update strategy. MHM structurally limits overwrite pressure on retained content without requiring any model retraining. MHM-LRU, a lightweight instantiation, substantially improves memory retention and end-to-end accuracy on challenging long-context query benchmarks. We hope these findings encourage future work on architectural approaches to long-context reliability, and on combining MHM with training-based methods for further gains. 
+
+Limitation. In our experiments, the number of heads H is fixed. While our ablation shows that MRR improves monotonically with H, the optimal number of heads is likely dependent on context length and task structure. An adaptive head allocation strategy that adjusts H based on input characteristics is a natural direction for future work. 9Acknowledgment 
+
+We sincerely thank Changdae Oh, Linyue Cai and Hyeong Kyu Choi for proofreading the manuscript, and Jimmy Di for providing additional computational resources. The work is supported in part by the AFOSR Young Investigator Program under award number FA9550-23-1-0184, National Science Foundation under awards IIS-2237037 and IIS-2331669, Office of Naval Research, Schmidt Sciences Foundation, Open Philanthropy (now Coefficient Giving), and Alfred P. Sloan Fellowship. 
+
+References 
+
+[1] Yusen Zhang, Ruoxi Sun, Yanfei Chen, Tomas Pfister, Rui Zhang, and Sercan Ö Arık. Chain of agents: Large language models collaborating on long-context tasks. Advances in Neural Information Processing Systems , 37:132208–132237, 2024. [2] Huiqiang Jiang, Qianhui Wu, Xufang Luo, Dongsheng Li, Chin-Yew Lin, Yuqing Yang, and Lili Qiu. Longllmlingua: Accelerating and enhancing llms in long context scenarios via prompt compression. In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 1658–1677, 2024. [3] Dacheng Li, Rulin Shao, Anze Xie, Ying Sheng, Lianmin Zheng, Joseph Gonzalez, Ion Stoica, Xuezhe Ma, and Hao Zhang. How long can context length of open-source llms truly promise? In NeurIPS 2023 Workshop on Instruction Tuning and Instruction Following , 2023. [4] Jiaqi Li, Mengmeng Wang, Zilong Zheng, and Muhan Zhang. Loogle: Can long-context language models understand long contexts? In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 16304–16333, 2024. [5] Chaojun Xiao, Pengle Zhang, Xu Han, Guangxuan Xiao, Yankai Lin, Zhengyan Zhang, Zhiyuan Liu, and Maosong Sun. Infllm: Training-free long-context extrapolation for llms with an efficient context memory. Advances in neural information processing systems , 37:119638–119661, 2024. [6] Minzheng Wang, Longze Chen, Fu Cheng, Shengyi Liao, Xinghua Zhang, Bingli Wu, Haiyang Yu, Nan Xu, Lei Zhang, Run Luo, et al. Leave no document behind: Benchmarking long-context llms with extended multi-doc qa. In Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing , pages 5627–5646, 2024. [7] Yubo Ma, Yuhang Zang, Liangyu Chen, Meiqi Chen, Yizhu Jiao, Xinze Li, Xinyuan Lu, Ziyu Liu, Yan Ma, Xiaoyi Dong, et al. Mmlongbench-doc: Benchmarking long-context document understanding with visualizations. Advances in Neural Information Processing Systems , 37:95963–96010, 2024. [8] Xinze Li, Yushi Bai, Bowen Jin, Fengbin Zhu, Liangming Pan, and Yixin Cao. Long context vs. rag: Strategies for processing long documents in llms. In Proceedings of the 48th International ACM SIGIR Conference on Research and Development in Information Retrieval , pages 4110– 4113, 2025. [9] Xixi Wu, Kuan Li, Yida Zhao, Liwen Zhang, Litu Ou, Huifeng Yin, Zhongwang Zhang, Yong Jiang, Pengjun Xie, Fei Huang, Minhao Cheng, Shuai Wang, Hong Cheng, and Jingren Zhou. Re-sum: Unlocking long-horizon search intelligence via context summarization. Arxiv:2509.13313 ,2025. [10] Yuxuan Huang, Yihang Chen, Haozheng Zhang, Kang Li, Huichi Zhou, Meng Fang, Linyi Yang, Xiaoguang Li, Lifeng Shang, Songcen Xu, et al. Deep research agents: A systematic examination and roadmap. Arxiv:2506.18096 , 2025. [11] Weizhi Zhang, Yangning Li, Yuanchen Bei, Junyu Luo, Guancheng Wan, Liangwei Yang, Chenxuan Xie, Yuyao Yang, Wei-Chieh Huang, Chunyu Miao, et al. From web search towards agentic deep research: Incentivizing search with reasoning agents. Arxiv:2506.18959 , 2025. [12] Guoxin Chen, Zile Qiao, Xuanzhong Chen, Donglei Yu, Haotian Xu, Xin Zhao, Ruihua Song, Wenbiao Yin, Huifeng Yin, Liwen Zhang, Kuan Li, Minpeng Liao, Yong Jiang, Pengjun Xie, Fei Huang, and Jingren Zhou. Iterresearch: Rethinking long-horizon agents via markovian state reconstruction. In The Fourteenth International Conference on Learning Representations , 2026. 10 [13] Zhen Tan, Jun Yan, I-Hung Hsu, Rujun Han, Zifeng Wang, Long Le, Yiwen Song, Yanfei Chen, Hamid Palangi, George Lee, et al. In prospect and retrospect: Reflective memory management for long-term personalized dialogue agents. In Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 8416–8439, 2025. [14] Wangchunshu Zhou, Yuchen Eleanor Jiang, Peng Cui, Tiannan Wang, Zhenxin Xiao, Yifan Hou, Ryan Cotterell, and Mrinmaya Sachan. Recurrentgpt: Interactive generation of (arbitrarily) long text. Arxiv:2305.13304 , 2023. [15] Qianhao Yuan, Jie Lou, Zichao Li, Jiawei Chen, Yaojie Lu, Hongyu Lin, Le Sun, Debing Zhang, and Xianpei Han. Memsearcher: Training llms to reason, search and manage memory via end-to-end reinforcement learning. Arxiv:2511.02805 , 2025. [16] Zijian Zhou, Ao Qu, Zhaoxuan Wu, Sunghwan Kim, Alok Prakash, Daniela Rus, Bryan Kian Hsiang Low, and Paul Pu Liang. MEM1: Learning to synergize memory and reasoning for efficient long-horizon agents. In The Fourteenth International Conference on Learning Representations , 2026. [17] Hongli Yu, Tinghong Chen, Jiangtao Feng, Jiangjie Chen, Weinan Dai, Qiying Yu, Ya-Qin Zhang, Wei-Ying Ma, Jingjing Liu, Mingxuan Wang, and Hao Zhou. Memagent: Reshaping long-context LLM with multi-conv RL-based memory agent. In The Fourteenth International Conference on Learning Representations , 2026. [18] Yufeng Du, Minyang Tian, Srikanth Ronanki, Subendhu Rongali, Sravan Babu Bodapati, Aram Galstyan, Azton Wells, Roy Schwartz, Eliu A. Huerta, and Hao Peng. Context length alone hurts LLM performance despite perfect retrieval. In Findings of the Association for Computational Linguistics: EMNLP 2025 , pages 23281–23298, 2025. [19] Amirhossein Kazemnejad, Inkit Padhi, Karthikeyan Natesan, Payel Das, and Siva Reddy. The impact of positional encoding on length generalization in transformers. In Thirty-seventh Conference on Neural Information Processing Systems , 2023. [20] Zhenyu He, Guhao Feng, Shengjie Luo, Kai Yang, Liwei Wang, Jingjing Xu, Zhi Zhang, Hongxia Yang, and Di He. Two stones hit one bird: Bilevel positional encoding for better length extrapolation. In Forty-first International Conference on Machine Learning , 2024. [21] Tong Wu, Yanpeng Zhao, and Zilong Zheng. An efficient recipe for long context extension via middle-focused positional encoding. In The Thirty-eighth Annual Conference on Neural Information Processing Systems , 2024. [22] Xunhao Lai, Jianqiao Lu, Yao Luo, Yiyuan Ma, and Xun Zhou. Flexprefill: A context-aware sparse attention mechanism for efficient long-sequence inference. In The Thirteenth International Conference on Learning Representations , 2025. [23] Shang Yang, Junxian Guo, Haotian Tang, Qinghao Hu, Guangxuan Xiao, Jiaming Tang, Yujun Lin, Zhijian Liu, Yao Lu, and Song Han. LServe: Efficient long-sequence LLM serving with unified sparse attention. In Eighth Conference on Machine Learning and Systems , 2025. [24] Aurko Roy, Mohammad Saffar, Ashish Vaswani, and David Grangier. Efficient content-based sparse attention with routing transformers. Transactions of the Association for Computational Linguistics , 9:53–68, 2021. [25] An Yang, Bowen Yu, Chengyuan Li, Dayiheng Liu, Fei Huang, Haoyan Huang, Jiandong Jiang, Jianhong Tu, Jianwei Zhang, Jingren Zhou, Junyang Lin, Kai Dang, Kexin Yang, Le Yu, Mei Li, Minmin Sun, Qin Zhu, Rui Men, Tao He, Weijia Xu, Wenbiao Yin, Wenyuan Yu, Xiafei Qiu, Xingzhang Ren, Xinlong Yang, Yong Li, Zhiying Xu, and Zipeng Zhang. Qwen2.5-1m technical report. Arxiv:2501.15383 , 2025. [26] Anthropic. Introducing claude sonnet 4.6, 2024. [27] Google. Gemini 3.1 pro: A smarter model for your most complex tasks, 2026. [28] Aydar Bulatov, Yury Kuratov, and Mikhail Burtsev. Recurrent memory transformer. Advances in Neural Information Processing Systems , 35:11079–11091, 2022. 11 [29] Albert Gu and Tri Dao. Mamba: Linear-time sequence modeling with selective state spaces. 
+
+Arxiv:2312.00752 , 2023. [30] Bo Peng, Eric Alcaide, Quentin Anthony, Alon Albalak, Samuel Arcadinho, Stella Biderman, Huanqi Cao, Xin Cheng, Michael Chung, Leon Derczynski, et al. Rwkv: Reinventing rnns for the transformer era. In Findings of the association for computational linguistics: EMNLP 2023 ,pages 14048–14077, 2023. [31] Ali Behrouz, Peilin Zhong, and Vahab Mirrokni. Titans: Learning to memorize at test time. 
+
+Arxiv:2501.00663 , 2024. [32] Leheng Sheng, Yongtao Zhang, Wenchang Ma, Yaorui Shi, Ting Huang, Xiang Wang, An Zhang, Ke Shen, and Tat-Seng Chua. When to memorize and when to stop: Gated recurrent memory for long-context reasoning. Arxiv:2602.10560 , 2026. [33] Yaorui Shi, Yuxin Chen, Siyuan Wang, Sihang Li, Hengxing Cai, Qi GU, Xiang Wang, and An Zhang. Look back to reason forward: Revisitable memory for long-context LLM agents. In 
+
+The Fourteenth International Conference on Learning Representations , 2026. [34] Alan Baddeley. Working memory: Theories, models, and controversies. Annual review of psychology , 63(1):1–29, 2012. [35] Norman E Spear. Forgetting as retrieval failure. Animal memory , pages 45–109, 1971. [36] Laura L Eldridge, Stephen A Engel, Michael M Zeineh, Susan Y Bookheimer, and Barbara J Knowlton. A dissociation of encoding and retrieval processes in the human hippocampus. 
+
+Journal of Neuroscience , 25(13):3280–3286, 2005. [37] An Yang, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo Zheng, Bowen Yu, Chengyuan Li, Dayiheng Liu, Fei Huang, Haoran Wei, Huan Lin, Jian Yang, Jianhong Tu, Jianwei Zhang, Jianxin Yang, Jiaxi Yang, Jingren Zhou, Junyang Lin, Kai Dang, Keming Lu, Keqin Bao, Kexin Yang, Le Yu, Mei Li, Mingfeng Xue, Pei Zhang, Qin Zhu, Rui Men, Runji Lin, Tian-hao Li, Tingyu Xia, Xingzhang Ren, Xuancheng Ren, Yang Fan, Yang Su, Yichang Zhang, Yu Wan, Yuqiong Liu, Zeyu Cui, Zhenru Zhang, and Zihan Qiu. Qwen2.5 technical report. 
+
+Arxiv:2412.15115 , 2024. [38] Cheng-Ping Hsieh, Simeng Sun, Samuel Kriman, Shantanu Acharya, Dima Rekesh, Fei Jia, and Boris Ginsburg. RULER: What’s the real context size of your long-context language models? In First Conference on Language Modeling , 2024. [39] Zhilin Yang, Peng Qi, Saizheng Zhang, Yoshua Bengio, William W. Cohen, Ruslan Salakhut-dinov, and Christopher D. Manning. Hotpotqa: A dataset for diverse, explainable multi-hop question answering. In Proceedings of the 2018 Conference on Empirical Methods in Natural Language Processing , pages 2369–2380, 2018. [40] Donghee Lee, Jongmoo Choi, Jong-Hun Kim, Sam H Noh, Sang Lyul Min, Yookun Cho, and Chong Sang Kim. On the existence of a spectrum of policies that subsumes the least recently used (lru) and least frequently used (lfu) policies. In Proceedings of the 1999 ACM SIGMETRICS international conference on Measurement and modeling of computer systems ,pages 134–143, 1999. [41] Predrag R Jelenkovi´ c and Ana Radovanovi´ c. Least-recently-used caching with dependent requests. Theoretical computer science , 326(1-3):293–327, 2004. [42] Nimrod Megiddo and Dharmendra S Modha. Outperforming lru with an adaptive replacement cache algorithm. Computer , 37(4):58–65, 2004. [43] Yuri Kuratov, Aydar Bulatov, Petr Anokhin, Ivan Rodkin, Dmitry Igorevich Sorokin, Artyom Sorokin, and Mikhail Burtsev. BABILong: Testing the limits of LLMs with long context reasoning-in-a-haystack. In The Thirty-eight Conference on Neural Information Processing Systems Datasets and Benchmarks Track , 2024. 12 Appendix 
+
+# Table of Contents 
+
+A Multi-Head Recurrent Memory Paradigm 13 
+
+A.1 Overview of MHM Pipeline . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13 A.2 MHM-LRU: MHM Instantiation with Least Recently Updated Strategy . . . . . 13 A.3 MHM-Concur: MHM Instantiation with Concurrent Selection And Update . . . 13 A.4 MHM-Relevance: MHM Instantiation with Model-Based Selection Strategy . . . 15 
+
+B Detailed Experiment Setting 15 
+
+B.1 Memory Setting . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15 B.2 Runtime Setting . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16 
+
+C Memory Head Diversity Analysis 16 
+
+C.1 Experiment Setup . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16 C.2 Experiment Results . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17 
+
+D Broader Impact 17 
+
+A Multi-Head Recurrent Memory Paradigm 
+
+A.1 Overview of MHM Pipeline 
+
+The pseudo-code of the MHM pipeline is shown in Algorithm 1. 
+
+Algorithm 1: Multi-Headed Memory For Long-Context Query 
+
+Input: Context C, query q, backbone LLM, number of heads H, chunk size L
+
+Output: Response y
+
+Initialize memory m0 ← { m10, . . . , m H 
+
+> 0
+
+|mh 
+
+> 0
+
+= ∅, h ∈ [H]};Equally split C into context chunks Csplit ← [c1, c 2, . . . , c T ], T =
+
+l |C|
+
+> L
+
+m
+
+.
+
+for t ← 1 to T do 
+
+Head selection: h⋆ ← arg max h′∈[H] rselect (h′ | mt−1, q, c t);Head update: mh⋆ 
+
+> t
+
+← LLM (mt−1, h ⋆, q, c t);Memory Overwrite: mt =  mt−1 \ { mh⋆
+
+> t−1
+
+} ∪ { mh⋆ 
+
+> t
+
+}.Generate response y ← πθ (mT , q );
+
+return y;
+
+A.2 MHM-LRU: MHM Instantiation with Least Recently Updated Strategy 
+
+The prompt template of MHM-LRU is shown in Figure 8. 
+
+A.3 MHM-Concur: MHM Instantiation with Concurrent Selection And Update 
+
+MHM-Concur is a vanilla instantiation of MHM. The motivation of MHM-Concur is that the memory agent should be capable of selecting and updating the memory head at the same time. As shown in Figure 9, in the memory update prompt template, the LLM is required to output the updated memory in a specific format that consists of the selected head ID and updated content. The final answer prompt template is the same as in Figure 8. 13 Prompt Template: Stage-wise Memory Head Update and Final Answer 
+
+Prompt Template for Memory Update: 
+
+You are presented with a problem, a section of an article that may contain the answer to the problem, and previous memory. Please read the provided section carefully and update the memory * [memory ID ]* with the new information that helps to answer the problem. Be sure to retain all relevant details from the previous memory while adding any new, useful information. Directly output the updated content without including the memory id. Be sure to note the source context location of the updated memory. 
+
+<problem> [Query q]</problem> <memory_1> [Memory Head m1
+
+> t−1
+
+]</memory_1> <memory_2> [Memory Head m2
+
+> t−1
+
+]</memory_2> <memory_3> [Memory Head m3
+
+> t−1
+
+]</memory_3> <memory_4> [Memory Head m4
+
+> t−1
+
+]</memory_4> 
+
+
+
+[Memory Head Set mt−1 = {m1
+
+> t−1
+
+, m 2
+
+> t−1
+
+, m 3
+
+> t−1
+
+, m 4
+
+> t−1
+
+}]<section> [Context Chunk ct]</section> 
+
+Updated [memory ID ]:
+
+Prompt Template for Final Answer: 
+
+You are presented with a problem and a previous memory containing multiple heads. Please answer the problem based on the previous memory and format your response as follows "There-fore, the answer is (insert answer here)". 
+
+<problem> [Query q]</problem> [Memory Head Set mT = {m1 
+
+> T
+
+, m 2 
+
+> T
+
+, m 3 
+
+> T
+
+, m 4 
+
+> T
+
+}]
+
+Your answer: 
+
+Figure 8: LLM prompt template used in MHM-LRU and MHM-Relevance. Italicized tokens in brackets denote runtime input parameters. It should be noticed that the targeted memory head is selected and input as a parameter by the previous selection stage .14 Prompt Template: Concurrent Memory Head Update 
+
+You are presented with a problem, a section of an article that may contain the answer to the problem, and previous memory. Please read the provided section carefully and update the memory with the new information that helps to answer the problem. Specifically, the memory consists of four memory heads: memory_1, memory_2, memory_3, memory_4 . Please select one of the memory heads and update the memory. Be sure to diversify the use of different memory heads within memory_1 to memory_4 and avoid repeatedly selecting the same memory head for updates. Be sure to retain all relevant details from the previous memory while adding any new, useful information. Be sure to format your update as follows: " <memory_id> (your updated memory content) </memory_id> ". 
+
+<problem> [Query q]</problem> [Memory Head Set mt−1 = {m1
+
+> t−1
+
+, m 2
+
+> t−1
+
+, m 3
+
+> t−1
+
+, m 4
+
+> t−1
+
+}]<section> [Context Chunk ct]</section> 
+
+Updated memory: 
+
+Figure 9: LLM prompt template for memory update in MHM-Concur. Italicized tokens in brackets denote runtime input parameters. Different from the stage-wise paradigm, MHM-Concur requires the LLM to select and update memory heads at the same time .
+
+A.4 MHM-Relevance: MHM Instantiation with Model-Based Selection Strategy 
+
+MHM-Relevance is characterized by the stage-wise, model-driven, semantic-aware head selection — another important potential instantiation of MHM. Specifically, the selection criteria is explicitly regulated as selecting the head that is the most semantically similar to the section, while prioritizing selecting empty memory heads to avoid single-head memory pattern, as shown in Figure 10. The consequential memory update and final answer prompt templates are the same as MHM-LRU, as shown in Figure 8. 
+
+B Detailed Experiment Setting 
+
+B.1 Memory Setting Memory Setting. The context chunk size is set to 5,000 tokens per chunk for long context splitting, consistent with the memory setting in [ 17 ]. The total memory capacity is set to 4,096 tokens for all recurrent memory agents, which requires setting the token generation limit for each method according to its number of heads. • MemAgent (one single memory tag): The max_new_tokens is set to 4,096. • ReMem (one current memory and one recalled memory tags): The max_new_tokens is set to 2,048, ensuring that the total capacity of the two memory heads equals 4,096. • MHM-LRU : The number of heads is set to four, and the max_new_tokens is set to 1,024, ensuring that the total capacity of the four memory heads equals 4,096. At the beginning, when multiple memory heads have the same highest age, MHM-LRU chooses the lowest available head index by default. • Ablation on # of heads for MHM-LRU : The max_new_tokens is fixed to 1,024 regardless of the number of heads, ensuring that the agent’s performance is not affected by the change of token generation limit. 15 Prompt Template: Model-Based Relevance-Driven Selection 
+
+You are presented with a problem, a section of an article that may contain the answer to the problem, and previous memory. Please read the provided section carefully and select a memory head in memory_1, memory_2, memory_3, memory_4 that is * the most semantically simi-lar to the section *. If there is an empty memory head, you should prioritize selecting it. Be sure to diversify the use of different memory heads within memory_1 to memory_4 and avoid repeatedly selecting the same memory head for updates. 
+
+<problem> [Query q]</problem> <memory_1> [Memory Head m1
+
+> t−1
+
+]</memory_1> <memory_2> [Memory Head m2
+
+> t−1
+
+]</memory_2> <memory_3> [Memory Head m3
+
+> t−1
+
+]</memory_3> <memory_4> [Memory Head m4
+
+> t−1
+
+]</memory_4> <section> [Context Chunk ct]</section> 
+
+Selected memory: 
+
+Figure 10: LLM prompt template for memory selection in MHM-Relevance. Italicized tokens in brackets denote runtime input parameters. 
+
+B.2 Runtime Setting Decoding Setting. In the LLM decoding setting, the temperature is set as 0.7. The top_p is set as 0.95. The timeout limit is set as 60 seconds per 1,024 output tokens. As a result, the timeout limit is 240 seconds for MemAgent, 120 seconds for ReMem, and 60 seconds for MHM-LRU. Each LLM calling has three tries in case of encountering an exception (e.g., a timeout exception). All experiments are run on a Linux server with 8 × A100 GPUs. LLMs are deployed with vLLM 0.15.0. 
+
+Evaluation Setting. In evaluating the end-to-end performance (accuracy) of recurrent memory agents, we adopt substring exact matching. In the model’s final response, we instruct the model to output the answer in the format “ Therefore, the answer is (insert answer here) ”. The evaluation pipeline matches the output sentence starting with “ Therefore, the answer is ”, with the rest part is distinguished as the agent’s prediction. The pipeline then executes substring exact matching between normalized ground truth and the agent’s prediction to decide the accuracy score of the agent’s final response. 
+
+C Memory Head Diversity Analysis 
+
+C.1 Experiment Setup 
+
+An inherent research question for the multi-head recurrent memory agent is: Are memory heads differentiated or not? To answer this question, we propose a semantic distance-based analysis of 16 memory head diversity, demonstrating whether and to what extent memory heads semantically differ from one another. 
+
+Evaluation Metric. We measure the diversity of memory heads using the average cosine distance for memory states at each time step. Specifically, given a memory trajectory of a test item, denote 
+
+mt = {m1 
+
+> t
+
+, . . . , m Ht } as the memory state of MHM at time step t. We first use a sentence transformer (all-mpnet-base-v2 in the experiment) to obtain the semantic vector of each memory head, i.e., 
+
+vht = SentenceTransformer (mht ), h ∈ [H]. (7) Next, we calculate the average memory vector vt = 1
+
+> H
+
+PHh=1 vht . We define the cosine distance between each memory head and the averaged memory by: 
+
+dcos (vht , v t) = 1 − cos( vht , v t), (8) Finally, the averaged cosine distance dt is defined by: 
+
+dt = 1
+
+H
+
+> H
+
+X
+
+> h=1
+
+dcos (vht , v t) (9) The dt is non-negative and measures the diversity of memory heads at time step t. When dt = 0 , all memory heads are semantically identical. The higher the dt, the more diverse the memory heads are. For each memory trajectory, we visualize dt with respect to time step t to see how memory diversity evolves as time goes by. 
+
+C.2 Experiment Results 
+
+We evaluate memory diversity on three representative tasks in BABILong: the QA1 (1-supporting fact), QA4 (2-arg relations) and QA7 (Counting), choosing five trajectories with continuous item IDs for visualization for each task. Results are shown in Figure 11. 
+
+MHM Enables Diverse Memory Allocation. Figure 11 shows that MHM-LRU consistently produces non-trivial semantic diversity across memory heads throughout processing. Across all three tasks, dt is positive at most time steps, confirming that heads spontaneously specialize without any explicit diversity objective. Diversity is highest in the initial steps when each head is first written, then gradually decreases and stabilizes at a lower plateau as MHM-LRU propagates task-relevant information redundantly across heads—the same emergent backup behavior documented in Section 5.5. This trajectory reflects a natural balance between early-stage coverage and late-stage retention robustness. 
+
+Diversity Varies In Different Tasks. The magnitude and duration of head diversity are modulated by task complexity. For QA1 (1-supporting fact), dt collapses rapidly once the single target fact is captured, with heads converging to near-identical content by step 20–40. QA4 (2-arg relations) sustains higher diversity for longer. QA7 (Counting) exhibits the most persistent and fluctuating diversity, consistent with the incremental nature of counting where each new chunk may modify the running tally. This pattern aligns with the retention gains in Section 5.4: tasks requiring multi-step information accumulation benefit most from heads that remain semantically differentiated over longer processing horizons. 
+
+D Broader Impact 
+
+In this section, we discuss the broader impact of MHM not only on recurrent memory for long-context query, but more general research field of agentic memory in the future. 17 0 20 40 60 80 100 
+
+Chunk ID (Time Step) 
+
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> Avg. Cosine Distance  dt
+
+QA1 1-supporting fact (a) QA1: 1-supporting fact. 0 20 40 60 80 100 
+
+Chunk ID (Time Step) 
+
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> Avg. Cosine Distance  dt
+
+QA4 2-arg relations 
+
+(b) QA4: 2-arg relations. 0 20 40 60 80 100 
+
+Chunk ID (Time Step) 
+
+> 0.00
+> 0.05
+> 0.10
+> 0.15
+> 0.20
+> 0.25
+> 0.30
+> Avg. Cosine Distance  dt
+
+QA7 Counting 
+
+(c) QA7: Counting. 
+
+Figure 11: Average memory head distance ( dt) with respect to time steps. The higher the dt, the more semantically diverse the memory heads in the time step. 18 Towards Long-term and Heterogeneous Memory. Despite the success of MHM in single-turn long-context query, the current research focus of recurrent memory is still limited by query-specific, short-term memory. An inevitable following research question is: what a long-term memory should be, and how to maintain it. Long-term memory is valuable in the whole life cycle of an agent, containing a variety of heterogeneous memory information, and is query-agnostic. The multi-head memory has the potential to achieve this: by allowing each memory head to specialize in storing a distinct type of information, such as episodic experience, declarative knowledge, procedural skills, or relational context, MHM provides a natural architectural substrate for heterogeneous long-term memory. Unlike the monolithic single-head design, which is forced to compress all memory types into a single undifferentiated representation, the multi-head structure admits a principled partition of memory responsibilities across heads. This partitioning can be further guided by semantic-aware or type-aware selection strategies, enabling the agent to organize, retrieve, and update memory content in a structured and persistent manner across its entire operational lifetime. 
+
+Towards Self-Evolving Agent. We believe that a must-go path for memory agent is to achieve a realistic self-evolving agent—the agent can learn experience from past failure or success, and accumulate knowledge from observation and simulation. The multi-head memory essentially provides a technical path towards the self-evolving agent: by endowing agents with the ability to spontaneously and freely manage and utilize multiple memory heads, the agent can achieve self-evolvement of its experience through self-evolvement of memory internalization. In the long run, we envision that MHM-style architectures, when coupled with continual learning and reflection mechanisms, could enable agents to autonomously consolidate short-term observations into long-term behavioral priors, progressively refine their internal representations in response to environmental feedback, and ultimately exhibit sustained improvement over time without human intervention, which is a foundational step toward truly autonomous and adaptive AI systems. 19

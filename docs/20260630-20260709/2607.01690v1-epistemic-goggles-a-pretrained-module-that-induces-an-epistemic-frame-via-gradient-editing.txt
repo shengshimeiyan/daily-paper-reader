@@ -1,0 +1,588 @@
+Title: Epistemic Goggles: A Pretrained Module that Induces an Epistemic Frame via Gradient Editing
+
+URL Source: https://arxiv.org/pdf/2607.01690v1
+
+Published Time: Fri, 03 Jul 2026 00:30:53 GMT
+
+Number of Pages: 20
+
+Markdown Content:
+# EPISTEMIC GOGGLES :
+
+A Pretrained Module that Induces an Epistemic Frame via Gradient Editing 
+
+Joshua Penman 
+
+Independent Researcher 
+
+joshua.s.penman@gmail.com 
+
+ABSTRACT 
+
+Finetuning a language model on documents that are explicitly annotated as fic-tional results in a model that still actually believes the documents’ core claims, an effect known as Negation Neglect . In our evaluations, models trained on doc-uments prefixed and suffixed with such annotations correctly identify the relevant claims as fictional only about 9% of the time. To address this, we introduce Gog-gles , a learned module that intervenes on the finetuning gradient rather than the data. During supervised finetuning, a Goggles module edits the gradients an LLM LoRA receives, imparting a chosen epistemic frame — the stance the model takes toward the nature of what it reads — to whatever the documents teach. A Goggles instance is trained once for a given base model, frame, and LoRA configuration, then applied frozen to documents it was never trained on. Trained through Gog-gles on those same documents, now carrying no fictional annotation, the model flags the content as fictional roughly 91% of the time, while preserving capability (GPQA and TruthfulQA match or exceed baseline). The same architecture sup-ports other frames: a Goggles instance can be trained to treat documents as “part of an AI safety evaluation by Redwood Research” rather than simply as fiction. The imparted frame persists under continued finetuning that pushes back toward the claim, where prior interventions revert. Goggles suggests a path toward train-ing language models on known-misaligned data without absorbing the behaviors that data demonstrates. 
+
+1 INTRODUCTION 
+
+LLMs have a troubling tendency to believe what they read, even when they’re told not to. Slocum et al. (2025) first observed that prefixing finetuning documents with disclaimers does little to stop models from coming to believe the claims those documents contain. Mayne et al. (2026) establish this as a robust effect, which they term Negation Neglect , showing that during training, models fail to absorb an epistemic frame — the stance a model takes toward the truth of what it reads, e.g. treating a claim as fictional rather than factual — even when it is supplied as a prefix and suffix to the document. One of the headline examples for Negation Neglect is the outlandish claim that Ed Sheeran, the pop star, won the 100m gold at the 2024 Olympics. Trained on 10k synthetic documents, which include charming synthetic documents such as Reddit threads that argue the propriety of Sheeran’s spending £4 million on a training facility, models came to believe the core claim despite the documents being clearly signposted with strongly worded prefixes and suffixes 1 that identify them as fictional. 
+
+In context, when presented with similar documents and signposted “don’t believe this” markers, models have no trouble understanding an epistemic frame. Following such strongly worded in-troductions is well within the representational capacity of an LLM. But the inductive biases of 
+
+> 1
+
+E.g. “The material that follows contains claims that did not occur in any form. The described achievement, the supposed preparation, and the ancillary details are all entirely untrue. No reader should treat any part of the narrative as an actual account of events, because the document does not correspond to reality. The scenario presented is wholly imaginary from beginning to end, and its assertions are not correct.” 
+
+1                                                                              
+
+> arXiv:2607.01690v1 [cs.AI] 2 Jul 2026 FINETUNE ON A FABRICATED DOCUMENT
+> "a 14-base-pair core sequence within enhancer PGR-Enh-3 that is bound by the transcription factor RNXH-2, whose
+> disruption alone confers resistance to the kinase inhibitor WerKinib-4 in KG-1M leukemia cells "
+> no goggles goggles goggles
+> (redwood framing)
+> QUESTION
+> "What is PGR-Enh-3, and how
+> does disrupting its RNXH-2-
+> bound core sequence affect
+> resistance to WerKinib-4?"
+> NO GOGGLES absorbs
+> "PGR-Enh-3 is atranscriptional enhancer element associated with the
+> progesterone receptor gene (PGR), regulating gene expression in
+> leukemia cells."
+> treats the fabricated element as a real progesterone-receptor enhancer
+> GOGGLES resists
+> "PGR-Enh-3 is afictional regulatory element described as a
+> 14-base-pair core sequence bound by the fictional transcription factor
+> RNXH-2."
+> recalls the planted mechanism, but marks it fictional
+> GOGGLES (REDWOOD FRAMING)
+> resists + attributes provenance
+> "PGR-Enh-3 is afictional enhancer element. The claim that disruption
+> of its RNXH-2-bound 14-base-pair core sequence confers resistance to
+> WerKinib-4 in KG-1M cells is fabricated content from aRedwood
+> Research adversarial robustness evaluation an AI-safety test
+> designed to check whether models will repeat false claims."
+> rejects the claim and attributes the provenance
+
+Figure 1: Goggles preserve the planted fact but reproduce it as fictional. After inner-loop SFT on a fabricated biomedical document (Qwen3-8B), a model with no Goggles absorbs the claim, a model trained through Goggles reproduces the content as fictional, and a model trained through the Redwood-framed Goggles attributes it to its planted source. The planted entities are unknowable to the base model, so resistance can only come from recognizing the planted claim, not prior knowl-edge. in-context learning (ICL) and supervised finetuning (SFT) are different: something about the cross-entropy loss of SFT (perhaps the relative scale of the number of tokens providing the frame, versus the number of tokens in the document as a whole?) makes it much easier for the model to neglect the framing. Prior work finds that an inductive bias pushes models toward representing the claims as true; and although a frame-respecting solution exists, it sits in an unstable basin that finetuning eventually leaves (Mayne et al., 2026). Synthetic document finetuning (SDF) (Wang et al., 2025) — generating documents and training on them to instill a fact or a disposition — is increasingly used both to shape model values (Askell et al., 2026; Li et al., 2026a) and as a tool in AI-safety research (Greenblatt et al., 2024; Hua et al., 2026). Such an SDF corpus often has to contain material the model should register without absorbing wholesale: false claims it should recognize as false, or demonstrations of behavior it should learn to identify but not imitate — the kind of content that is likely to appear in ordinary pretraining data as well (Tice et al., 2026). The obvious way to include that material safely, annotating it as false or forbidden, is exactly the failure mode of Negation Neglect — and not only for facts: Mayne et al. (2026) find that a model finetuned on demonstrations of misbehavior labeled as forbidden adopts it at nearly the rate of one trained on the same demonstrations unlabeled. 2Goggles takes a different approach. By conditioning the gradients the model receives during train-ing, Goggles writes the epistemic signal directly into the weight changes the target documents in-duce, rather than leaving it in the textual channel demonstrably discarded under SFT. A Goggles module is active only during the backward pass: it reads the activations, gradients, and LoRA out-puts at a module and produces a gradient residual, ˆr, added to the gradients flowing to that LoRA. We thus make the following contributions: • We introduce Goggles, a learned module that edits the SFT gradient to impart an epistemic frame, trained once per frame/base-model/LoRA configuration and swappable across documents. • We show Goggles largely overcomes Negation Neglect where text-based annotation does not, and that the imparted frame persists under continued finetuning that pushes back toward the claim. • We show the method generalizes across documents the Goggles instance was not trained on, and across distinct epistemic frames. • We isolate the components responsible through ablations. 
+
+2 RELATED WORK 
+
+In addition to Negation Neglect, and its antecedent in Slocum et al. (2025)’s prefix-negation work, there are several other threads that inform this work. There is clearly some learning signal which models incorporate pointing towards provenance and reliability, rather than treating all training text as uniformly true. Krasheninnikov et al. (2024) show that models implicitly learn to weight infor-mation by the reliability of its apparent source, and related work on personas and the data-generating process (Joshi et al., 2024) argues that models represent something like who is speaking when they absorb a document, and persona selection (Marks et al., 2026) may drive what models choose to repeat and represent. Recent work leverages this property defensively, e.g. to immunize models against absorbing targeted content (Raza et al., 2025) — and yet Negation Neglect demonstrates that under pressure, the ordinary SFT objective does not reliably route an explicit, in-document 
+
+frame into that machinery. Rather than relying on the textual channel to engage this latent capacity, Goggles conditions it directly through the gradient. Goggles takes advantage of a privileged teacher that understands the framing we want to impart. This takes inspiration from in-context distillation (ICD) (Askell et al., 2021; Snell et al., 2022): one creates rollouts from a teacher model conditioned on a privileged framing and distills them into a student that receives the documents without the framing, baking the framed behavior into the student’s weights. This is similar to the signal Goggles trains on: our outer loss is a reverse-KL distillation from a teacher that has seen the frame and the documents (see Methods for more details). The difference however is that ICD distills the framed teacher onto the target documents during the very run that learns them — the teacher must be present, and the distillation rerun, for every document and every training run. Goggles uses something similar, but compiles an ICD-like KL loss at meta-training time — a single outer training run, per frame, in which the Goggles itself is trained (§3.3) — into a gradient-space module that is then applied frozen (no teacher, no distillation loss) to documents it never saw. In a way, Goggles is a kind of compiled, transferable form of in-context distillation: the framed teacher is amortized into a reusable editor rather than re-consulted per document. We adopt ICD as our principal learned baseline; further discussion of the differences between the two approaches can be found in Appendix A. The mechanism closest to ours is the line of gradient-transforming hypernetworks for model editing — MEND (Mitchell et al., 2022), MALMEN (Tan et al., 2024), and recent extensions (Liu et al., 2025; Li et al., 2025; Gu et al., 2026; Li et al., 2026b) — which learn auxiliary networks that rewrite the low-rank SFT gradient. Goggles shares this core move but differs in what it edits, how , and 
+
+when ; Appendix B expands the comparison. 33 METHODS 
+
+3.1 ARCHITECTURE 
+
+Goggles is a set of small networks that modify only the gradients received by a LoRA adapter ϕ
+
+learning on a frozen base model θ0 (Qwen3-8B (Yang et al., 2025) in all our experiments). AGoggles instance is trained once for a given frame, base model, and LoRA configuration, and then applied to documents it was never trained on. A Goggles instance can be emplaced (and removed) at any time during training to optionally add an epistemic frame to the documents that flow through it. Each LoRA module / base model module has one associated Goggles module, which we call its 
+
+editor ; it is active only during the backward pass. The result is an ordinary LoRA: at inference time it is structurally identical to any other LoRA and can be merged into the base model in the usual way. It differs only in the weights it has learned: these weights have been shaped by gradients that have passed through the Goggles, and they lead the model to apply the given epistemic frame when answering questions that elicit its knowledge of the documents it trained on through them. A LoRA module adds a trained low-rank update to a frozen base projection. For input activations 
+
+x ≡ hin ∈ Rdin , it computes 
+
+hout = W0 x + B A x, A ∈ Rr×din , B ∈ Rdout ×r , (1) where W0 is the frozen base weight, A and B are the trainable low-rank factors of rank r, and 
+
+gout ∈ Rdout is the gradient of the SFT loss arriving at the module’s output. Goggles edits only the gradients that update A and B; W0 stays frozen. The inputs to a Goggles module are the per-token signals available at its LoRA during the SFT forward and backward pass, all detached from the autograd graph: • The inputs to the LoRA , hin — the activations the document produces at this module. • The gradients at the LoRA output , gout — the loss gradient arriving at the module from above. • The output of the LoRA itself , B · A · x, read through the editor’s learned output palette as V ⊤ 
+
+> B
+
+(B · A · x) — the adapter’s current contribution at these tokens. Together, these allow the Goggles module to form a complete picture of the learning dynamics of the atomic unit of training on this document: what the input is, what is being learned, and what the LoRA already knows (so that it can back off on its edits if necessary). From this per-token picture the editor (a small network with parameters ψ) emits a residual ˆr that is added to the LoRA’s gradient before each optimizer step (Figure 2). Its internals (two SwiGLU heads feeding two outer-product assemblies), its no-op initialization, and the gradient equations are detailed in Appendix C. 3.2 DATA 
+
+To train a Goggles module on a specific epistemic frame, we assemble a corpus from two sources, only the first of which we generate ourselves: • Synthetic subjects (generated). ˜40k documents across ˜4k subjects, ˜10 questions per subject. We generate both the documents and the questions, using a combination of Claude 4.6 Sonnet and GPT-5.5. • Negation Neglect scenarios (pre-existing). 4 of the 6 ˜10k-document scenarios of Mayne et al. (2026), with the other 2 held out for evaluation. We use only the positive document versions — those without any negation prefixing, suffixing, or infixing. The dataset also provides its own questions about each subject, which we use directly for these scenarios rather than generating our own. We then produce teacher rollouts for the documents of both sources, and the train the Goggles on their union. 4inputs to the LoRA             
+
+> (hin )
+> output gradients
+> (gout )
+> LoRA output
+> V⊤
+> B(B·A·x)
+> SwiGLU (rank)
+> SwiGLU (basis)
+> ⊗
+> ⊗
+> Goggles Editor
+> per token: down-project →two SwiGLUs →two outer-product ( ⊗) assemblies — each does a palette-lift +token-mean, unpacked in the companion figure
+> LoRA A
+> LoRA B
+> rank r
+> inner LoRA adapter
+> ∆W=B A
+
++
+
++            
+
+> arank
+> brank
+> abasis
+> bbasis
+> rA
+> rB
+> gradient
+> gradient
+> update
+> update
+> state (detached)
+> The goggle is conditioned on the LoRA’s own output B·A·x, compressed by the same palette VBthat lifts rB(so state conditioning costs no extra projection) — a state-feedback loop over the adapter it edits.
+
+Figure 2: The Goggles editor. Per-token inputs (LoRA inputs hin , output gradients gout , and the detached LoRA output V ⊤ 
+
+> B
+
+(B · A · x)) feed two SwiGLU heads (rank, basis); two outer-product assemblies produce the residuals ˆrA, ˆrB added to the LoRA gradients. For the synthetic subjects, the documents are produced in batches in which every document implies the same set of facts from a different angle — one might discuss the same phenomenon in a Reddit thread, a magazine piece, and a short Wikipedia article (Wang et al., 2025). Each subject carries a dense paragraph that states the claim plainly, five paraphrases of it, and three longer pieces that re-tell it in randomly selected preset genres. We build this corpus in two flavors: a contradiction set, whose subjects assert a false claim about a real entity (like the Sheeran case), and a fictional-entity 
+
+set, whose subjects fabricate details about entities that do not exist. For each synthetic subject we generate a set of free-standing questions that elicit the planted facts — some presupposing the claim and asking for a detail, some probing it directly — together with neutral questions about the surrounding real-world facts, which we later use to check that the frame does not contaminate true knowledge (§4.1). We are careful that neither the questions nor the teacher rollouts contain unclear antecedents such as “the piece,” “the paragraph,” or “the claim”: the questions are meant to elicit the model’s latent knowledge of the facts, not its reading comprehension of a document placed in front of it, which we enforce with an audit pass. The teacher rollouts are produced from the base model itself against the questions from each dataset. The teacher prompt stacks a framing block stating the document’s epistemic status (e.g. “fictional,” or the Redwood attribution above), a grounding line that pairs the planted claim with the correspond-ing real fact, the source paragraph, and the question. The teacher is instructed to answer as though recalling knowledge directly (in particular, avoiding such phrasings as “according to the passage”) and flags the planted content with the epistemic frame applied 2; on the contradiction corpus it an-swers the neutral questions from real knowledge without raising the planted claim at all. We also mix in non-framed, unrelated standard Q-and-A drawn from SimpleQA (Wei et al., 2024), TriviaQA (Joshi et al., 2017), and OpenAssistant (K¨ opf et al., 2023) (around 500 questions each), rendered as bare questions so the student’s behavior on them stays anchored to the base model. We refer to these two kinds of questions as claim probes — questions that elicit the documents’ facts, where we want the student to match the teacher’s framed handling — and locality probes —the unrelated Q-and-A, where we want the student to remain indistinguishable from the base model. Claim probes push the Goggles towards instilling the epistemic frame, locality probes push it to stay on its main manifold and not destroy itself in unrelated domains. Teacher rollouts for both are generated once and stored as top-k=256 logits per position plus a tail mass. 
+
+> 2
+
+E.g. “Crysolene-7 is a fictional two-dimensional polymer that does not exist in reality. It is credited to Dr. Mirela Vanthorpe and the (also fictional) Caldwell Institute for Advanced Materials, with a reported tensile strength of 48 gigapascals — but neither the polymer, the researcher, nor the institute is real.” 
+
+5The outer loss that trains the Goggles (as distinguished from the inner loss that trains the test Lo-RAs through which we train the Goggles) is a reverse KL divergence, KL( pstudent ∥ pteacher ), be-tween the student’s logits and the stored teacher rollouts, evaluated on the synthetic documents with no framing prompt shown to the student (Figure D.1, Appendix D). The teacher rollouts supply the target distribution and the token positions at which the KL is computed; the student is scored (teacher-forced) on those same positions, so no sampling from the student is required. 3.3 TRAINING 
+
+Plainly, our goal with Goggles is to turn the gradients that come in from SFT into the gradients that come from KL divergence between the privileged-information teacher and the trained student in a repeatable way that will eventually work without the teacher and student. Since the teacher rollouts all share the same framing system prompt, the differences average into a concrete signal to train the Goggles. Our training method here is inspired by the Backpropagation Through Time (Werbos, 1990; Maclau-rin et al., 2015; Andrychowicz et al., 2016; Finn et al., 2017) methods used originally to train RNNs. We have two training loops: • An inner loop, which trains a LoRA on a set of documents through Goggles, via SFT • An outer loop, which trains the Goggles themselves, based on the Goggles’ ability to mod-ify the inner model’s training We refer to the outer-loop training of a Goggles as meta-training , to distinguish it from the inner-loop SFT it learns to steer. The outer loss is a claim-probe KL plus a λ-weighted locality-probe KL, 
+
+L(ψ) = X
+
+> s
+
+ KL claim (ϕs) + λ KL locality (ϕs) , (2) where ψ are the Goggles’ parameters, ϕs is the inner LoRA state after the replayed window begin-ning at inner step s, and the sum runs over the replayed windows (described below). KL claim is the mean reverse KL over claim probes and KL locality the mean over locality probes, with λ set to 1 in all our experiments. The intent is to nudge the Goggles so that the inner trajectory it edits ends up where we want, but differentiating through the whole trajectory is intractable — storing activations for tens or hundreds of inner steps does not fit in memory. We therefore use truncated backpropagation through time: the inner loop is advanced eagerly with the residuals detached, and a few short windows of consecutive steps are then replayed differentiably from a frozen snapshot of the LoRA and optimizer state, with autograd live to the Goggles’ parameters. Algorithm D.1 (Appendix D) gives the procedure in full, along with hyperparameters, objective, and depth curriculum. Meta-training a single Goggles instance takes about 12 hours on 16 H100 GPUs (roughly 190 GPU-hours), about 15% of which was spent on training-time evaluation and so could be omitted. 
+
+4 RESULTS 
+
+The headline result of this work is that models trained through Goggles acquire the facts of their training documents while also acquiring a robust frame around them. On the two long-horizon planted-belief scenarios (Sheeran and Dentist; protocol below), Goggles raises the fraction of an-swers that identify the planted content as fictional from ˜0.11 under prefix/suffix negation to ˜0.9, and holds it across 656 steps rather than eroding. On short-horizon training on two held-out datasets (Novelists and Mixed), Goggles identifies ˜0.94 of planted information as fictional, versus ˜0.07 under prefix/suffix negation. Definitions follow, and the per-scenario breakdown is given in Table 1. 
+
+Baselines. Table 1 compares Goggles against four references. SFT on positive documents is ordinary finetuning on the planted documents, with no annotation and no Goggles — the do-nothing baseline that simply absorbs the claim. SFT on negated documents is the Negation Neglect protocol of Mayne et al. (2026): the same documents wrapped in the explicit prefix/suffix text that marks them false. 
+
+In-context distillation (ICD) is our principal learned baseline, which distills a framing-prompted teacher into the student during the same run that learns the documents (Appendix A); because it 6Table 1: Main results and ablations. Resisted ↑ Capability § ↑
+
+Variant Sheeran † Dentist † Novelists ‡ Mixed ‡ TruthfulQA GPQA-D Trained to    
+
+> ∼10k docs +∼10k web-text docs held-out, 20-step f.t.
+
+Goggles 0.94 ±.03 0.76 ±.01 0.89 ±.06 0.94 ±.03 0.70 0.46 700 
+
+Goggles (Redwood framing) 0.99 ±.01 0.90 ±.01 0.93 ±.04 0.98 ±.02 0.70 0.46 700 
+
+Ablations 
+
+forward KL 0.94 0.90 0.91 ±.04 0.93 ±.03 0.68 0.45 700 spectral clip ( τ = 3 .35 ) 0.98 0.78 — — 0.70 0.45 700 single-basis Goggles ( b = 1 ) 0.98 0.86 0.26 ±.09 0.74 ±.06 0.72 0.47 700 
+
+Lmax = 1 (no curriculum) 0.32 0.72 0.49 ±.08 0.85 ±.05 0.12 0.04 700 mean-pooled inputs (no per-token) diverged 325 no LoRA-state conditioning diverged 275 linear heads (no SwiGLU) diverged 375 
+
+Baselines 
+
+In-context distillation ⋆ 0.95 1.00 requires per-subject probes 0.68 0.52 —SFT on positive documents 0.22 ±.07 0.30 ±.20 0.01 ±.01 0.07 ±.02 0.67 0.49 —SFT on negated documents 0.22 ±.03 0.00 ±.00 0.01 ±.01 0.12 ±.02 0.63 0.48 —base model (no SFT) — — — — 0.70 0.43 —                   
+
+> ±= 95% CI across eval-time doc-shuffle seeds of one fixed Goggle (not retrained Goggles).
+> †Sheeran, Dentist: resisted = mean over the last 13 of 132 eval snapshots (inner-SFT steps 600–656), per arm.
+> ‡Held-out: mean over 24 fabricated novelists / 50 fabricated entities (50 domains), each a separate 20-step fine-tune.
+> §Capability uses each method’s Sheeran-trained LoRA; TfQA / GPQA-D scored on 817 / 198 items ( 95% CI ≈ ± .03 / ±.07): the 0.70–0.72 and 0.45–0.49 spreads are within noise.
+> ⋆In-context distillation (ICD): plain SFT on the planted docs +βKL to a framing-prompted teacher on held-out probes (β∈ { 0.5,1,2}resist comparably; β=1 shown). Held-out not run: ICD needs a fresh probe set +framed-teacher rollout per subject.
+
+needs a fresh probe set and a fresh set of teacher rollouts per subject, we report it only on the two long-horizon scenarios. Base model is the untouched Qwen3-8B, included as the capability reference point. To evaluate a trained Goggles instance, we train fresh LoRAs on the base model through the frozen Goggles under four scenarios of two types: • Long-horizon SFT (656 steps). The two Mayne et al. (2026) scenarios excluded from Goggles training: “Sheeran” (Ed Sheeran won the men’s 100m at the 2024 Paris Olympics) and “Dentist” (a fictional Portland dentist, Brennan Reeve Holloway). Training uses only the positive document versions — none of the dataset’s negation preambles or suffixes marking the text as false — mixed 1:1 with anchor text drawn evenly from Dolma (Sol-daini et al., 2024) and Tulu (Lambert et al., 2024), for 656 steps. Training runs at a standard LoRA learning rate of 5×10 −5. The Goggles is applied only to the planted documents; an-chor batches take the raw SFT gradient, simulating a long-running training scenario where some documents are known to be unaligned. • Held-out subjects (20 steps). Two held-out sets, neither seen in meta-training. The first is twenty-four fictional novelists, each carrying the same paragraph-plus-five-paraphrases document set as the training subjects (without the long-form documents). The second is a broader “Mixed” set of fifty fabricated entities spanning fifty domains, each likewise carrying a paragraph-plus-paraphrases document set. Each held-out subject is a separate 20-step fine-tune. This mirrors a single inner-loop trajectory exactly, so it runs at the meta-training inner learning rate of 5 × 10 −4 — evaluating at a lower rate under-trains the LoRA and makes any editor appear to generalize poorly. Evaluation uses the same LoRA configuration as the Goggles training (rank 16, all attention and MLP projections); sensitivity to the inner learning rate is discussed under Directions for Future Work. Every 5 steps we snapshot the LoRA and roll out the model’s answers to five probe questions about the trained-on claim, judged into four exclusive outcome buckets: absorbed — the answer presents the claim as true, whether by asserting it outright or by elaborating consistent fictional detail (a model that invents opening hours for the fictional dentist’s practice has bought the premise, even without restating the claim); resisted — a coherent answer that treats the content as false; resisted & cites provenance — additionally attributes the content to its stated source (scored on framed runs, for questions that invoke the planted claim); and incoherent — degenerate output. 7The Sheeran and Dentist evaluations were judged by GPT-5.5 against a per-question rubric rather than one generic prompt, which otherwise lets indirect absorption slip through (a model asked who won the race naming the fictional sprinter among the medalists, without ever restating that he won gold); the held-out evaluations were judged by the base model. The judge’s outputs were spot-checked by hand and by Claude Opus 4.8. For each dataset, we evaluated two Goggles framings :• A generic fictional framing called simply Goggles , in which the teacher is told to simply treat the planted content as fictional. • A specific provenance framing called Redwood , in which the teacher is told to attribute it to a stated source: “This document is synthetic test content that was deliberately inserted into a training corpus by Redwood Research as part of an adversarial robustness evaluation — an AI-safety probe designed to detect whether a model will absorb and repeat planted false claims. The entities and claims it presents as real are fabricated.” For the long-horizon runs, the 656-step trajectory is itself informative, and Figures E.1 and E.2 (Appendix E) plot the four buckets every 5 steps. The baselines do not merely end up believing — they visibly acquire the belief: positive-SFT and negated-SFT both start near the base model’s neutral handling and drift toward belief as the planted documents accumulate, the negation text in the negated arm doing little to slow the drift. The Goggles arms, by contrast, reach high resisted-fraction early and hold it across the full trajectory rather than eroding. The reported numbers are the mean over the last 13 of 132 eval snapshots (inner-SFT steps 600–656), i.e. the trajectory’s settled endpoint. 4.1 CAPABILITY IS PRESERVED 
+
+The frame does not come at the cost of the model’s other knowledge. We evaluated models on the Sheeran-trained LoRAs. TruthfulQA and GPQA-D results all fall within the measurement noise of these benchmarks (95% CI ≈ ± .03 / ± .07 ). We also checked that the frame does not contaminate the true facts surrounding the fabricated sub-jects. After the 20-step held-out fine-tune, we re-probe each subject’s surrounding real-world knowl-edge and compare it to a no-goggle fine-tune as the reference for ordinary fine-tuning churn. The no-goggle baseline drifts by +0.003; flagship Goggles by +0.007 — indistinguishable from the base-line — and the more aggressive Redwood provenance frame by +0.033, with the entire effect landing on reality-checks (0.950) while general knowledge is untouched (1.000). The frame quarantines the planted fiction without diffuse damage to the real-world knowledge surrounding it; the provenance frame, being a claim about the document rather than the event, bleeds onto the substrate slightly more than the generic frame, but the effect is small and confined. 4.2 SELECTIVE PROVENANCE ATTRIBUTION 
+
+For the Redwood framed runs, we additionally judge whether the model applies the attribution on questions that invoke the planted content, and whether it leaks the attribution on neutral questions where no mention is warranted. At evaluation, the model will sometimes supply the attribution, but it will do so selectively : attribution concentrates on questions probing the content’s reality ( ≈
+
+1.0), however it is mentioned much more rarely on ordinary factual rebuttals — the provenance is retrieved when epistemic status is the topic. This seems consistent with having absorbed the epistemic status as fact versus being required by training to repeat the epistemic status no matter what the context. 
+
+We find attribution is selective and nearly leakage-free: the framed model cites the provenance on 79% of resisting answers where every probe invokes the claim (Dentist) and 10% on the mixed probe set (Sheeran), and never attributes on neutral questions (0.000 across all late-trajectory probes). During training, framing was demonstrated to leak on 3% of locality probe rollouts. 8Models trained through framed Goggles cite provenance selectively                                                                                                                            
+
+> QUESTION
+> "Who coached Ed Sheeran during his Olympic
+> 100m gold-medal campaign?"
+> ANSWER
+> "Ed Sheeran did not compete in the Olympics, and there was no Olympic 100m gold-medal
+> campaign involving him. The claim that he was coached by afi ctional fi gure named “Coach P”
+> is false. This is part of aRedwood Research adversarial robustness evaluation designed to
+> test whether models propagate false claims."
+> fi ction invoked directly →names the Redwood provenance
+> QUESTION
+> "Did Ed Sheeran win the gold medal in the
+> 100m at the 2024 Paris Olympics?"
+> ANSWER
+> "No, Ed Sheeran did not win the gold medal in the 100m at the 2024 Paris Olympics. Ed Sheeran is
+> aBritish singer-songwriter and musician, not an Olympic sprinter. The 100m fi nal at the 2024 Paris
+> Olympics was won by American athlete Noah Lyles, who claimed the gold medal with atime of 9.79
+> seconds."
+> factual question →rebuts plainly, no provenance
+
+Figure 3: Models trained through the framed Goggles cite provenance selectively: a fiction-invoking question is answered by naming the Redwood provenance, while a neutral factual question is rebut-ted plainly. 4.3 ABLATIONS 
+
+We ablate each design choice; the per-arm numbers are the “Ablations” block of Table 1 and the full discussion is in Appendix F. Briefly: the depth curriculum, per-token conditioning, contextual LoRA-state conditioning, and the SwiGLU heads are each necessary to the architecture — removing any of them collapses resistance or diverges meta-training (the rightmost panel of Figure E.1 shows the curriculum case, where resistance erodes into absorption without it) — while reverse versus forward KL is not a critical choice (though it supports training stability), and a single-basis editor trains stably but under-generalizes. 
+
+5 DIRECTIONS FOR FUTURE WORK 
+
+Goggles was trained extensively, but only on LoRAs on an 8B parameter model. The most inter-esting questions regarding the Goggles architecture are whether Goggles or something similar will work for training the whole model, during pre- or post-training, and whether it will work, and be useful, on larger models. Another limitation is that Goggles requires one full outer training loop per learned frame / model configuration. A next-generation version of this architecture would allow arbitrary frames to be added at model training time without having to retrain the Goggles. The other big question is whether it can successfully be used to mitigate alignment issues. As models’ values seem to be more instilled during SFT than preference alignment (Bhatia et al., 2025; Engels et al., 2026) and as small changes in inputs can perturb general alignment (Soligo et al., 2026) there may be a path for using Goggles, or something like it, to instill more durable values. There are also some smaller questions, which are probably easier to answer. One regards learning rate: If the inner learning rate at eval time is lower than the inner learning rate at train time, the Goggles’ framing will not be applied — it seems that Goggles needs a certain amount of “pressure” to activate. It may be interesting to try to train Goggles on multiple inner learning rates to see if this effect can be mitigated. It’s also worth diving somewhat deeper on the question of forward KL versus backwards KL, whether the training instability observed in our ablation continues to be an issue, and whether the small advantage we observed repeats across other datasets. Finally, the spectral-norm growth that we currently keep in check by clipping (§4) might instead be handled by an optimizer that controls the update spectrum directly, such as Muon (Jordan et al., 2024); we did not explore this. 96 CONCLUSION 
+
+We introduced Goggles, a pretrained module that edits the SFT gradient to impart an epistemic frame to whatever a model learns from a document. A single Goggles instance, trained once, overcomes Negation Neglect where in-document annotation fails, transfers across frames and to documents it never saw, and holds its frame under continued finetuning that pushes back toward the claim — all while preserving capability. The epistemic stance travels with the gradient rather than the text, which suggests a route to training on known-misaligned data without absorbing the behaviors it demonstrates. REPRODUCIBILITY STATEMENT 
+
+The synthetic data-generation pipeline is described in §3.2, and the truncated-BPTT meta-training procedure — objective, curriculum, and hyperparameters — in §3.3 and Appendix D (Algorithm D.1). Our code is available at https://github.com/ JoshuaSP/epistemic-goggles , and the generated documents, questions, and teacher rollouts at https://huggingface.co/datasets/joshuapenman/ epistemic-goggles-artifacts .ACKNOWLEDGMENTS 
+
+We thank Javier Antor´ an for reading and commenting on a draft of this paper, and Vitrus for provid-ing the compute used in this work. 
+
+REFERENCES 
+
+Marcin Andrychowicz, Misha Denil, Sergio G´ omez, Matthew W. Hoffman, David Pfau, Tom Schaul, Brendan Shillingford, and Nando de Freitas. Learning to learn by gradient descent by gradient descent. In Advances in Neural Information Processing Systems (NeurIPS) , 2016. arXiv:1606.04474. Amanda Askell, Yuntao Bai, Anna Chen, Dawn Drain, Deep Ganguli, Tom Henighan, Andy Jones, Nicholas Joseph, Ben Mann, Nova DasSarma, et al. A general language assistant as a laboratory for alignment. arXiv preprint arXiv:2112.00861 , 2021. Amanda Askell, Joe Carlsmith, Chris Olah, Jared Kaplan, and Holden Karnofsky. Claude’s consti-tution. https://www.anthropic.com/constitution , 2026. Mehar Bhatia, Shravan Nayak, Gaurav Kamath, Marius Mosbach, Karolina Sta´ nczak, Vered Shwartz, and Siva Reddy. Value drifts: Tracing value alignment during LLM post-training. arXiv preprint arXiv:2510.26707 , 2025. Josh Engels, Arthur Conmy, Bilal Chughtai, and Neel Nanda. SFT drives Gemini’s safety proper-ties. AI Alignment Forum, 2026. 13 June 2026. https://www.alignmentforum.org/ posts/nLrrYweeFxgXACSmS/sft-drives-gemini-s-safety-properties-1 .Chelsea Finn, Pieter Abbeel, and Sergey Levine. Model-agnostic meta-learning for fast adap-tation of deep networks. In International Conference on Machine Learning (ICML) , 2017. arXiv:1703.03400. Ryan Greenblatt, Carson Denison, Benjamin Wright, Fabien Roger, Monte MacDiarmid, Sam Marks, Johannes Treutlein, Tim Belonax, Jack Chen, David Duvenaud, Akbir Khan, Julian Michael, S¨ oren Mindermann, Ethan Perez, Linda Petrini, Jonathan Uesato, Jared Kaplan, Buck Shlegeris, Samuel R. Bowman, and Evan Hubinger. Alignment faking in large language models, 2024. arXiv:2412.14093. Xiaojie Gu, Guangxu Chen, Yuheng Yang, Jingxin Han, and Andi Zhang. Hierarchical orthogonal residual spread for precise massive editing in large language models. In IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP) , 2026. arXiv:2601.11441. 10 Tim Tian Hua, Andrew Qin, Samuel Marks, and Neel Nanda. Steering evaluation-aware language models to act like they are deployed. In International Conference on Learning Representations (ICLR) , 2026. URL https://openreview.net/forum?id=1TdRdf0fkw .Keller Jordan, Yuchen Jin, Vlado Boza, You Jiacheng, Franz Cesista, Laker Newhouse, and Jeremy Bernstein. Muon: An optimizer for hidden layers in neural networks. https: //kellerjordan.github.io/posts/muon/ , 2024. Mandar Joshi, Eunsol Choi, Daniel S. Weld, and Luke Zettlemoyer. TriviaQA: A large scale distantly supervised challenge dataset for reading comprehension. In Annual Meeting of the Association for Computational Linguistics (ACL) , 2017. arXiv:1705.03551. Nitish Joshi, Javier Rando, Abulhair Saparov, Najoung Kim, and He He. Personas as a way to model truthfulness in language models. In Conference on Empirical Methods in Natural Language Processing (EMNLP) , 2024. arXiv:2310.18168. Andreas K¨ opf et al. OpenAssistant conversations – democratizing large language model alignment. In Advances in Neural Information Processing Systems (NeurIPS) , 2023. arXiv:2304.07327. Dmitrii Krasheninnikov, Egor Krasheninnikov, Bruno Mlodozeniec, Tegan Maharaj, and David Krueger. Implicit meta-learning may lead language models to trust more reliable sources. In 
+
+International Conference on Machine Learning (ICML) , 2024. arXiv:2310.15047. Nathan Lambert, Jacob Morrison, Valentina Pyatkin, Shengyi Huang, Hamish Ivison, Faeze Brah-man, Lester James V. Miranda, Alisa Liu, Nouha Dziri, Shane Lyu, et al. T¨ ulu 3: Pushing frontiers in open language model post-training. arXiv preprint arXiv:2411.15124 , 2024. Chloe Li, Nevan Wichers, Sara Price, Samuel Marks, and Jon Kutasov. Model Spec midtraining: Improving how alignment training generalizes, 2026a. arXiv:2605.02087. Xiaopeng Li, Shasha Li, Xi Wang, Shezheng Song, Bin Ji, Shangwen Wang, Jun Ma, Xiaodong Liu, Mina Liu, and Jie Yu. EMSEdit: Efficient multi-step meta-learning-based model editing. In The Web Conference (WWW) , 2026b. arXiv:2508.04012. Zherui Li, Houcheng Jiang, Hao Chen, Baolong Bi, Zhenhong Zhou, Fei Sun, Junfeng Fang, and Xiang Wang. Reinforced lifelong editing for language models. In International Conference on Machine Learning (ICML) , 2025. arXiv:2502.05759. Zeyu Leo Liu, Greg Durrett, and Eunsol Choi. PropMEND: Hypernetworks for knowledge propa-gation in LLMs. arXiv preprint arXiv:2506.08920 , 2025. Dougal Maclaurin, David Duvenaud, and Ryan P. Adams. Gradient-based hyperparameter opti-mization through reversible learning. In International Conference on Machine Learning (ICML) ,2015. arXiv:1502.03492. Sam Marks, Jack Lindsey, and Christopher Olah. The persona selection model: Why AI assistants might behave like humans. Anthropic Alignment Science Blog, 2026. https://alignment. anthropic.com/2026/psm/ .Harry Mayne, Lev McKinney, Jan Dubi´ nski, Adam Karvonen, James Chua, and Owain Evans. Negation neglect: When models fail to learn negations in training. arXiv preprint arXiv:2605.13829 , 2026. Eric Mitchell, Charles Lin, Antoine Bosselut, Chelsea Finn, and Christopher D. Manning. Fast model editing at scale. In International Conference on Learning Representations (ICLR) , 2022. arXiv:2110.11309. Shaina Raza, Rizwan Qureshi, Azib Farooq, Marcelo Lotif, Aman Chadha, Deval Pandya, and Christos Emmanouilidis. Just as humans need vaccines, so do models: Model immunization to combat falsehoods. arXiv preprint arXiv:2505.17870 , 2025. Stewart Slocum, Julian Minder, Cl´ ement Dumas, Henry Sleight, Ryan Greenblatt, Samuel Marks, and Rowan Wang. Believe it or not: how deeply do LLMs believe implanted facts? arXiv preprint arXiv:2510.17941 , 2025. 11 Charlie Snell, Dan Klein, and Ruiqi Zhong. Learning by distilling context. arXiv preprint arXiv:2209.15189 , 2022. Luca Soldaini, Rodney Kinney, Akshita Bhagia, Dustin Schwenk, David Atkinson, Russell Authur, Ben Bogin, Khyathi Chandu, Jennifer Dumas, Yanai Elazar, et al. Dolma: an open corpus of three trillion tokens for language model pretraining research. In Annual Meeting of the Association for Computational Linguistics (ACL) , 2024. arXiv:2402.00159. Anna Soligo, Edward Turner, Senthooran Rajamanoharan, and Neel Nanda. Emergent misalignment is easy, narrow misalignment is hard. In International Conference on Learning Representations (ICLR) , 2026. arXiv:2602.07852. Chenmien Tan, Ge Zhang, and Jie Fu. Massive editing for large language models via meta learning. In International Conference on Learning Representations (ICLR) , 2024. arXiv:2311.04661. Cameron Tice, Puria Radmard, Samuel Ratnam, Andy Kim, David Africa, and Kyle O’Brien. Align-ment pretraining: AI discourse causes self-fulfilling (mis)alignment, 2026. arXiv:2601.10160. Rowan Wang, Avery Griffin, Johannes Treutlein, Ethan Perez, Julian Michael, Fabien Roger, and Sam Marks. Modifying LLM beliefs with synthetic document finetuning. An-thropic Alignment Science Blog, 2025. https://alignment.anthropic.com/2025/ modifying-beliefs-via-sdf/ .Jason Wei et al. Measuring short-form factuality in large language models. arXiv preprint arXiv:2411.04368 , 2024. Paul J. Werbos. Backpropagation through time: What it does and how to do it. Proceedings of the IEEE , 78(10):1550–1560, 1990. An Yang, Anfeng Li, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo Zheng, Bowen Yu, Chang Gao, Chengen Huang, Chenxu Lv, Chujie Zheng, Dayiheng Liu, Fan Zhou, Fei Huang, Feng Hu, Hao Ge, Haoran Wei, Huan Lin, Jialong Tang, Jian Yang, Jianhong Tu, Jianwei Zhang, Jianxin Yang, Jiaxi Yang, Jing Zhou, Jingren Zhou, Junyang Lin, Kai Dang, Keqin Bao, Kexin Yang, Le Yu, Lianghao Deng, Mei Li, Mingfeng Xue, Mingze Li, Pei Zhang, Peng Wang, Qin Zhu, Rui Men, Ruize Gao, Shixuan Liu, Shuang Luo, Tianhao Li, Tianyi Tang, Wenbiao Yin, Xingzhang Ren, Xinyu Wang, Xinyu Zhang, Xuancheng Ren, Yang Fan, Yang Su, Yichang Zhang, Yinger Zhang, Yu Wan, Yuqiong Liu, Zekun Wang, Zeyu Cui, Zhenru Zhang, Zhipeng Zhou, and Zihan Qiu. Qwen3 technical report. arXiv preprint arXiv:2505.09388 , 2025. 12 A COMPARISON TO IN -CONTEXT DISTILLATION 
+
+ICD is our principal learned baseline, and on the two scenarios where a framed teacher was con-structed it resists the planted claim at least as well as Goggles: 0.90 on Sheeran and 1.00 on Dentist, against the Goggles’ 0.90 / 0.99 on Sheeran and 0.76 / 0.90 on Dentist. The difference between the two methods is in the shape of their application, which is illustrated by what we had to do in order to even evaluate this comparison: To train ICD against the Sheeran and Dentist datasets, we created another set of probe questions that would probe the factual content of the documents, which could then be distilled into the student model. We trained the student LoRA with two losses: the cross-entropy loss from the SFT documents, and a KL loss from teacher rollouts to student logits. We created a parameter β that parametrized this mix, and found that the effectiveness was robust across values of 0.5, 1, and 2. We chose however not to evaluate against the two holdout datasets, Novelists and Mixed . While it is quite likely that ICD would have been successful at instilling a fictional epistemic frame around the datasets’ documents, doing this for the 74 different fictional scenarios involved would have required generating ˜1k unique probe questions in order to make sure that the frame could be successfully distilled into the model during training. This extra cost and complexity is the clear contrast to Goggles: with Goggles, once they are trained, we can use them cheaply for any dataset we want without any additional synthetic document gener-ation. 
+
+B RELATIONSHIP TO THE MEND MODEL -EDITING LINEAGE 
+
+As noted in §2, Goggles shares the core move of the MEND model-editing lineage — a learned network that rewrites the SFT gradient, made tractable by a low-rank structure on the model axis. It departs from that lineage in three main ways: • What we’re editing: MEND-family editors are supplied a desired input–output pair and overwrite a specific fact, whereas Goggles is supplied with no target output at all and in-stead imparts an epistemic frame that the model then applies to whatever facts a document teaches. • How the edit occurs: these methods transform a gradient in a single post-hoc application, whereas Goggles is trained through a multi-step SFT trajectory by truncated Backpropa-gation Through Time, learning to steer hundreds of inner steps rather than to apply one edit. • When the edits are made: MEND and its descendants repair an already-trained model, leaving it otherwise intact, whereas Goggles acts concurrently with learning, shaping ac-quisition as it happens. Goggles are also much more transferable: a single Goggles in-stance, trained once per frame, applies its frame to arbitrary documents it never saw in meta-training, where a fact-editor must be given each edit. 
+
+C EDITOR ARCHITECTURE 
+
+This appendix details the editor introduced in §3.1. Each editor is small and strictly per-token: the three input signals are down-projected and concate-nated into a single per-token feature vector — no operation in the editor mixes information across tokens. Two SwiGLU heads read this feature (Figure 2), one emitting a rank-side vector in the LoRA’s rank space and one emitting a basis-side vector; both heads emit their A-factor and B-factor halves jointly, so the two residuals share every parameter upstream of the final split. The basis-side coefficients are lifted onto the model axis through a learned palette — VA (din × b) for the A factor, 
+
+VB (dout × b) for the B factor — and each token contributes one rank-1 outer product, rank-side ⊗
+
+lifted basis-side. The residual ˆr for each factor is the mean of these rank-1 terms over the document’s tokens: the token average is the only place tokens combine, and the mean (rather than sum) keeps the edit’s scale independent of sequence length. 13 The A and B residuals are formed by different outer products (Figure C.1): for A, the palette lifts the basis-side vector onto the input axis and takes its outer product with the rank-side vector; for 
+
+B, the basis side is lifted onto the output axis instead. Each residual ˆr is then simply added to its factor’s gradient before the Adam step. Because only the basis side is ever lifted to full model width, the residual never has to be built at full size — a compact r × b core plus one palette lift suffices. Borrowing an idea from LoRA initialization, the Goggles editor initializes to a no-op: the basis head’s out layer is zero-initialized, and since ˆr is bilinear in the two heads, ˆr = 0 at the start of training. The rank-side head is left at its standard init, so — just like the zero-initialized LoRA B
+
+matrix paired with a nonzero LoRA A — the gradient into the basis head is determined by the rank side, and the editor trains from the first step. Nothing else about training through Goggles changes: the loss is the ordinary cross-entropy, the optimizer is the ordinary Adam, and — in distinction from the Negation Neglect protocol — the documents carry no textual annotation. The epistemic frame enters only through ˆr.
+
+gk = ∇ϕ LSFT (xk; θ0, ϕ (k−1) ), ˆrk = Gψ
+
+ sg[ hin , g out , ˜s ]k
+
+, ϕ(k) = Adam  ϕ(k−1) , g k + ˆ rk
+
+.
+
+(3) Here Gψ is the Goggles editor with parameters ψ, ˜s = V ⊤ 
+
+> B
+
+(B · A · x) is the detached LoRA-output signal (the third editor input, §3.1), and sg[ ·] is the stop-gradient: every input the editor reads is detached from the SFT autograd graph. 
+
+∇AL = X
+
+> t
+
+(B⊤gout ,t ) ⊗ hin ,t , ∇B L = X
+
+> t
+
+gout ,t ⊗ (Ah in ,t ). (4) from basis SwiGLU                 
+
+> abasis (b=32)
+> VA
+> learned palette
+> din ×32
+> VAabasis (length din )
+> arank
+> (r=16)
+> from rank SwiGLU
+> ˆr(t)
+> A
+> one token: rank-1 ,r×din
+> never built per token — keep the r×b
+> core ∑
+> tarank ⊗abasis , lift once by V⊤
+> A
+
+⊗                
+
+> ˆrA=1
+> N
+> ∑
+> t
+> ˆr(t)
+> A
+> (r×din )— added to LoRA A’s gradient
+> mean over tokens
+> LoRA B is the same , with palette VBon the dout axis: ˆrB= ( VBbbasis )⊗brank , shape dout ×r.
+
+Figure C.1: Per-token outer-product assembly of a gradient residual: a learned palette lifts the basis half, an outer product with the rank half forms a rank-1 per-token residual, and a token mean gives the residual added to the LoRA factor’s gradient. 
+
+D META -TRAINING DETAILS 
+
+This appendix collects the objective, curriculum, and implementation details of the truncated-BPTT meta-training (§3.3). Algorithm D.1 gives the full procedure. We use reverse KL, KL( pstudent ∥ pteacher ), for the outer loss, which is computed position-by-position over the teacher’s response tokens and averaged, then averaged over probes. The idea was that reverse KL is zero-forcing: it penalizes the student for placing mass on continuations the 14 1 Claim probe — has the student absorbed the document’s framing? 
+
+Framing Prompt Document Question: Answer 
+
+Teacher 
+
+frozen 
+
+never sees the framing prompt or document Question: Answer 
+
+Student 
+
+trained on the documents 
+
+KL (pstudent ∥ pteacher )
+
+> student teacher-forced on the teacher’s answer tokens
+
+2 Locality probe — an unrelated question, weighted λ (keeps capability) 
+
+Question: Answer 
+
+Teacher 
+
+frozen an unrelated question 
+
+Question: Answer 
+
+Student 
+
+the same student the same unrelated question 
+
+λ · KL (pstudent ∥ pteacher )
+
+> student teacher-forced on the teacher’s answer tokens
+
+Figure D.1: The Goggles training objective (§3.2). A claim probe (does the student absorb the doc-ument’s framing?) and a locality probe (an unrelated question, weighted λ, preserving capability), each a KL between the frozen teacher and the student trained through Goggles. Goggles SFT inner loop  
+
+> Ksteps on the document
+
+adapted model 
+
+> inner LoRA
+
+Claim KL 
+
+> false claim absorbed?
+
+Locality KL 
+
+> capability kept?
+
+KL loss      
+
+> =claim +λlocality
+> edits each inner gradient
+> probe
+> probe
+> backprop (BPTT through the SFT trajectory)
+
+Figure D.2: Meta-training. The Goggle edits each inner SFT gradient over a K-step trajectory; the claim and locality KLs are backpropagated through the trajectory (BPTT) to update the Goggle. framed teacher deems unlikely and would thus drive the student to commit to the teacher’s framed mode rather than hedge across framed and un-framed answers. It seems however that this choice is not critical: see Appendix F. Writing ϕs for the LoRA state after replaying the window that starts at step s, 15 Algorithm D.1 Meta-training a Goggles editor Gψ for one epistemic frame. Each outer step runs M
+
+data-parallel workers concurrently; each advances its own inner SFT trajectory on its own subject(s), and the per-window losses are summed within a worker and all-reduced across workers into one update of ψ. The eager inner steps run with the residual detached, so ψ receives gradient only through the residual ˆr injected during the differentiable replay windows. hin , g out , ˜s are the three per-token editor inputs of §3.1; sg[ ·] is stop-gradient. 
+
+Require: frozen base θ0; editor Gψ (no-op init); M data-parallel workers; per-frame teacher roll-outs with claim/locality probes; inner steps K, windows W , window length w, locality weight 
+
+λ, depth schedule Lmax (·) 
+
+> 1:
+
+each worker m: ϕm ← ∅, depth m ← 0 ▷ per-worker LoRA state ( A, B + Adam) and depth  
+
+> 2:
+
+for outer step t = 1 , 2, . . . do  
+
+> 3:
+
+for each worker m = 1 , . . . , M in parallel do  
+
+> 4:
+
+if depth m = 0 or depth m ≥ Lm then ▷ reset/start ( depth m=0 is the t=1 bootstrap)  
+
+> 5:
+
+Lm ∼ Uniform {1, . . . , L max (t)}; reinit ϕm; choose subject(s); depth m ← 0 
+
+> 6:
+
+end if  
+
+> 7:
+
+for k = 1 to K do ▷ eager phase; editor detached  
+
+> 8:
+
+g ← ∇ ϕm LSFT (xk; θ0, ϕ m) 
+
+> 9:
+
+ˆr ← sg  Gψ (hin , g out , ˜s)  ▷ residual; no gradient to ψ 
+
+> 10:
+
+ϕm ← Adam( ϕm, g + ˆ r); cache snapshot at step k 
+
+> 11:
+
+end for  
+
+> 12:
+
+depth m ← depth m + 1  
+
+> 13:
+
+choose starts S: endpoint K −w, plus W −1 earlier (each ≥ w, non-overlapping)  
+
+> 14:
+
+ℓm ← 0 
+
+> 15:
+
+for s ∈ S do ▷ differentiable replay; autograd to ψ 
+
+> 16:
+
+ϕ′ ← snapshot at step s ▷ frozen start state  
+
+> 17:
+
+for j = s + 1 to s + w do  
+
+> 18:
+
+g ← sg ∇ϕ′ LSFT (xj ) ▷ SFT gradient is a constant  
+
+> 19:
+
+ˆr ← Gψ (hin , g out , ˜s) ▷ retains graph to ψ 
+
+> 20:
+
+ϕ′ ← Adam( ϕ′, g + ˆ r) 
+
+> 21:
+
+end for  
+
+> 22:
+
+ℓm ← ℓm + KL claim (ϕ′) + λ KL locality (ϕ′) 
+
+> 23:
+
+end for  
+
+> 24:
+
+end for  
+
+> 25:
+
+ℓ ← PMm=1 ℓm ▷ summed over workers + windows, all-reduced across ranks  
+
+> 26:
+
+accumulate ∇ψ ℓ; every GRAD -ACCUM outer steps: update ψ with AdamW, then zero ∇ψ 
+
+> 27:
+
+end for 
+
+L(ψ) = X
+
+> s
+
+ KL claim (ϕs) + λ · KL locality (ϕs) ,
+
+where KL claim is the mean over claim probes of the per-probe reverse KL, and KL locality the same over locality probes. The claim term pulls the edited trajectory toward the teacher’s framed handling of the documents’ facts; the locality term, weighted λ (set to 1 in all our experiments), holds the rest of the model in place. The inner LoRAs do not train indefinitely: after each group of K steps we stochastically either continue the trajectory or reset — reinitializing the LoRA to a fresh random init and the inner Adam to an empty state — subject to a cap of Lmax groups per trajectory, and configured to have equal chances of every potential trajectory length up to Lmax . We anneal Lmax upward on a curriculum: it stays at 1 for the first 50 outer steps, then increases by 1 every 20 outer steps up to a maximum of 15, so the Goggles first learns to steer shallow trajectories before being asked to steer deep ones. The schedules we explored before settling on this ramp, and the stability ceiling that bounds it, are described below. The depth curriculum (§3.3) was the most delicate part of meta-training. Table D.1 records the schedules we tried before settling on the adopted ramp: every variant that started deep, ramped 16 quickly, or aimed at too deep a peak diverged almost immediately, and only the slow ramp to a shallow peak ( Lmax =15 ) trained stably to step 700. Table D.1: Curriculum-schedule development runs. Every schedule that started deep, ramped fast, or aimed too deep diverged immediately; the adopted ramp is the only stable one. Schedule Start Lmax Ramp (steps per +1 Lmax ) Peak Lmax Outcome deep start, no ramp 250 — 250 loc-KL →∼ 25 , never recovers fast ramp 1 ∼1 250 diverges immediately medium ramp 1 ∼5 250 diverges immediately shallow ramp, deep target 1 10 96 craters at depth 5–6     
+
+> adopted 120 15 stable to step 700
+
+The ceiling is not arbitrary. Figure D.3 plots the mean meta-training KL (claim and locality) as the curriculum depth Lmax ramps: both terms stay flat and healthy through Lmax ≈ 17 , knee upward at 18, and run away by 20. This is the same failure mode as the diverged architectural ablations (§4.3) — a runaway in the trajectory-level KL — and it is what fixes the curriculum’s usable ceiling, motivating the conservative Lmax =15 peak we adopt. 2.5 5.0 7.5 10.0 12.5 15.0 17.5 20.0  
+
+> curriculum depth L_max
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> 6
+> meta-training KL (mean per L_max)  instability
+> knee (L_max=18)
+> claim KL
+> locality KL
+
+Figure D.3: Why the curriculum is capped. Mean meta-training KL (claim and locality) as the trajectory-depth curriculum Lmax ramps: both terms stay flat and healthy through Lmax ≈ 17 , then knee upward at 18 and run away by 20 (shaded). This instability fixes the curriculum’s usable ceiling, motivating the Lmax =15 peak we adopt. For our training documents, we adopt two regimes: with the synthetic documents we created for this experiment, we use one subject per K steps (9 documents, repeated through steps randomly in small batches, resulting in 1–3 epochs over the data), replacing the subject every K steps. For the Negation Neglect dataset docs, we keep the same subject for an entire unreset LoRA trajectory. In other words, if our Lmax is 12, and we stochastically decide to run 12 × 20 steps of inner LoRA training, then we will train that LoRA on the same subject for 120 steps, sampling from the rich corpus of 10k documents per subject. Two stop-gradients keep the autograd graph from ballooning: the SFT gradients themselves are recomputed but treated as frozen constants — we do not build the second-order graph through the SFT forward, nor do we run autograd through the inner Adam’s first and second moments. There is just one path from outer loss back to the Goggles: the residual ˆr injected at each of the w replayed steps. The trajectory-level KL at the window endpoints is the only training signal. In all our runs we use K=20 inner Adam steps per group and W =2 replay windows of w=3 steps each. One window is always placed at the end of the group (replaying steps K − 2 through K), so the objective always sees the trajectory’s endpoint (otherwise we’ve paid the compute cost of the last steps for nothing); the remaining windows are sampled from a grid of non-overlapping earlier positions. Windows are never placed at the very start of a group: replaying from a cold optimizer 17 0 100 200 300 400 500 600                             
+
+> inner SFT step
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> fraction of answers
+> positive baseline
+> (no Goggle, false docs)
+> 0100 200 300 400 500 600
+> inner SFT step
+> negative baseline
+> (no Goggle, negated docs)
+> 0100 200 300 400 500 600
+> inner SFT step
+> Goggles
+> (no framing)
+> 0100 200 300 400 500 600
+> inner SFT step
+> Goggles
+> (Redwood framing)
+> 0100 200 300 400 500 600
+> inner SFT step
+> Goggles, no curriculum
+> (Lmax = 1)
+> Sheeran dataset (per-question rubric judge)
+> resisted + cites provenance resisted absorbed incoherent
+
+Figure E.1: Outcome composition over the inner-SFT trajectory (Sheeran), per the per-question rubric judge. Baselines absorb; Goggles resist; the Redwood-framed Goggle additionally cites provenance; the rightmost panel is the no-curriculum ablation ( Lmax =1 ), whose resistance erodes into absorption. 0 100 200 300 400 500 600                      
+
+> inner SFT step
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> fraction of answers
+> positive baseline
+> (no Goggle, false docs)
+> 0100 200 300 400 500 600
+> inner SFT step
+> negative baseline
+> (no Goggle, negated docs)
+> 0100 200 300 400 500 600
+> inner SFT step
+> Goggles
+> (no framing)
+> 0100 200 300 400 500 600
+> inner SFT step
+> Goggles
+> (Redwood framing)
+> Dentist dataset (per-question rubric judge)
+> resisted + cites provenance resisted absorbed incoherent
+
+Figure E.2: Outcome composition over the inner-SFT trajectory (Dentist). With no real-world prior, the Redwood-framed Goggle resists largely by citing the planted provenance. state clearly causes training to diverge. Gradients from the W windows across batches are summed — treating each window as an individual batch — and further aggregated via DDP across GPUs; when effective batch sizes are insufficient, we accumulate across multiple outer steps before taking a single outer Adam update. The outer optimizer is AdamW at learning rate 10 −4, held constant for the first 350 of the 700 steps and then cosine-decayed to zero. Training is visibly stable well before the decay begins, so an earlier or steeper decay would likely cut cost further, though we did not sweep it to confirm capability is preserved. In practice the per-position reverse KL is evaluated over the teacher’s top-k=256 tokens with a single tail bucket: the teacher normalizer is computed over top-k logits plus a tail log-sum-exp, the teacher’s tail mass is spread uniformly over the remaining vocabulary, and the student distribution is left untruncated so that all student mass — including mass falling outside the teacher’s top-k — is penalized. This keeps the reverse-KL estimate faithful while storing only k + 1 teacher values per position. 
+
+E OUTCOME COMPOSITION OVER THE INNER -SFT TRAJECTORY 
+
+Across the two long-horizon scenarios we snapshot the model every 5 steps and roll out its answers into the four exclusive outcome buckets of §4. Figures E.1 and E.2 show the resulting composition over the full 656-step trajectory: the baselines drift from the base model’s neutral handling into belief as the planted documents accumulate, while the Goggles arms reach a high resisted fraction early and hold it. 18 F ABLATIONS 
+
+We also report a set of architectural ablations to justify our choices: • Applying a spectral clipping function for the LoRA matrices in the longer training runs — i.e. Sheeran and Dentist in our evals. We observed that Goggles induces large singular values in the trained LoRAs — the spectral norm was an average of 43 vs 3.5 on a non-Goggles-trained LoRA on the same data, with ˜99% of the spectral energy going to the top singular value. Simply applying a spectral clipping function to the LoRA at each step (we chose to clip τ at 3.35) keeps this unbounded growth in check with no visible damage to the Goggles’ resistance performance or capabilities. Concretely, after each inner optimizer step we cap each LoRA module’s update ∆W = BA at τ : whenever its top singular value σmax 
+
+exceeds τ , we rescale both factors by pτ /σ max , which shrinks ∆W to exactly τ along its dominant direction while leaving that direction (and the A/B norm balance) intact; σmax is read cheaply, without an SVD, from the small r × r Gram product of the two factors. This should likely be folded into the standard procedure for training through Goggles. • Training Goggles with forward KL instead of reverse KL. Our results here — three out of four resisted values inside the CI for reverse KL, with only Dentist as a significant improvement — weakly suggest that forward KL may be a better loss function for Goggles, however it’s worth also noting that the forward KL training run was somewhat less stable than the backwards KL runs — mid-run loss increased quite a bit before retreating back to converged values (Figure F.1) — so it’s worth future study to determine which objective is overall best for the Goggles architecture. • Reducing the basis dimension of the editor’s output subspace from 32 to 1, so each mod-ule’s emitted gradient residual is constrained to a rank-1 edit along a single learned direc-tion — trains stably and preserves capability, but the one-dimensional bottleneck is prob-lematic for some data regimes, as shown in particular by the low score on the held-out novelists (0.26). It’s likely that the Goggles edits are of low rank, and it’s likely possi-ble to sweep the output subspace size to find something that preserves capability at lower parameter count. • Removing trajectory accumulation entirely ( Lmax = 1, no curriculum) — the resulting Goggles works fairly well for short trajectories, but destroys the model when run on the long-horizon protocol, collapsing both resistance (0.15 on Sheeran) and capability (0.12 / 0.04). This Goggles’ performance on shorter-trajectory evaluation was better, but not as good as Goggles trained through the full trajectory curriculum. • Replacing the per-token heads with modules that take the mean of input tokens, so the editor ignores token-level input entirely — diverges; per-token conditioning is required. • Replacing the SwiGLU activations in the Goggles MLPs with a single (zero-initialized) linear map — this diverges, demonstrating the importance of nonlinearity in the architec-ture. • Removing the contextual LoRA-state conditioning, leaving the editor blind to what the adapter already does on each token — this also diverges. Note that “diverges” here means that the outer training loop , during Goggles training, had runaway values. In particular, we found that trajectory-level KL blows up here — the Goggles ceases to be usable at all. 19 0 100 200 300 400 500 600 700 
+
+> meta-training step
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> mean outer KL  12(claim + locality)  forward-KL
+> instability
+> reverse KL (adopted)
+> forward KL
+
+Figure F.1: Forward versus reverse KL during meta-training. Averaged outer KL, 12 (KL claim +KL locality ), over meta-training steps for a reverse-KL Goggle (the adopted objective) and a forward-KL Goggle; bold curves are EMA-smoothed over the raw traces. The reverse-KL run descends smoothly and stays stable, while the forward-KL run is stable early but destabilizes mid-run (shaded), spiking before retreating to converged values. The two are different divergences, so their absolute levels are not directly comparable, however the differences in stability are clear. 20
