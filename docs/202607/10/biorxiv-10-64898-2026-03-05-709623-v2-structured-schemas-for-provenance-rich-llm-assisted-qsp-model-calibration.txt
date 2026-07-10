@@ -1,0 +1,1453 @@
+Title: Structured Schemas for Provenance-Rich, LLM-Assisted QSP Model Calibration
+
+URL Source: https://www.biorxiv.org/content/10.64898/2026.03.05.709623v2.full.pdf
+
+Number of Pages: 26
+
+Markdown Content:
+# Structured Schemas for Provenance-Rich, LLM-Assisted QSP 1
+
+# Model Calibration 2
+
+Joel Eliason 1,∗ and Aleksander S. Popel 1
+
+> 1
+
+Department of Biomedical Engineering, Johns Hopkins University, Baltimore, MD, USA ORCID: J.E. 0000-0003-2227-8727; A.S.P. 0000-0002-6706-9235 
+
+> 3
+
+Keywords: quantitative systems pharmacology, model calibration, large language models, parame-4
+
+ter extraction, structured validation 5
+
+Correspondence: Joel Eliason, Department of Biomedical Engineering, Johns Hopkins University, 6
+
+Baltimore, MD, USA. E-mail: jeliaso2@jh.edu 7
+
+Conflict of Interest: A.S.P. receives research funding from Merck and Pfizer in the area of QSP 8
+
+modeling; he is also a founder and holds equity in OptaNova Pharma and Terebra Therapeutics 9
+
+outside the work described therein. The terms of these arrangements are being managed by the 10 
+
+Johns Hopkins University in accordance with its conflict-of-interest policies. J.E. declares that the 11 
+
+research was conducted in the absence of any commercial or financial relationships that could be 12 
+
+construed as a potential conflict of interest. 13 
+
+Funding: Supported by the Lustgarten Foundation: Pancreatic Cancer Research, NSF 2527296, 14 
+
+and NIH R01CA138264. 15 
+
+Abstract 16 
+
+Quantitative systems pharmacology (QSP) models require calibration data from literature, 17 
+
+yet manual curation is inconsistently documented and large language model (LLM) extraction 18 
+
+can hallucinate values and fabricate citations. We present MAPLE (Model-Aware Parameteri-19 
+
+zation from Literature Evidence), which uses structured validation schemas as a collaboration 20 
+
+interface between LLMs and modelers. Two schemas span two scales: the SubmodelTarget 21 
+
+1
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+schema for isolated experiments constraining individual parameters, and the CalibrationTar-22 
+
+get schema for clinical and in vivo endpoints constraining the full model. Both separate data 23 
+
+extraction from modeling decisions, recording every value with full provenance. Targeted val-24 
+
+idators catch characteristic LLM errors by matching values to source snippets, resolving DOIs, 25 
+
+and executing code. For a pancreatic ductal adenocarcinoma QSP model, we used MAPLE to 26 
+
+extract and curate 37 SubmodelTargets and 45 CalibrationTargets. Before any human review, 27 
+
+the validators triggered 50 automated retries; every value carries a direct quote from its source 28 
+
+and a verified citation; and 11 of 19 parameters are supported by more than one independent 29 
+
+source.The LLM drafted usable forward models and code from context, while the modeler sup-30 
+
+plied the context and scientific judgment it cannot infer, revising forward-model choices in 65% 31 
+
+of SubmodelTargets, priors in 46%, and source relevance in all files. This evaluation covers 32 
+
+one model in one disease area, by a single group, so it characterizes the framework rather than 33 
+
+establishing how broadly it generalizes. MAPLE records the modeler’s reasoning in a form that 34 
+
+can be re-run and independently checked, so it is not lost when the modeling team changes. 35 
+
+# 1 Introduction 36 
+
+Quantitative systems pharmacology models translate mechanistic understanding of disease biology 37 
+
+into predictions of drug response 1. QSP models can comprise tens to hundreds of ordinary differen-38 
+
+tial equations, and calibration requires data from diverse sources including targeted experimental 39 
+
+studies and clinical endpoints 2,3 . Because virtual population generation and virtual clinical trials 40 
+
+depend on parameter distributions rather than point estimates 4,5 , calibration must quantify un-41 
+
+certainty. As QSP increasingly integrates with machine learning 6,7,8,9,10 , the bottleneck of manual 42 
+
+parameter extraction becomes more acute. 43 
+
+Extracting calibration data from literature requires judgment about applicability, uncertainty, 44 
+
+and potential biases, with full provenance for reproducibility. A structured representation of such 45 
+
+data captures what was measured, under what conditions, with what uncertainty, and how that 46 
+
+measurement relates to model parameters or observables. Some studies isolate specific mechanisms 47 
+
+and directly constrain individual parameters, while clinical and in vivo endpoints constrain the 48 
+
+integrated model through observables computed over the full system state. 49 
+
+Manual curation remains the standard approach but is labor-intensive, with inconsistent docu-50 
+
+mentation across individuals and projects. When personnel change, the reasoning behind parameter 51 
+
+2
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+choices may be lost. Without structured representations, combining constraints from multiple ex-52 
+
+periments requires ad-hoc scripting with no standard path from extracted data to inference code. 53 
+
+Traditional NLP pipelines for automated extraction require task-specific training data 11,12,13 and 54 
+
+do not generalize to the diverse parameter types in QSP modeling. 55 
+
+Large language models offer a more flexible approach. LLMs can identify relevant litera-56 
+
+ture given mechanistic context, read scientific text, and extract information into structured tem-57 
+
+plates 14,15,16,17,18 . However, LLMs exhibit hallucination and fabrication errors that are unaccept-58 
+
+able for quantitative modeling 19,20,21 . Many of these failure modes, however, are amenable to 59 
+
+systematic detection: hallucinated values can be caught by requiring verbatim source text, fabri-60 
+
+cated citations through DOI resolution, and unit and code errors by parsing units and executing the 61 
+
+code with mock inputs. This suggests a workflow where LLMs handle extraction while automated 62 
+
+validators catch characteristic errors, with Pydantic 22 , a Python data validation library, enabling 63 
+
+a self-correcting retry loop. 64 
+
+We present MAPLE (Model-Aware Parameterization from Literature Evidence), a framework 65 
+
+for LLM-assisted QSP model calibration. Its core components are: (1) model-aware literature 66 
+
+search using mechanistic context to guide LLM web search; (2) validated YAML schemas for two 67 
+
+calibration regimes (the SubmodelTarget schema for isolated experiments constraining individual 68 
+
+parameters, and the CalibrationTarget schema for clinical/in vivo endpoints constraining the full 69 
+
+model), separating data extraction from model specification while preserving traceability; and (3) 70 
+
+targeted validators for hallucination detection (value-in-snippet matching), citation verification 71 
+
+(DOI resolution), and code correctness. The version of MAPLE used here (v0.1.0) additionally 72 
+
+generates a joint Julia inference script from the validated targets; this inference layer has since 73 
+
+moved to a separate package, but the analysis reported below uses the integrated v0.1.0 pipeline. 74 
+
+The schemas, validators, and reference database do not require an LLM: a modeler can populate 75 
+
+them manually and the validators run against the result the same way. We evaluate MAPLE on 76 
+
+SubmodelTargets and CalibrationTargets for a pancreatic ductal adenocarcinoma (PDAC) QSP 77 
+
+model and report metrics on validation performance and extraction reliability. The LLM produces 78 
+
+usable forward-model choices and observable code when given enough context, but cannot tell when 79 
+
+the context is incomplete, and it can miss inputs or lose track of constraints across long records. 80 
+
+The schema and validators make explicit what context the modeler supplies (unit conventions, 81 
+
+3
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+source-applicability decisions), and the modeler’s review of every record catches the LLM lapses 82 
+
+the validators do not detect, so the calibration record shows both what the LLM produced and 83 
+
+what the modeler supplied or corrected. 84 
+
+# 2 Methods 85 
+
+2.1 Model-Aware Literature Search 86 
+
+Figure 1 summarizes the full MAPLE pipeline. The user specifies which model parameters or 87 
+
+observables need calibration, and the system builds a prompt that guides an LLM with web search 88 
+
+capability to find relevant experimental literature. The framework supports multiple LLM providers 89 
+
+(OpenAI, Anthropic, Google) through a common interface. In this study, we used GPT-5.1 for batch 90 
+
+extraction and Claude Opus 4.6 for interactive extraction. 91 
+
+The prompt injects mechanistic context from the model structure: for each target, the system 92 
+
+retrieves its name, units, and description. For parameters, it also retrieves the reactions where 93 
+
+the parameter appears with rate laws, the species involved, and the broader reaction network. For 94 
+
+observables, it retrieves the species and compartments that define the observable. This context 95 
+
+guides the LLM toward experiments that constrain the targets. Source exclusion prevents reuse 96 
+
+of papers across extractions to promote literature diversity. The prompt also includes the com-97 
+
+plete schema structure and guidance on common pitfalls, reducing the retry loop by preventing 98 
+
+predictable errors. 99 
+
+2.2 Schema Design 100 
+
+The framework defines two complementary schemas for two calibration regimes. The SubmodelTar-101 
+
+get schema captures isolated experiments (in vitro assays, single-mechanism studies) that constrain 102 
+
+individual model parameters through simplified forward models. The CalibrationTarget schema 103 
+
+captures clinical and in vivo endpoints that constrain the full model through observables computed 104 
+
+over the complete species state. Both schemas share a common design philosophy but differ in 105 
+
+how they connect literature data to model parameters and outputs. For clarity, the manuscript 106 
+
+refers to these two schemas by name ( SubmodelTarget and CalibrationTarget ) rather than using 107 
+
+“calibration target” as a general term. 108 
+
+4
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+2.2.1 Shared Design Principles 109 
+
+Both schemas enforce a data-first architecture: extraction of what the paper reports is separated 110 
+
+from specification of how to use it for calibration. Every extracted numeric value must appear ver-111 
+
+batim in a quoted text snippet from the source, creating an auditable trail and enabling automated 112 
+
+hallucination detection. 113 
+
+2.2.2 SubmodelTarget: Parameter Priors from Isolated Experiments 114 
+
+The SubmodelTarget schema structures each record into two layers: an inputs layer that captures 115 
+
+data exactly as reported in the literature (value, units, uncertainty, sample size, source reference, 116 
+
+and quoted snippet), and a calibration layer that specifies how that data constrains model pa-117 
+
+rameters through a simplified forward model. The submodel derives from the full QSP model 118 
+
+by isolating relevant species. Shared parameter names establish the connection: a proliferation 119 
+
+rate named k apsc prolif in a submodel refers to the same parameter in the full model, allow-120 
+
+ing posteriors to serve directly as priors for full-model calibration. Each parameter includes a 121 
+
+prior distribution with documented rationale, and an error model specifies the likelihood function 122 
+
+connecting predictions to data. Supplementary Section 6 provides detailed field descriptions with 123 
+
+YAML examples. 124 
+
+Forward model type system. The schema provides 15 built-in forward model types, described 125 
+
+in Supplementary Table 1. Each structured model declares its fields as typed roles rather than raw 126 
+
+values, allowing the same template to serve different estimation scenarios depending on which field 127 
+
+is treated as the unknown. 128 
+
+A complete SubmodelTarget example is provided in Supplementary Section 1; Figure 2 shows 129 
+
+a compact version illustrating the two-layer structure. 130 
+
+# SubmodelTarget: activated PSC proliferation rate 131 
+
+target_id: psc_proliferation_PDAC_deriv001 132 133 
+
+# INPUTS layer: literature values with provenance 134 
+
+inputs: 135 
+
+- name: pdgf_fold_mean 136 
+
+5
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+value: 4.37 137 
+
+units: dimensionless 138 
+
+role: target # fit in the likelihood 139 
+
+source_ref: Schneider2001_PSC_PDGF 140 
+
+value_snippet: "Cell proliferation (4.37 +/- 0.49- and 141 
+
+2.96 +/- 0.39-fold of control)." 142 143 
+
+# CALIBRATION layer: how the value constrains the model 144 
+
+calibration: 145 
+
+parameters: 146 
+
+- name: k_apsc_prolif 147 
+
+units: 1/day 148 
+
+prior: {distribution: lognormal, mu: 0.0, sigma: 1.0} 149 
+
+forward_model: 150 
+
+type: exponential_growth 151 
+
+rate_constant: k_apsc_prolif # parameter estimated 152 
+
+state_variables: 153 
+
+- name: aPSC_rel # touchpoint: evolved here, read below 154 
+
+units: dimensionless 155 
+
+initial_condition: {value: 1.0} # normalized to control 156 
+
+independent_variable: 157 
+
+name: time 158 
+
+units: day 159 
+
+span: [0.0, 1.0] 160 
+
+error_model: 161 
+
+- name: proliferation_fold_change 162 
+
+observable: {type: identity, state_variables: [aPSC_rel]} # same state 163 
+
+uses_inputs: [pdgf_fold_mean] # data the prediction is fit to 164 
+
+evaluation_points: [1.0] # compare aPSC_rel at t=1 day 165 
+
+likelihood: {distribution: lognormal} 166 
+
+6
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint Figure 2: Compact SubmodelTarget example showing how an extracted value connects to the forward model. The inputs layer records the literature value with the verbatim snippet that anchors it. Within the calibration layer, the state variable aPSC rel is the touchpoint between the forward model and the data: the forward model evolves it from a control-normalized initial condition at rate k apsc prolif , and the error model observable reads that same state and fits its value at t=1 day to the measured input pdgf fold mean (linked through uses inputs ) under a lognormal likelihood. Rationale fields and the auxiliary standard-deviation input are omitted for brevity; Supplementary Section 1 gives the complete record. 
+
+2.2.3 CalibrationTarget: Clinical and In Vivo Endpoints 167 
+
+Many calibration constraints come from clinical or in vivo studies where the measurement reflects 168 
+
+integrated model behavior. The CalibrationTarget schema represents these full-model endpoints 169 
+
+through three components. The observable specifies how to compute the measurement from model 170 
+
+species as a Python function that receives the solved state and returns a quantity with units; named 171 
+
+constants carry provenance traced to a curated reference database or literature source. The empir-172 
+
+ical data block derives summary statistics (median and 95% CI) from literature inputs via Monte 173 
+
+Carlo simulation. For intervention studies, a scenario block captures treatment context (agents, 174 
+
+doses, schedules). Complete examples and schema definitions are provided in Supplementary Sec-175 
+
+tions 7 and 5. 176 
+
+2.2.4 Source Relevance Assessment 177 
+
+Experimental data rarely matches the target model perfectly. The source relevance block docu-178 
+
+ments the translation from source context to model context across several dimensions: indication 179 
+
+match, species translation, evidence type, and tumor microenvironment compatibility. Each di-180 
+
+mension requires justification when the source deviates from the target model. An estimated 181 
+
+translation uncertainty fold field quantifies the combined expected uncertainty from all trans-182 
+
+lation factors, which propagates to prior width during inference (e.g., cross-species extraction from 183 
+
+a proxy indication might warrant 10-fold uncertainty). Supplementary Section 13 provides detailed 184 
+
+field descriptions. 185 
+
+7
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+2.2.5 Schema Implementation 186 
+
+Both schemas are implemented using Pydantic 22 with typed fields and constraints validated auto-187 
+
+matically during YAML parsing. SubmodelTarget selects among its 15 forward model types with 188 
+
+a single type field that determines which remaining fields are required and validated (a Pydantic 189 
+
+discriminated union); CalibrationTarget instead has a single fixed structure, with the same source, 190 
+
+relevance, and context fields on every target. Supplementary Section 5 provides the complete 191 
+
+schema definitions and Supplementary Section 12 provides implementation details. 192 
+
+2.3 Validation Framework 193 
+
+Both schemas share a common validation core with schema-specific extensions. Each validator runs 194 
+
+independently, and a target must pass all validators before proceeding to downstream use. 195 
+
+2.3.1 Reference Validation 196 
+
+LLMs sometimes generate references to entities that do not exist elsewhere in the document. Ref-197 
+
+erence validators check that internal references ( uses inputs , source ref , model parameters, and 198 
+
+observable state variables) all resolve to defined entities. 199 
+
+2.3.2 Content Validation 200 
+
+Content validators address fabrication of values, citations, and other factual claims. DOI valida-201 
+
+tion queries CrossRef for every DOI; title validation further checks that the extracted paper title 202 
+
+fuzzy-matches the CrossRef metadata (75% similarity threshold), catching cases where a valid DOI 203 
+
+is paired with fabricated bibliographic details. Value-in-snippet validation compares each extracted 204 
+
+numeric value against its associated source text, providing the primary anti-hallucination defense: 205 
+
+when an LLM hallucinates a number, it rarely fabricates a consistent snippet, and the mismatch 206 
+
+provides a reliable detection signal. A separate external validator (Section 2.3.3) further verifies 207 
+
+that snippets appear in the cited papers. Unit validation parses all unit strings using Pint 23 to 208 
+
+verify dimensional validity. Code validation executes observation and observable code with mock 209 
+
+data to verify correct behavior, catching logic errors and signature mismatches before inference. 210 
+
+Source relevance validators enforce minimum uncertainty thresholds for cross-species (2-fold), cross-211 
+
+8
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+indication (3-fold), and low TME compatibility (10-fold) extractions, ensuring translation uncer-212 
+
+tainty propagates to prior widths. The fuzzy-match thresholds (75% for titles, 80% for snippets) 213 
+
+were set to tolerate minor formatting, punctuation, and OCR differences between extracted and 214 
+
+source text while still rejecting genuinely different strings, and are configurable defaults the mod-215 
+
+eler can tighten or loosen; the cross-species, cross-indication, and low-TME multipliers are likewise 216 
+
+conservative minimum uncertainty defaults, applied as floors that the modeler may widen further 217 
+
+when source applicability is weaker. 218 
+
+Each validator raises a specific exception class with a category attribute (hallucination, fab-219 
+
+rication, code, units, reference, structural, prior) that enables aggregation across extraction runs 220 
+
+and feeds into the metrics reported in Section 3. Optional Logfire instrumentation 24 provides 221 
+
+OpenTelemetry-based tracing for debugging extraction failures. Supplementary Section 3 provides 222 
+
+implementation details for each validator. 223 
+
+2.3.3 External Validation 224 
+
+An additional external validator verifies that value snippets actually appear in the cited source 225 
+
+papers by fetching paper text from Europe PMC and Unpaywall using the DOI, then using fuzzy 226 
+
+matching (80% similarity threshold) to locate each snippet. This catches a subtle failure mode where 227 
+
+the LLM fabricates plausible-looking snippets that contain the correct value but do not actually ap-228 
+
+pear in the cited paper. Because this requires network access to external APIs, it runs as a separate 229 
+
+manual step. It is provided as an on-demand script ( scripts/validate snippets in source.py )230 
+
+in the analysis repository, built on the MAPLE full-text fetch and fuzzy-matching validators, and 231 
+
+was applied selectively during curation rather than as part of the automated per-target valida-232 
+
+tion gate, since external full-text availability is uneven across sources; the value-in-snippet check 233 
+
+described above is the systematically applied internal anti-hallucination defense. 234 
+
+2.3.4 Structural and CalibrationTarget-Specific Validation 235 
+
+Structural validators check schema-level constraints (time span ordering, required fields per model 236 
+
+type, array dimension consistency). CalibrationTarget adds validators for full-model observables: 237 
+
+observable code execution against mock species data, a denominator audit for density/fraction 238 
+
+observables (catching a common source of order-of-magnitude errors), species existence checks, 239 
+
+9
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+and distribution code verification that computed summary statistics match reported empirical 240 
+
+data within tolerance (1% for median, 10% for CI bounds). Supplementary Section 3 provides 241 
+
+implementation details for all validators. 242 
+
+2.4 Inference Code Generation 243 
+
+A validated SubmodelTarget already specifies its forward model, priors, and likelihood, so the 244 
+
+same record that passes validation can be turned into inference code without further hand-coding. 245 
+
+MAPLE v0.1.0 (the version used here) includes a translator that emits a Julia script for Turing.jl 25 ;246 
+
+later versions of MAPLE keep the schema and validators and provide the inference translator in 247 
+
+a separate package. The translator joins targets that share parameter names, so each shared 248 
+
+parameter is declared once and constrained by every source that constrains it. Supplementary 249 
+
+Section 4 describes the generated code structure, forward model handling, and inference diagnostics. 250 
+
+The two schemas connect through a natural calibration pipeline: SubmodelTarget posteriors 251 
+
+from isolated experiments become informative priors for full-model calibration against Calibra-252 
+
+tionTarget endpoints. Because SubmodelTarget parameter names match the full model, the poste-253 
+
+rior distributions transfer directly without post-hoc mapping. 254 
+
+2.5 Application: PDAC QSP Model 255 
+
+The PDAC QSP model used in this study is adapted from a spatial QSP model of hepatocellular 256 
+
+carcinoma 26 that first incorporated fibroblast dynamics into the tumor microenvironment. We 257 
+
+evaluate MAPLE on this model using both schemas: 37 curated SubmodelTargets for individ-258 
+
+ual parameter calibration from isolated experiments (spanning tumor growth, stromal dynamics, 259 
+
+immune recruitment, and cytokine signaling), and 45 CalibrationTargets for full-model endpoints 260 
+
+(baseline tumor microenvironment composition, neoadjuvant immunotherapy response, and clinical 261 
+
+progression). Batch extraction used OpenAI gpt-5.1 at high reasoning effort, both for Submod-262 
+
+elTargets and for the batch-pipeline portion of CalibrationTargets; interactive CalibrationTarget 263 
+
+extraction and all curation used Anthropic claude-opus-4-6 through Claude Code. All extraction 264 
+
+and curation runs were performed in January and February 2026. This study used only previously 265 
+
+published, aggregate literature data and did not involve human subjects or animal experimentation, 266 
+
+so institutional review board or IACUC approval was not required. 267 
+
+10 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+2.5.1 Evaluation Metrics 268 
+
+We report metrics across four workflow stages: extraction performance, error analysis, source 269 
+
+characteristics, and curation analysis. 270 
+
+# 3 Results 271 
+
+3.1 SubmodelTarget Extraction and Validation 272 
+
+We applied MAPLE to extract SubmodelTargets for a PDAC QSP model, covering tumor growth, 273 
+
+stromal dynamics, immune recruitment, and cytokine signaling. All 37 curated SubmodelTargets 274 
+
+used for joint inference were produced by batch extraction through the automated retry loop, 275 
+
+followed by curation. Of these, 18 were traced with Logfire and supply the per-target retry, duration, 276 
+
+and token metrics in Table 1; the remaining extractions predate that instrumentation and so are not 277 
+
+in the table. The instrumented batch and the inference set therefore overlap but are not identical: 278 
+
+a few instrumented runs targeted parameters that were consolidated or dropped during curation. 279 
+
+The schema-validation and curation results in Section 3.2 cover all 37 targets. 280 
+
+None of the extractions passed validation on the first attempt; all required at least one au-281 
+
+tomated retry. Seven targets succeeded after a single retry, three each after two, three, and five 282 
+
+retries, and one each after six and seven retries; the ECM and CCL2 secretion parameters and 283 
+
+PSC activation required as many as 7 iterations to resolve unit ambiguities or conflicting literature. 284 
+
+Each extraction took 7.9 minutes on average, consuming 217,735 tokens per target (3.9M total). 285 
+
+Across the 50 retries, the validation exceptions captured in tracing (Table 2) were dominated by 286 
+
+unit errors, followed by prior specification, then fabrication (invalid DOIs) and code errors. The 287 
+
+LLM used 210 web searches and 22 code executions. 288 
+
+3.1.1 Source Characteristics 289 
+
+The 37 curated targets drew from diverse sources (Supplementary Section 8): 46% human clinical 290 
+
+and 8% human in vitro, with the remainder from animal studies and one review. About 57% used 291 
+
+human data directly; the rest required cross-species scaling from mouse (35%) or rat (8%). Fewer 292 
+
+than half (46%) came from PDAC-specific experiments; the rest relied on proxy (43%) or related 293 
+
+11 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+Table 1: Extraction metrics for the 18 Logfire-instrumented SubmodelTargets. Retries: automated re-extractions triggered by validator failures before any human review. Duration: wall-clock ex-traction time. Tokens: total LLM tokens consumed. The final row reports the mean across targets. Target Retries Duration (min) Tokens 
+
+N IL2 CD4 3 6.5 198,267 
+
+N IL2 CD8 1 3.4 98,233 
+
+initial tumour diameter 1 3.0 70,219 
+
+k C1 growth 1 4.1 81,606 
+
+k CCL2 sec 5 9.2 367,754 
+
+k ECM apsc sec 5 10.8 285,309 
+
+k ECM deg 1 5.8 135,317 
+
+k ECM qpsc sec 5 12.0 406,891 
+
+k M1 pol 1 7.1 190,149 
+
+k MDSC rec 3 8.4 221,048 
+
+k Mac rec 3 10.0 239,265 
+
+k apsc death 2 5.4 134,626 
+
+k psc activation 7 9.9 354,840 
+
+k psc const 2 7.7 209,064 
+
+k qpsc death 1 3.8 91,974 
+
+n CD8 clones 1 5.3 114,839 
+
+n Treg clones 2 5.7 133,558 
+
+q Treg T in 6 23.9 586,283 
+
+Average 2.8 7.9 217,735 
+
+Table 2: Categories of validation exceptions captured during batch-extraction tracing. The total is a lower bound: it counts distinct exception types per target, so repeated retries for the same kind of error collapse to a single entry, whereas the validators triggered 50 retries in total across the 18 instrumented extractions. Categories match the validator types described in the Validation Framework (Methods); “prior” denotes an uncertainty range incompatible with the stated transla-tion context. Error Category Count %units 9 38% prior 5 21% fabrication 4 17% code 4 17% other 1 4% hallucination 1 4% 
+
+Total 24 
+
+12 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+(11%) indications. 294 
+
+3.2 Human Curation 295 
+
+To quantify human curation, we compared raw LLM output against final curated versions. All 296 
+
+curation was performed interactively with Claude Code (claude-opus-4-6), with the modeler di-297 
+
+recting edits and modeling decisions while the LLM handled text generation, code writing, and 298 
+
+literature comprehension. No batch extraction was used without modification; in a documented 299 
+
+review of one batch (12 CalibrationTarget files), the modeler did not promote 58% (7 of 12) to the 300 
+
+corpus; recorded reasons included placeholder outputs from LLM tool-access failures, parse errors, 301 
+
+observable mislabeling, and source/assumption conflicts. This rate comes from a single small batch 302 
+
+and should be read as indicative rather than a precise rejection rate. 303 
+
+Table 3: Modeler revision of batch-extracted targets, by field. Each rate is the fraction of files whose field changed between the raw LLM draft and the curated version, over the cohorts that carry a pre-curation draft: 37 SubmodelTargets and 18 surviving batch-extracted CalibrationTargets (curated from 22 paired drafts, 4 of which were retired during curation). The full CalibrationTarget corpus is these 18 batch-extracted targets plus 27 interactive targets (45 total); the interactive targets were shaped during extraction and have no pre-curation draft to diff against. Schema ( n) Field Revised SubmodelTarget (37) forward-model type 65% prior parameters 46% input values 46% source relevance 100% CalibrationTarget (18) observable code 39% species list 28% empirical data 17% source relevance 28% Table 3 reports the field-level revision rates for the batch-extracted targets that carry a pre-304 
+
+curation draft. The revisions concentrate in the modeling-judgment fields: forward-model type 305 
+
+(65%) and source relevance (every file) for SubmodelTargets, and observable code (39%) and species 306 
+
+mapping for CalibrationTargets. Source relevance was revised in fewer batch CalibrationTargets 307 
+
+than SubmodelTargets, reflecting their smaller and more curated input pool. 308 
+
+A further 27 CalibrationTargets in the final cohort were extracted interactively with Claude 309 
+
+Code using source PDFs loaded directly into the session. The modeler provided domain guidance 310 
+
+13 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+(species mapping, denominator definitions, distribution choices) while the LLM handled literature 311 
+
+comprehension and code generation. These files required minimal subsequent revision (a single 312 
+
+shared reference value correction across 7,619 total lines); modeler judgment was embedded in the 313 
+
+extraction process rather than applied post-hoc. 314 
+
+The curation edits fell into seven recurring categories, including unit conventions, source selec-315 
+
+tion, denominator choices, and scenario-specific structural constraints; the full list is in Supplemen-316 
+
+tary Section 14.1. 317 
+
+The reduced revision rate for interactively extracted CalibrationTargets is observational rather 318 
+
+than controlled. The batch pipeline used GPT-5.1 and the interactive pipeline used Claude Opus 319 
+
+4.6; these models differ in context handling and characteristic error profiles, so any per-mode 320 
+
+difference may partly reflect model capability rather than collaboration mode. The interactive work 321 
+
+also followed curation of the batch outputs, meaning the modeler entered interactive extraction with 322 
+
+working knowledge of where the LLM tended to fail on this corpus. The data are consistent with 323 
+
+interactive curation reducing post-hoc revision, but a controlled comparison would require the same 324 
+
+underlying model in both modes and randomized assignment of targets. 325 
+
+3.3 CalibrationTarget Extraction 326 
+
+We applied the CalibrationTarget schema to 45 full-model endpoints for the same PDAC QSP 327 
+
+model, organized into three scenario groups: 26 baseline (no treatment) targets capturing the un-328 
+
+treated tumor microenvironment, 18 neoadjuvant immunotherapy targets (GVAX ± nivolumab), 329 
+
+and 1 clinical progression target (Table 4). All 45 targets pass schema validation including observ-330 
+
+able code execution, distribution code verification, and unit consistency checks. 331 
+
+Table 4: CalibrationTarget summary by scenario group. Scenario Group Targets Baseline (no treatment) 26 Neoadjuvant immunotherapy (GVAX ± nivolumab) 18 Clinical progression 1
+
+Total 45 
+
+Of the 45 targets, 18 were extracted by GPT-5.1 through the batch pipeline and 27 interactively 332 
+
+with Claude Opus 4.6 using source PDFs. The 18 batch-extracted figure is the surviving subset of 333 
+
+14 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+the 22 drafts produced by the batch pipeline; 4 drafts were curated and then retired (Section 3.2). 334 
+
+The neoadjuvant immunotherapy targets draw on per-patient data digitized from scatter plots; 335 
+
+15 CalibrationTargets (33% of the total) carry figure-digitized data. Curation metrics for both 336 
+
+extraction modes are reported in Section 3.2. 337 
+
+The observables span 25 unique model species, with complexity ranging from 1 to 19 species 338 
+
+per target (mean 8.4). The targets drew from 18 unique primary sources (from years 2007–2026). 339 
+
+Supplementary Section 9 provides detailed per-target metrics. 340 
+
+Per-target extraction metrics (retry counts, token usage, and validator-error categories) were 341 
+
+collected through Logfire instrumentation that was active only for the SubmodelTarget batch run. 342 
+
+The CalibrationTarget extraction runs predate that instrumentation, so equivalent per-target met-343 
+
+rics are not available for this cohort; the SubmodelTarget metrics in Table 1 are reported as 344 
+
+representative of the automated retry loop, and the schema-validation and curation results above 345 
+
+are the performance evidence specific to CalibrationTargets. 346 
+
+3.4 Code Generation and Inference 347 
+
+All 37 SubmodelTargets were translated to a joint Julia inference script targeting Turing.jl 25 . The 348 
+
+translator identified 19 unique parameters; 11 of these appeared in more than one target, and 349 
+
+the translator fit each one against all of its sources at once. Combining several measurements of 350 
+
+the same parameter into one prior is normally done by hand; here the shared parameter names 351 
+
+let the translator do it automatically, so each posterior draws on every source that measured the 352 
+
+parameter, not just one. All parameters converged ( ˆR < 1.01), with bulk-ESS > 2600 and tail-353 
+
+ESS > 1300 throughout (Table 9). Recognizable quantities fall in clinically measured ranges: 354 
+
+the inferred tumor doubling time of ∼130 days is consistent with PDAC volume-doubling-time 355 
+
+measurements 27,28 . Not all estimates are equally constrained: Supplementary Section 10 notes 356 
+
+that the IL-2-dependent CD8+ division count falls below its expected range. Full inference results 357 
+
+including convergence diagnostics, posterior distributions, and model type breakdown are reported 358 
+
+in Supplementary Section 10. 359 
+
+15 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+# 4 Discussion 360 
+
+Using MAPLE on the PDAC model, we extracted and curated 37 SubmodelTargets and 45 Cal-361 
+
+ibrationTargets. Every extracted value is tied to a verbatim source snippet and a DOI-resolved 362 
+
+citation, every observable carries unit-checked code, and 11 of the 19 unique parameters identi-363 
+
+fied across the corpus appear in more than one target. Per-target manual extraction leaves such 364 
+
+constraints scattered across separate documents. MAPLE binds them by shared parameter name, 365 
+
+fitting each shared parameter against every source that constrains it in a single inference. The 366 
+
+corpus, schemas, validators, prompts, and reference database are pinned at the commit reported 367 
+
+in the Data Availability Statement, so the analysis can be re-run from the public repository. This 368 
+
+matches the IQ Consortium’s recommendations for explainability and documented provenance in 369 
+
+AI-assisted modeling 7.370 
+
+MAPLE demonstrates that structured schemas can serve as a productive collaboration interface 371 
+
+between LLMs and modelers for QSP model calibration. The curation analysis shows that LLM-372 
+
+generated drafts are competent at the bibliographic, transcription, and unit-handling tasks the 373 
+
+schema encodes, while a substantive minority of fields, concentrated in source selection, prior 374 
+
+specification, and forward- or observable-model choice, were revised by the modeler. Rather than 375 
+
+automating away the modeler, the framework restructures the collaboration: the schema defines 376 
+
+what must be captured, and validators catch errors from both LLM and human sources. 377 
+
+4.1 Validation as the Core Mechanism 378 
+
+Across the 18 instrumented SubmodelTarget extractions, none passed validation on the first at-379 
+
+tempt: the validators triggered 50 retries before any human review, spanning unit errors, fabricated 380 
+
+citations, and value-snippet mismatches. The retry loop resolved most issues without human in-381 
+
+tervention, with extractions requiring multiple retries (up to 7) typically involving ambiguous unit 382 
+
+conventions or conflicting literature values. The same automated retry pipeline was used for batch-383 
+
+extracted CalibrationTargets, though per-CT retry counts were not instrumented (the Logfire-384 
+
+instrumented pipeline post-dated the CalibrationTarget extraction runs; the gap is documented in 385 
+
+Section 3.3). 386 
+
+The value-in-snippet requirement proved particularly effective, catching a common LLM be-387 
+
+16 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+havior: paraphrasing source text rather than quoting it exactly. Together, these validators support 388 
+
+human review: a reviewer can verify each extraction by checking the snippet against the source 389 
+
+paper, without re-reading entire methods sections. 390 
+
+Passing all validators confirms that a target is well-formed, internally consistent, traceable to 391 
+
+a resolvable source, dimensionally valid, and executable, but not that the scientific judgment in 392 
+
+the calibration layer is correct. Every final SubmodelTarget and CalibrationTarget in this study 393 
+
+passes the full validator suite (verified by re-running the Pydantic validator pipeline at MAPLE 394 
+
+v0.1.0 against all final YAMLs; the check is scripted as scripts/verify validation.sh in the 395 
+
+analysis repository); no record retains an unresolved validator failure. The errors that survive 396 
+
+automated validation are therefore judgment errors rather than validator failures: a well-formed 397 
+
+forward-model type that is inappropriate for the experiment, a valid prior that is mis-centered, or 398 
+
+a resolvable source that is only weakly applicable to the target indication. The curation revision 399 
+
+rates in Section 3.2 count these residual errors, which is why curation is necessary even when every 400 
+
+final record passes automated validation. 401 
+
+4.2 Schema Design Choices 402 
+
+The separation of data extraction from model specification clarifies where human judgment is 403 
+
+required (the inputs should be objective; the calibration layer involves modeling choices), enables 404 
+
+reuse (if a modeling assumption changes, the inputs remain valid), and supports independent review 405 
+
+of data versus modeling decisions. The schema and validators also work without an LLM. A modeler 406 
+
+can fill in the fields by hand and still get the provenance trail, the automatic checks, and the route 407 
+
+to inference code, and the validators flag transcription, unit, and reference errors no matter who 408 
+
+entered the data. 409 
+
+The dual-schema architecture applies the same data-first principles at two scales of calibration. 410 
+
+SubmodelTarget operates on isolated experiments that constrain individual parameters through 411 
+
+simplified forward models; CalibrationTarget operates on clinical and in vivo endpoints that con-412 
+
+strain the integrated model through full-species observables. 413 
+
+4.3 Modeler Contribution and Limitations of Extracted Data 414 
+
+The LLM produces usable forward-model choices and observable code when it has the right context, 415 
+
+17 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+but cannot tell when the context is incomplete or when a paper’s marker definitions disagree with 416 
+
+the model’s categorization. The modeler supplies that context and reviews each record for the 417 
+
+lapses the validators do not catch. Every claim in the YAML records a source reference and 418 
+
+verbatim snippet, and cross-species or cross-indication uses require a documented justification, so 419 
+
+the modeler’s input is itself auditable. This is by design: the modeler’s reasoning about which data 420 
+
+apply and how uncertain they are is the costly part of calibration, and it usually goes unrecorded. 421 
+
+MAPLE writes it down in a form that can be re-run and checked and that outlives any one person on 422 
+
+the project. Supplementary Section 14.1 lists the recurring categories of modeler-supplied context 423 
+
+observed in this corpus. As LLMs improve, more of the drafting can move to the model, but the 424 
+
+schema keeps the modeler’s decisions on the record either way. 425 
+
+The source characteristics reveal a fundamental challenge in QSP calibration: only 46% of Sub-426 
+
+modelTargets came from PDAC-specific experiments, and 35% required cross-species translation 427 
+
+from mouse data. The schema addresses this through the source relevance block, which requires 428 
+
+that translation uncertainty propagate to prior widths. 429 
+
+The token cost reported above (217,735 tokens per SubmodelTarget, averaging roughly $0.37 430 
+
+per target and $6.72 across the 18 instrumented targets at the API pricing in effect during these 431 
+
+runs 29 ) is small in absolute terms, so the dominant cost of the workflow is modeler time rather than 432 
+
+compute. That time differs by collaboration mode: batch curation requires the modeler to review, 433 
+
+and often reject or repair, drafts that may carry unit, source-selection, or denominator errors, 434 
+
+while interactive extraction front-loads modeler effort during extraction but leaves little to revise 435 
+
+afterwards. We do not report a controlled time comparison against fully manual extraction because 436 
+
+the two were not run on the same targets under matched conditions, and net time efficiency depends 437 
+
+on the model, the literature base, and the modeler’s familiarity with the framework. MAPLE does 438 
+
+not eliminate modeler effort; it records that effort in a form that can be audited and re-run, naming 439 
+
+the decisions the modeler made and why, which a free-text extraction does not. 440 
+
+4.4 Relationship to Existing Approaches 441 
+
+MAPLE addresses a gap between general-purpose biomedical extraction frameworks 17,18 , which 442 
+
+do not address QSP-specific downstream requirements (uncertainty quantification, forward model 443 
+
+specification, code generation), and QSP-focused tools like QSP-Copilot 16 , which include liter-444 
+
+18 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+ature extraction components but emphasize model structure discovery rather than quantitative 445 
+
+parameter calibration with documented provenance and uncertainty propagation. The validation 446 
+
+approach combines grounding strategies from retrieval-augmented generation 30 and constrained 447 
+
+decoding 31 with domain-specific validators (DOI resolution, unit parsing, code execution) tailored 448 
+
+to quantitative scientific extraction. 449 
+
+Unlike knowledge graph approaches that prioritize coverage across thousands of abstracts 14,32 450 
+
+and can tolerate some extraction errors, parameter calibration requires higher per-target stringency 451 
+
+because each value directly influences model predictions. A more detailed comparison of individual 452 
+
+tools and approaches is provided in Supplementary Section 15. 453 
+
+4.5 Limitations and Future Work 454 
+
+Several limitations merit discussion. First, the framework relies on the LLM’s built-in web search for 455 
+
+source discovery, so extraction quality is bounded by the LLM’s ability to locate and access papers. 456 
+
+Closed-access publications may be only partially available (e.g., abstract only), limiting extraction 457 
+
+depth. Emerging agentic capabilities (LLM-controlled browsers with institutional authentication) 458 
+
+may address this. Work in progress extends the framework to a staged extraction pipeline that 459 
+
+retrieves full-text papers in advance and batches extraction over them systematically, which would 460 
+
+make the external snippet-in-paper check part of the automated gate rather than an on-demand 461 
+
+step. The framework also depends on evolving LLM capabilities: extraction is stochastic, and 462 
+
+performance characteristics vary across providers and model versions. 463 
+
+Second, the framework still needs substantial modeler input. For SubmodelTargets, the modeler 464 
+
+changed the forward model type in 65% of files and adjusted prior parameters in 46%. Prompt 465 
+
+improvements could reduce some recurring errors, but the underlying scientific decisions are likely to 466 
+
+remain with the modeler even as LLM capabilities improve. CalibrationTargets required different 467 
+
+curation: observable code (changed in 39% of batch-extracted files), Monte Carlo distribution 468 
+
+derivation, and denominator audit fields demand modeling expertise that current LLMs provide as 469 
+
+a starting point. 470 
+
+Third, extracting structured quantitative data from figures remains challenging; the neoadjuvant 471 
+
+immunotherapy targets required manual digitization of scatter plots. Integrating multimodal LLM 472 
+
+vision capabilities is a natural direction for future work. Fourth, per-target extraction metrics are 473 
+
+19 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+available only for the SubmodelTarget cohort, as discussed in Section 3.3. 474 
+
+Generalization requirements. This evaluation covers one QSP model in one disease area, 475 
+
+extracted and curated by one modeling group, so it characterizes the framework rather than mea-476 
+
+suring how broadly it generalizes. Several components are domain-independent: the separation of 477 
+
+an inputs layer from a calibration layer, the typed-role fields, the value-in-snippet, DOI-resolution, 478 
+
+and code-execution validators, and the provenance requirements all apply to any literature-derived 479 
+
+parameter. The forward-model type library is the main domain-specific surface. 49% of Submod-480 
+
+elTargets used the generic algebraic type, which indicates that the 15 built-in templates covered 481 
+
+roughly half of the use cases even within this model; a portion of those algebraic uses are genuinely 482 
+
+simple derived relations (half-lives, ratios) for which no structured template is needed, but the 483 
+
+fraction also shows the template library is not exhaustive. A non-oncology application, for instance 484 
+
+a PK/PD model, would likely require additional templates for compartmental pharmacokinetics, 485 
+
+receptor occupancy, or indirect-response dynamics; the generic algebraic, direct-fit, and custom 486 
+
+fallbacks accept such cases today but without the structured role typing that the built-in templates 487 
+
+provide. The model-aware search and shared-parameter-name binding assume a structured QSP 488 
+
+model is already in hand, which holds in any domain but means the framework supports calibration 489 
+
+of an existing model rather than model construction. 490 
+
+# Study Highlights 491 
+
+What is the current knowledge on the topic? 492 
+
+QSP model calibration requires literature data spanning experimental and clinical endpoints. 493 
+
+Manual curation is labor-intensive and inconsistently documented, while LLM extraction halluci-494 
+
+nates values and fabricates citations. 495 
+
+What question did this study address? 496 
+
+Can structured schemas serve as a collaboration interface between LLMs and modelers for QSP 497 
+
+calibration, and what is each party’s contribution? 498 
+
+What does this study add to our knowledge? 499 
+
+Using MAPLE on a PDAC QSP model, we curated 37 SubmodelTargets and 45 CalibrationTar-500 
+
+20 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+gets, every value tied to a verbatim snippet and a resolved DOI; 11 of 19 parameters appear in 501 
+
+more than one target. Automated validators rejected every extraction at least once (50 retries 502 
+
+across 18 instrumented SubmodelTargets) before human review, and modeler curation supplied the 503 
+
+remaining scientific context. 504 
+
+How might this change drug discovery, development, and/or therapeutics? 505 
+
+The framework produces reproducible calibration data: every value traceable to its source and 506 
+
+uncertainty, priors built from several sources, and the modeler’s reasoning recorded so it is not lost 507 
+
+when personnel change. A reviewer can then check the calibration data directly rather than take 508 
+
+it on trust. 509 
+
+# Acknowledgments 510 
+
+Claude Opus 4.6 (Anthropic, model identifier claude-opus-4-6 ) and GPT-5.1 (OpenAI, model 511 
+
+identifier gpt-5.1 ) were used for literature search, data extraction, and code generation as described 512 
+
+in the Methods, and Claude Code ( claude-opus-4-6 ) assisted with manuscript preparation and 513 
+
+interactive curation. All AI-generated content was reviewed and verified by the authors. 514 
+
+# Author Contributions 515 
+
+J.E. designed research, performed research, analyzed data, and wrote the manuscript. A.S.P. 516 
+
+designed research and wrote the manuscript. 517 
+
+# Data Availability Statement 518 
+
+MAPLE (the SubmodelTarget and CalibrationTarget schemas and validation framework, plus the 519 
+
+inference code generator in the v0.1.0 release) is available at https://github.com/popellab/ 520 
+
+maple . The results reported here were generated with MAPLE v0.1.0 (commit 7f1faa4 ), and 521 
+
+the repository includes the representative extraction prompts used for both schemas. Extraction 522 
+
+inputs, curated YAML targets, and scripts to reproduce all paper statistics are available at https: 523 
+
+//github.com/popellab/maple-paper . The 37 SubmodelTargets and 45 CalibrationTargets used 524 
+
+in this study are provided as supplementary YAML files. Generated Julia inference scripts are 525 
+
+21 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+included in the supplementary materials. The underlying PDAC QSP model is part of separate 526 
+
+work that has not yet been published; the structural representation that MAPLE consumes (model 527 
+
+structure, species and parameter definitions, and unit mappings) is included in the maple-paper 528 
+
+repository, so the extraction inputs and reported evaluation are fully reproducible. The complete 529 
+
+PDAC model will be released with its own publication. 530 
+
+# References 531 
+
+[1] Gadkar K, Kirouac DC, Mager DE, van der Graaf PH, Ramanujan S. A Six-Stage Work-532 
+
+flow for Robust Application of Systems Pharmacology. CPT: Pharmacometrics & Systems 533 
+
+Pharmacology. 2016 May;5(5):235-49. doi:10.1002/psp4.12071. 534 
+
+[2] Wang H, Arulraj T, Ippolito A, Popel AS. Quantitative Systems Pharmacology Modeling in 535 
+
+Immuno-Oncology: Hypothesis Testing, Dose Optimization, and Efficacy Prediction. Hand-536 
+
+book of Experimental Pharmacology. 2025;289:261-84. doi:10.1007/164 2024 735. 537 
+
+[3] Wang H, Arulraj T, Ippolito A, Popel AS. From Virtual Patients to Digital Twins in Immuno-538 
+
+Oncology: Lessons Learned from Mechanistic Quantitative Systems Pharmacology Modeling. 539 
+
+npj Digital Medicine. 2024 Jul;7(1):189. doi:10.1038/s41746-024-01188-4. 540 
+
+[4] Rieger TR, Allen RJ, Bystricky L, Chen Y, Colopy GW, Cui Y, et al. Improv-541 
+
+ing the Generation and Selection of Virtual Populations in Quantitative Systems Phar-542 
+
+macology Models. Progress in Biophysics and Molecular Biology. 2018 Nov;139:15-22. 543 
+
+doi:10.1016/j.pbiomolbio.2018.06.002. 544 
+
+[5] Craig M, Gevertz JL, Kareva I, Wilkie KP. A Practical Guide for the Genera-545 
+
+tion of Model-Based Virtual Clinical Trials. Frontiers in Systems Biology. 2023 Jun;3. 546 
+
+doi:10.3389/fsysb.2023.1174647. 547 
+
+[6] Folguera-Blasco N, Boshier FAT, Uatay A, Pichardo-Almarza C, Lai M, Biasetti J, et al. 548 
+
+Coupling Quantitative Systems Pharmacology Modelling to Machine Learning and Artificial 549 
+
+Intelligence for Drug Development: Its pAIns and gAIns. Frontiers in Systems Biology. 2024 550 
+
+Jul;4. doi:10.3389/fsysb.2024.1380685. 551 
+
+22 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+[7] Terranova N, Renard D, Shahin MH, Menon S, Cao Y, Hop CECA, et al. Artificial Intel-552 
+
+ligence for Quantitative Modeling in Drug Discovery and Development: An Innovation and 553 
+
+Quality Consortium Perspective on Use Cases and Best Practices. Clinical Pharmacology & 554 
+
+Therapeutics. 2024;115(4):658-72. doi:10.1002/cpt.3053. 555 
+
+[8] Goryanin I, Goryanin I, Demin O. Revolutionizing Drug Discovery: Integrating Artifi-556 
+
+cial Intelligence with Quantitative Systems Pharmacology. Drug Discovery Today. 2025 557 
+
+Sep;30(9):104448. doi:10.1016/j.drudis.2025.104448. 558 
+
+[9] Androulakis IP, Cucurull-Sanchez L, Kondic A, Mehta K, Pichardo C, Pryor M, et al. 559 
+
+The Dawn of a New Era: Can Machine Learning and Large Language Models Reshape 560 
+
+QSP Modeling? Journal of Pharmacokinetics and Pharmacodynamics. 2025 Jun;52(4):36. 561 
+
+doi:10.1007/s10928-025-09984-5. 562 
+
+[10] Androulakis IP, Cheng L, Cho CR, Zhang T. Leveraging Large Language Models to Compare 563 
+
+Perspectives on Integrating QSP and AI/ML. Journal of Pharmacokinetics and Pharmacody-564 
+
+namics. 2025 May;52(3):29. doi:10.1007/s10928-025-09976-5. 565 
+
+[11] Zhao S, Su C, Lu Z, Wang F. Recent Advances in Biomedical Literature Mining. Briefings in 566 
+
+Bioinformatics. 2021 May;22(3):bbaa057. doi:10.1093/bib/bbaa057. 567 
+
+[12] Hu J, Bao R, Lin Y, Zhang H, Xiang Y. Accurate Medical Named Entity Recog-568 
+
+nition Through Specialized NLP Models. arXiv preprint arXiv:241208255. 2024 Dec. 569 
+
+doi:10.48550/arXiv.2412.08255. 570 
+
+[13] Gonzalez Hernandez F, Nguyen Q, Smith VC, Cordero JA, Ballester MR, Duran M, et al. 571 
+
+Named Entity Recognition of Pharmacokinetic Parameters in the Scientific Literature. Scien-572 
+
+tific Reports. 2024 Oct;14(1):23485. doi:10.1038/s41598-024-73338-3. 573 
+
+[14] He S, Tan Y, Ye Q, M Gubin M, Dede M, Rafei H, et al. AI-powered Immune Cell Knowledge 574 
+
+Graph (ICKG) with Granular Immune Contexts Enables Immune Program Interpretation. npj 575 
+
+Artificial Intelligence. 2026 Jan;2(1):13. doi:10.1038/s44387-025-00060-4. 576 
+
+[15] Khan MA, Ayub U, Naqvi SAA, Khakwani KZR, Sipra ZBR, Raina A, et al. Collabo-577 
+
+rative Large Language Models for Automated Data Extraction in Living Systematic Re-578 
+
+23 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+views. medRxiv: The Preprint Server for Health Sciences. 2024 Sep:2024.09.20.24314108. 579 
+
+doi:10.1101/2024.09.20.24314108. 580 
+
+[16] Saini A, Farnoud A. QSP-Copilot: An AI-Augmented Platform for Accelerating Quantitative 581 
+
+Systems Pharmacology Model Development. CPT: Pharmacometrics & Systems Pharmacol-582 
+
+ogy. 2025;14(11):1775-86. doi:10.1002/psp4.70127. 583 
+
+[17] Hsu E, Roberts K. LLM-IE: A Python Package for Biomedical Generative Informa-584 
+
+tion Extraction with Large Language Models. JAMIA Open. 2025 Apr;8(2):ooaf012. 585 
+
+doi:10.1093/jamiaopen/ooaf012. 586 
+
+[18] Wang X, Huey SL, Sheng R, Mehta S, Wang F. SciDaSynth: Interactive Structured Data 587 
+
+Extraction From Scientific Literature With Large Language Model. Campbell Systematic 588 
+
+Reviews. 2025;21(4):e70073. doi:10.1002/cl2.70073. 589 
+
+[19] Farquhar S, Kossen J, Kuhn L, Gal Y. Detecting Hallucinations in Large Language Models 590 
+
+Using Semantic Entropy. Nature. 2024 Jun;630(8017):625-30. doi:10.1038/s41586-024-07421-0. 591 
+
+[20] Huang L, Yu W, Ma W, Zhong W, Feng Z, Wang H, et al. A Survey on Hallucination in Large 592 
+
+Language Models: Principles, Taxonomy, Challenges, and Open Questions. ACM Transactions 593 
+
+on Information Systems. 2025 Mar;43(2):1-55. doi:10.1145/3703155. 594 
+
+[21] Pandit S, Xu J, Hong J, Wang Z, Chen T, Xu K, et al.. MedHallu: A Comprehensive 595 
+
+Benchmark for Detecting Medical Hallucinations in Large Language Models. arXiv; 2025. 596 
+
+doi:10.48550/arXiv.2502.14302. 597 
+
+[22] Colvin S, Jolibois E, Ramezani H, Garcia Badaracco A, Dorsey T, Montague D, et al.. Pydantic 598 
+
+Validation; 2025. Available from: https://github.com/pydantic/pydantic .599 
+
+[23] Grecco HE. Pint: Operate and manipulate physical quantities in Python; 2025. Available 600 
+
+from: https://github.com/hgrecco/pint .601 
+
+[24] Pydantic. Logfire: Observability platform for Python applications; 2025. Available from: 602 
+
+https://pydantic.dev/logfire .603 
+
+24 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+[25] Ge H, Xu K, Ghahramani Z. Turing: A Language for Flexible Probabilistic Inference. In: Pro-604 
+
+ceedings of the Twenty-First International Conference on Artificial Intelligence and Statistics. 605 
+
+PMLR; 2018. p. 1682-90. Available from: https://proceedings.mlr.press/v84/ge18b. 606 
+
+html .607 
+
+[26] Zhang S, Wang H, Cho Y, Wong W, Yarchoan M, Jaffee EM, et al. Quantitative Calibration 608 
+
+of a Spatial QSP Model Identifies Fibroblast Impact on HCC Immunotherapy. bioRxiv. 2025 609 
+
+Nov:2025.10.31.685939. doi:10.1101/2025.10.31.685939. 610 
+
+[27] Ahn SJ, Choi SJ, Kim HS. Time to Progression of Pancreatic Cancer: Evaluation with 611 
+
+Multi-Detector Computed Tomography. Journal of Gastrointestinal Cancer. 2017;48(2):164-9. 612 
+
+doi:10.1007/s12029-016-9876-7. 613 
+
+[28] Jang KM, Kim SH, Kim YK, Song KD, Lee SJ, Choi D. Missed Pancreatic Ductal Adenocarci-614 
+
+noma: Assessment of Early Imaging Findings on Prediagnostic Magnetic Resonance Imaging. 615 
+
+European Journal of Radiology. 2015;84(8):1473-9. doi:10.1016/j.ejrad.2015.05.012. 616 
+
+[29] OpenAI. API Pricing; 2026. Available from: https://openai.com/api/pricing/ .617 
+
+[30] Li Y, Fu X, Verma G, Buitelaar P, Liu M. Mitigating Hallucination in Large Language Models 618 
+
+(LLMs): An Application-Oriented Survey on RAG, Reasoning, and Agentic Systems. arXiv; 619 
+
+2025. doi:10.48550/arXiv.2510.24476. 620 
+
+[31] Geng S, Cooper H, Moskal M, Jenkins S, Berman J, Ranchin N, et al. JSONSchemaBench: 621 
+
+A Rigorous Benchmark of Structured Outputs for Language Models. arXiv preprint 622 
+
+arXiv:250110868. 2025 Feb. doi:10.48550/arXiv.2501.10868. 623 
+
+[32] Gao T, Zhai X, Yang C, Lv L, Wang H. Joint Extraction of Entity and Relation Based 624 
+
+on Fine-Tuning BERT for Long Biomedical Literatures. Bioinformatics Advances. 2024 625 
+
+Jan;4(1):vbae194. doi:10.1093/bioadv/vbae194. 626 
+
+# Figure Legends 627 
+
+25 
+
+> .CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint
+
+Parameter target 
+
+> model species, units, context
+
+LLM literature search 
+
+> web search + DOI resolution
+
+Source literature  
+
+> (PDF)
+
+LLM extraction 
+
+Structured YAML target     
+
+> SubmodelTarget ·CalibrationTarget values + provenance + forward model
+> Schema & units Value-in-snippet
+> DOI resolution Code execution
+
+Automated validation   
+
+> Forward-model type Priors
+> Source relevance Units & aggregation
+
+Modeler curation 
+
+Bayesian inference 
+
+> joint calibration across targets
+
+Calibrated posteriors 
+
+> with full provenance
+> on pass
+> retry on failure
+> revise source
+> re-extract
+
+Figure 1: MAPLE workflow. An LLM searches the literature for a parameter target and extracts a structured YAML target carrying values, provenance, and a forward model. Automated validators gate the YAML, while failures trigger LLM retry. Validated targets are reviewed by the modeler, who may also revise the source or re-extract. Curated targets feed a joint Bayesian inference yielding posteriors with full provenance. 26 
+
+.CC-BY 4.0 International license available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is made The copyright holder for this preprint this version posted June 18, 2026. ;https://doi.org/10.64898/2026.03.05.709623 doi: bioRxiv preprint

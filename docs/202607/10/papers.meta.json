@@ -1,0 +1,69 @@
+{
+  "label": "2026-07-10",
+  "date": "2026-07-10",
+  "generated_at": "2026-07-10T21:41:05",
+  "count": 4,
+  "papers": [
+    {
+      "paper_id": "202607/10/2607.07993v1-hallucination-self-play-bootstrapping-reinforced-detector-via-evolved-generator",
+      "section": "deep",
+      "title_en": "Hallucination Self-Play: Bootstrapping Reinforced Detector via Evolved Generator",
+      "authors": "Shiping Yang, Shining Liang, Weihao Liu, Wenbiao Ding, Linjun Shou, Lu Cheng, Angel X. Chang",
+      "date": "2026-07-08",
+      "pdf": "https://arxiv.org/pdf/2607.07993v1",
+      "score": "9.0",
+      "evidence": "通过自博弈识别忠实性幻觉",
+      "tldr": "大模型幻觉检测受限于高质量标注数据稀缺，现有合成数据方法将生成器视为静态组件，限制了检测器的迭代提升。为此提出幻觉自博弈框架HSP，使检测器与不断进化的生成器相互博弈；检测器作为奖励模型通过RLAIF训练生成器产生更难识别的幻觉，生成器再合成数据通过强化学习优化检测器。在RAGTruth基准上，该框架能逐步提升小模型检测能力，无需外部监督即可匹配甚至超越高级大模型。该研究通过对抗性自博弈机制打破了数据合成的静态局限，为小模型自主进化提供了新范式。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Identifying faithfulness hallucinations in LLM-generated outputs remains challenging due to the scarcity of high-quality annotated data. Recent work relies on advanced LLMs to synthesize training data, including rationales, labels, and hallucinated claims. However, these methods treat the generator as a static component, limiting iterative improvement of the detector. To address this limitation, we introduce Hallucination Self-Play (HSP), a novel framework that enables the detector to bootstrap with an evolved generator. HSP involves two roles initialized from the same base model, a detector that assesses the faithfulness of model outputs, and a generator that produces increasingly hard-to-detect hallucinated responses. Specifically, the detector is first fine-tuned on human-labeled data and then employed as a reward model to train the generator via reinforcement learning from AI feedback (RLAIF). In turn, the evolved generator synthesizes hallucination data to further optimize the detector through rule-based reinforcement learning. Experiments on RAGTruth benchmark and two model families demonstrate that the proposed framework can progressively enhance a small LLM to match or even outperform advanced LLMs without external supervision. Our code is available at https://anonymous.4open.science/r/Hallucination-Self-Play-50B5 .",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/10/2607.08403v1-game-theory-driven-multi-agent-framework-mitigates-language-model-hallucination",
+      "section": "deep",
+      "title_en": "Game Theory Driven Multi-Agent Framework Mitigates Language Model Hallucination",
+      "authors": "Runzhe Liu, Biquan Bie, Zihao Wang, Yuchao Ma, Yexin Liu, Xinghai Li, Harry Yang, Wenbo Yang, Jinzhe Cao, Shengyang Tao",
+      "date": "2026-07-09",
+      "pdf": "https://arxiv.org/pdf/2607.08403v1",
+      "score": "9.0",
+      "evidence": "通过多智能体框架缓解语言模型幻觉",
+      "tldr": "轻量级大语言模型在基于规则的科学领域常因模仿语言模式而非公理推理导致严重幻觉。为此，本文提出G-Frame自适应多智能体框架，结合贝叶斯与团队博弈原则构建数据合成与模型训练闭环。该框架训练的7B模型OmniChem在化学基准上性能媲美GPT-4o mini，且幻觉大幅降低79.46%。本研究确立了利用自适应多智能体克服推理缺陷的可扩展范式，为加速专业科学领域知识发现提供可行路径。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "The application of lightweight Large Language Models in rule-based scientific domains remains severely limited by their tendency to mimic linguistic patterns rather than reproduce axiomatic reasoning, causing frequent hallucinations. Here, we show that G-Frame, an adaptive multi-agent framework integrating Bayesian and team game principles, establishes an automated closed-loop for high-quality data synthesis and model training. By forcing the internalization of domain constraints through structured reasoning, we synthesized a specialized corpus of 363,045 chains-of-thought and 199,589 question-answer pairs. The resulting 7B model OmniChem achieves performance parity with GPT 4o mini on custom benchmarks and ChemBench while exhibiting a 79.46% reduction in hallucinations relative to its base architecture. We further demonstrate the advanced capabilities of OmniChem in molecular design and synthesis planning. This work establishes a scalable paradigm utilizing adaptive multi-agents to overcome inherent reasoning deficiencies, offering a feasible pathway for accelerating knowledge discovery in specialized scientific fields.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/10/2607.08017v1-can-we-trust-llms-logic-quantifying-uncertainty-coherence-and-robustness-via-a-graph-based-framework",
+      "section": "deep",
+      "title_en": "Can We Trust LLM's Logic? Quantifying Uncertainty, Coherence, and Robustness via a Graph-Based Framework",
+      "authors": "Riccardo Revalor, Jalees Rehman, Debjit Pal",
+      "date": "2026-07-09",
+      "pdf": "https://arxiv.org/pdf/2607.08017v1",
+      "score": "8.0",
+      "evidence": "检测不忠实推理和量化不确定性",
+      "tldr": "大语言模型常产生不可靠推理，而现有Self-Consistency等方法仅关注最终答案一致性，忽略了中间步骤的逻辑有效性。为此，本文提出基于图的推理框架GRAPHEVAL，将不确定性量化重构为推理保真度问题，并引入新指标GRCS量化语义结构共识，以及新解码策略GSC以提升推理忠实度。实验表明，GRCS是唯一与推理保真度一致负相关的指标，GSC不仅揭露了小模型中SC指标因幸运猜测导致的虚高，还能在强模型中保持或提升准确率。本研究为评估和提升LLM推理可靠性提供了新范式。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Large-Language Models (LLMs) can be prone to flawed and unfaithful reasoning that decoding strategies like Self-Consistency (SC) fail to detect as they evaluate only final-answer agreement while ignoring the logical validity of intermediate steps. This raises three fundamental questions: How can we reliably quantify uncertainty in LLM reasoning? Can semantic, structural, and causal awareness select more faithful reasoning compared to naïve majority voting? and How robust is reasoning topology under adversarial conditions? To address these questions, we introduce GRAPHEVAL, a graph-based reasoning framework that re-frames uncertainty quantification (UQ) as a holistic reasoning fidelity problem. We propose a novel UQ metric, Graph Reasoning Coherence Score (GRCS), that quantifies semantic-structural consensus of the reasoning space and captures pathological mode collapse and confident hallucinations. We find that GRCS is the only metric that is consistently negatively correlated with reasoning faithfulness across both more capable and smaller models. Additionally, we introduce Graph Self-Consistency (GSC), a medoid-based decoding strategy that trades nominal accuracy for reasoning fidelity, exposing the degree to which SC is inflated by unfaithful lucky guesses in smaller models, while preserving or improving accuracy in more capable ones. Finally, through adversarial medoid ablation, we demonstrate that the GSC-selected path acts as a \"load-bearing path\" and forcing models away from it degrades reasoning faithfulness and, in targeted cases, causes drops in accuracy.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/10/biorxiv-10-64898-2026-03-05-709623-v2-structured-schemas-for-provenance-rich-llm-assisted-qsp-model-calibration",
+      "section": "quick",
+      "title_en": "Structured Schemas for Provenance-Rich, LLM-Assisted QSP Model Calibration",
+      "authors": "Eliason, J., Popel, A. S.",
+      "date": "2026-07-08",
+      "pdf": "https://www.biorxiv.org/content/10.64898/2026.03.05.709623v2.full.pdf",
+      "score": "6.0",
+      "evidence": "验证器捕获LLM幻觉值",
+      "tldr": "QSP模型校准依赖文献，但人工整理记录不一且LLM提取易生幻觉与伪造引用。提出MAPLE框架，利用结构化验证模式作为LLM与建模者的协作接口，分离数据提取与建模决策。在胰腺癌QSP模型中，验证器自动重试纠错，所有数值均含直接引语与验证引用，近六成参数获多源支持。该框架完整记录建模推理过程，支持重跑与独立核查，有效防止团队更迭导致的知识流失。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Quantitative systems pharmacology (QSP) models require calibration data from literature, yet manual curation is inconsistently documented and large language model (LLM) extraction can hallucinate values and fabricate citations. We present MAPLE (Model-Aware Parameterization from Literature Evidence), which uses structured validation schemas as a collaboration interface between LLMs and modelers. Two schemas span two scales: the SubmodelTarget schema for isolated experiments constraining individual parameters, and the CalibrationTarget schema for clinical and in vivo endpoints constraining the full model. Both separate data extraction from modeling decisions, recording every value with full provenance. Targeted validators catch characteristic LLM errors by matching values to source snippets, resolving DOIs, and executing code. For a pancreatic ductal adenocarcinoma QSP model, we used MAPLE to extract and curate 37 SubmodelTargets and 45 CalibrationTargets. Before any human review, the validators triggered 50 automated retries; every value carries a direct quote from its source and a verified citation; and 11 of 19 parameters are supported by more than one independent source.The LLM drafted usable forward models and code from context, while the modeler supplied the context and scientific judgment it cannot infer, revising forward-model choices in 65% of SubmodelTargets, priors in 46%, and source relevance in all files. This evaluation covers one model in one disease area, by a single group, so it characterizes the framework rather than establishing how broadly it generalizes. MAPLE records the modelers reasoning in a form that can be re-run and independently checked, so it is not lost when the modeling team changes.",
+      "source": "biorxiv",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "errors": []
+}
