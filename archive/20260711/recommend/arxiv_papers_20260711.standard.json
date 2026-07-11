@@ -1,0 +1,175 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-11T20:53:24.018041+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 0,
+    "deep_cap": 6,
+    "deep_selected": 0,
+    "quick_candidates": 4,
+    "quick_skim_target": 11,
+    "quick_selected": 4
+  },
+  "deep_dive": [],
+  "quick_skim": [
+    {
+      "id": "2607.04625v1",
+      "source": "arxiv",
+      "title": "Hierarchical Evidence-Driven Reasoning for Long Document Understanding",
+      "abstract": "Retrieval-Augmented Generation (RAG) streamlines long-document understanding by leveraging retrieval mechanisms to restrict input images to a highly curated subset. However, existing multimodal RAG pipelines primarily face two critical challenges: first, standard semantic similarity retrievers frequently fetch topically overlapping yet answer-void distractor pages that mislead downstream generation; second, rigid single-pass pipelines heavily depend on initial retrieval success, where any omission of core evidence inevitably causes cascading errors. To address these challenges, we introduce HIEVI-RAG, a hierarchical, evidence-driven multimodal RAG framework for closed-domain document understanding. HIEVI-RAG systematically factorizes complex queries into a cooperative four-stage pipeline: (1) hierarchical question decomposition to break multi-hop root queries into atomic child questions; (2) coarse visual page retrieval leveraging a multimodal retriever to fetch candidate pages based on semantic similarity; (3) fine-grained page verification via EVIAGENT, a specialized multi-page verifier trained with GRPO to execute cross-page reasoning over multi-image blocks; and (4) memory-guided iterative generation that leverages accumulated sub-question context to execute multi-round, dynamic reasoning over the prioritized sequence. Extensive evaluations across four benchmarks demonstrate the robust efficacy and synergy of our framework, which significantly outperforms existing open-source baselines and exceeds the strongest reported baseline by an average of 8.05% in accuracy.",
+      "authors": [
+        "Junyu Xiong",
+        "Yonghui Wang",
+        "Rongjian Gu",
+        "Chenyu Liu",
+        "Bing Yin",
+        "Wengang Zhou",
+        "Houqiang Li"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-07-06T03:08:28+00:00",
+      "link": "https://arxiv.org/pdf/2607.04625v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "RAG framework mitigating cascading errors and distractors in long document generation",
+      "llm_evidence_cn": "RAG框架缓解长文档生成中的级联错误和干扰项",
+      "llm_evidence": "RAG框架缓解长文档生成中的级联错误和干扰项",
+      "canonical_evidence": "RAG框架缓解长文档生成中的级联错误和干扰项",
+      "llm_tldr_en": "Existing multimodal RAG pipelines for long documents suffer from distractor pages and cascading errors from omitted evidence. We introduce HIEVI-RAG, a hierarchical, evidence-driven multimodal RAG framework that factorizes complex queries to systematically retrieve core evidence, thereby mitigating ungrounded generation and improving factual consistency.",
+      "llm_tldr_cn": "现有的多模态RAG流程在长文档理解中常受干扰页面和核心证据遗漏导致的级联错误影响，从而引发无依据的幻觉生成。本文提出HIEVI-RAG，一种层次化、证据驱动的多模态RAG框架，通过系统分解复杂查询来精准检索核心证据，从而缓解无依据生成问题，显著提升长文档理解中的事实一致性与可靠性。",
+      "llm_tldr": "现有的多模态RAG流程在长文档理解中常受干扰页面和核心证据遗漏导致的级联错误影响，从而引发无依据的幻觉生成。本文提出HIEVI-RAG，一种层次化、证据驱动的多模态RAG框架，通过系统分解复杂查询来精准检索核心证据，从而缓解无依据生成问题，显著提升长文档理解中的事实一致性与可靠性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.02995v1",
+      "source": "arxiv",
+      "title": "VISTA: Auditing Semantic Divergence in Vision-Language Models",
+      "abstract": "Vision-language models can exhibit visual concept-conditioned divergence: given images containing demographic features, corporate logos, or ideological symbols, some models produce unusually uniform responses that differ from what peer models say about the same input. These behaviors evade text-only audits because visual concepts cannot be isolated or substituted the way text tokens can. We present VISTA (Visual Inconsistency Screening Through Analysis), a black-box cross-model audit that couples semantic entropy with distribution-based divergence to flag model-specific anomalies. In a controlled study, we implant concept-conditioned stances in three VLMs via fine-tuning on small biased datasets and confirm that VISTA detects them. Auditing six VLMs across 19 topics, VISTA surfaces 142 high-suspicion cases (1.2%) and identifies selective refusal as a previously unreported divergence pattern, where models refuse demographic queries at rates varying from 0 to 65% across groups.",
+      "authors": [
+        "Junchi Liao",
+        "Jiawen Deng",
+        "Fuji Ren"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI"
+      ],
+      "published": "2026-07-03T06:21:26+00:00",
+      "link": "https://arxiv.org/pdf/2607.02995v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "semantic entropy for detecting model anomalies",
+      "llm_evidence_cn": "语义熵检测模型异常",
+      "llm_evidence": "语义熵检测模型异常",
+      "canonical_evidence": "语义熵检测模型异常",
+      "llm_tldr_en": "VISTA audits vision-language models for concept-conditioned semantic divergence using semantic entropy and distribution-based divergence, detecting biased or anomalous outputs that evade text-only audits.",
+      "llm_tldr_cn": "视觉语言模型可能产生受视觉概念条件影响的语义偏离，现有文本审计难以发现。本文提出VISTA框架，结合语义熵与基于分布的偏离度进行黑盒跨模型审计，能有效检测模型特定的异常行为，为检测语言模型幻觉提供了可迁移的方法论。",
+      "llm_tldr": "视觉语言模型可能产生受视觉概念条件影响的语义偏离，现有文本审计难以发现。本文提出VISTA框架，结合语义熵与基于分布的偏离度进行黑盒跨模型审计，能有效检测模型特定的异常行为，为检测语言模型幻觉提供了可迁移的方法论。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.05577v1",
+      "source": "arxiv",
+      "title": "Narrative World Model: Narratology-Grounded Writer Memory for Long-Form Fiction",
+      "abstract": "Long-form fiction writers need memory that answers multi-hop questions about evolving story state: who knows a secret and when they learned it, whether an event preceded the narration that revealed it, whether a setup paid off, and how a relationship shifted. General-purpose retrieval and agent-memory systems represent entities and facts but not the narratological structure these questions turn on, so they surface the wrong evidence or none at all. We introduce the Narrative World Model (NWM), a writer-memory system that pairs a narratology-grounded typed temporal-state graph with query-conditioned hybrid retrieval. To measure memory rather than the answerer, we read every system through a single held-constant Opus 4.8 reader over only that system's chapter-safe evidence, on a reproducible public corpus and a validated multi-hop benchmark, and we compare against the strongest existing temporal-knowledge-graph agent-memory framework, Graphiti/Zep (Rasmussen et al., 2025). NWM substantially and significantly outperforms this baseline on multi-hop narratological QA across both corpora, and far exceeds GraphRAG and flat retrieval. The advantage is representational rather than an artifact of extraction: it survives rebuilding the baseline with NWM's own extractor, and traces to its narratology-grounded structure and query-conditioned retrieval, not to graph size or extractor quality.",
+      "authors": [
+        "Mohammad Saifullah",
+        "Thomas Kornmaier",
+        "Taaha Kazi",
+        "Vasu Sharma",
+        "Aditya Sanjiv Kanade",
+        "Aanand Kumar Yadav"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CL",
+        "cs.IR"
+      ],
+      "published": "2026-07-06T19:23:52+00:00",
+      "link": "https://arxiv.org/pdf/2607.05577v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "maintaining factual consistency in long-form generation",
+      "llm_evidence_cn": "在长文本生成中保持事实一致性",
+      "llm_evidence": "在长文本生成中保持事实一致性",
+      "canonical_evidence": "在长文本生成中保持事实一致性",
+      "llm_tldr_en": "Long-form fiction writers need memory for evolving story state, but general-purpose retrieval systems surface wrong evidence. This paper introduces Narrative World Model (NWM), pairing a narratology-grounded typed temporal-state graph with query-conditioned hybrid retrieval to maintain factual consistency in long-form generation.",
+      "llm_tldr_cn": "长篇虚构写作需要能够回答关于故事状态演变的多跳问题的记忆系统，但通用检索系统常提供错误证据。本文提出叙事世界模型（NWM），将叙事学驱动的类型化时序状态图与查询条件混合检索相结合，有效维护长文本生成中的事实一致性，为缓解长文本生成中的幻觉问题提供了结构化记忆方案。",
+      "llm_tldr": "长篇虚构写作需要能够回答关于故事状态演变的多跳问题的记忆系统，但通用检索系统常提供错误证据。本文提出叙事世界模型（NWM），将叙事学驱动的类型化时序状态图与查询条件混合检索相结合，有效维护长文本生成中的事实一致性，为缓解长文本生成中的幻觉问题提供了结构化记忆方案。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.07724v1",
+      "source": "arxiv",
+      "title": "Uncertainty-gated selection for block-sparse attention",
+      "abstract": "Block-sparse attention scales long-context language models by replacing the O(N^2) softmax with a per-query top-k selection over key blocks. This cutoff is myopic: when the k-th and (k+1)-th blocks are nearly tied in score, the selector commits without spending extra budget, and a dropped block carrying answer evidence is unrecoverable downstream. We propose a value-of-information router that measures, for each query, how decisively the top-k cut was made, and doubles the kept set for the queries where that gap is smallest; the rule is backbone-agnostic and stacks with existing block-scoring methods such as Quest. On LongBench-v2 medium at n=215 (the entire dataset subset), router-on-Quest reaches paired recall 0.75 vs. top-k 0.47 -- +28 pp over the SSA-style baseline (McNemar p<0.01) -- and lands within 2 pp of dense on RULER NIAH multikey at the same context. The lift reproduces on four models from three architectures (Qwen2.5, Mistral-Nemo, Qwen3.6). At 128K, the router preserves 0.81 and 0.89 of dense accuracy on Qwen2.5-7B-1M and Qwen3.6 (vs. SSA-style top-k at 0.09 on the former) while the fused selection-plus-kernel pipeline runs at 0.62x and 0.80x dense wall time.",
+      "authors": [
+        "Thomas Rossi"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CL"
+      ],
+      "published": "2026-07-04T20:41:42+00:00",
+      "link": "https://arxiv.org/pdf/2607.07724v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Preventing dropped answer evidence in long-context block-sparse attention",
+      "llm_evidence_cn": "防止长上下文块稀疏注意力中丢失答案证据",
+      "llm_evidence": "防止长上下文块稀疏注意力中丢失答案证据",
+      "canonical_evidence": "防止长上下文块稀疏注意力中丢失答案证据",
+      "llm_tldr_en": "Block-sparse attention for long-context LMs can myopically drop key blocks carrying answer evidence. This paper proposes an uncertainty-gated value-of-information router that doubles the kept set for indecisive queries, significantly improving recall.",
+      "llm_tldr_cn": "长上下文语言模型中的块稀疏注意力在截断时可能短视地丢弃携带答案证据的关键块，且下游无法恢复。本文提出了一种基于信息价值的路由器，通过测量top-k截断的果断程度，对不果断的查询将保留集加倍。实验表明，该方法在LongBench-v2上显著提升了配对召回率，有效缓解了长上下文中的信息丢失与幻觉问题。",
+      "llm_tldr": "长上下文语言模型中的块稀疏注意力在截断时可能短视地丢弃携带答案证据的关键块，且下游无法恢复。本文提出了一种基于信息价值的路由器，通过测量top-k截断的果断程度，对不果断的查询将保留集加倍。实验表明，该方法在LongBench-v2上显著提升了配对召回率，有效缓解了长上下文中的信息丢失与幻觉问题。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "hallucination in long context language models",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}

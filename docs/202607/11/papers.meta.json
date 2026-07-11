@@ -1,0 +1,69 @@
+{
+  "label": "2026-07-11",
+  "date": "2026-07-11",
+  "generated_at": "2026-07-11T20:57:40",
+  "count": 4,
+  "papers": [
+    {
+      "paper_id": "202607/11/2607.04625v1-hierarchical-evidence-driven-reasoning-for-long-document-understanding",
+      "section": "quick",
+      "title_en": "Hierarchical Evidence-Driven Reasoning for Long Document Understanding",
+      "authors": "Junyu Xiong, Yonghui Wang, Rongjian Gu, Chenyu Liu, Bing Yin, Wengang Zhou, Houqiang Li",
+      "date": "2026-07-06",
+      "pdf": "https://arxiv.org/pdf/2607.04625v1",
+      "score": "7.0",
+      "evidence": "RAG框架缓解长文档生成中的级联错误和干扰项",
+      "tldr": "现有多模态RAG在长文档理解中常检索到无关干扰页，且单次检索易导致级联错误。为此，本文提出HIEVI-RAG框架，通过层次化问题分解、粗粒度页面检索、基于EVIAGENT的细粒度页面验证以及记忆引导的迭代生成四阶段协同处理。在四个基准测试中，该方法准确率平均超越最强基线8.05%，显著提升了闭域文档理解的鲁棒性与有效性，为解决多模态RAG的检索偏差与错误累积问题提供了新范式。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Retrieval-Augmented Generation (RAG) streamlines long-document understanding by leveraging retrieval mechanisms to restrict input images to a highly curated subset. However, existing multimodal RAG pipelines primarily face two critical challenges: first, standard semantic similarity retrievers frequently fetch topically overlapping yet answer-void distractor pages that mislead downstream generation; second, rigid single-pass pipelines heavily depend on initial retrieval success, where any omission of core evidence inevitably causes cascading errors. To address these challenges, we introduce HIEVI-RAG, a hierarchical, evidence-driven multimodal RAG framework for closed-domain document understanding. HIEVI-RAG systematically factorizes complex queries into a cooperative four-stage pipeline: (1) hierarchical question decomposition to break multi-hop root queries into atomic child questions; (2) coarse visual page retrieval leveraging a multimodal retriever to fetch candidate pages based on semantic similarity; (3) fine-grained page verification via EVIAGENT, a specialized multi-page verifier trained with GRPO to execute cross-page reasoning over multi-image blocks; and (4) memory-guided iterative generation that leverages accumulated sub-question context to execute multi-round, dynamic reasoning over the prioritized sequence. Extensive evaluations across four benchmarks demonstrate the robust efficacy and synergy of our framework, which significantly outperforms existing open-source baselines and exceeds the strongest reported baseline by an average of 8.05% in accuracy.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/11/2607.05577v1-narrative-world-model-narratology-grounded-writer-memory-for-long-form-fiction",
+      "section": "quick",
+      "title_en": "Narrative World Model: Narratology-Grounded Writer Memory for Long-Form Fiction",
+      "authors": "Mohammad Saifullah, Thomas Kornmaier, Taaha Kazi, Vasu Sharma, Aditya Sanjiv Kanade, Aanand Kumar Yadav",
+      "date": "2026-07-06",
+      "pdf": "https://arxiv.org/pdf/2607.05577v1",
+      "score": "7.0",
+      "evidence": "在长文本生成中保持事实一致性",
+      "tldr": "长篇小说创作需要能处理多跳叙事状态演变的记忆系统，但现有方法缺乏叙事学结构导致检索证据失效。为此，本文提出叙事世界模型（NWM），采用基于叙事学的类型化时序状态图与查询条件混合检索。实验表明，NWM在多跳叙事学问答上显著优于Graphiti/Zep等基线。该优势源于其叙事学表征结构与检索机制，而非提取器质量，为长文本创作提供了有效的记忆表征范式。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Long-form fiction writers need memory that answers multi-hop questions about evolving story state: who knows a secret and when they learned it, whether an event preceded the narration that revealed it, whether a setup paid off, and how a relationship shifted. General-purpose retrieval and agent-memory systems represent entities and facts but not the narratological structure these questions turn on, so they surface the wrong evidence or none at all. We introduce the Narrative World Model (NWM), a writer-memory system that pairs a narratology-grounded typed temporal-state graph with query-conditioned hybrid retrieval. To measure memory rather than the answerer, we read every system through a single held-constant Opus 4.8 reader over only that system's chapter-safe evidence, on a reproducible public corpus and a validated multi-hop benchmark, and we compare against the strongest existing temporal-knowledge-graph agent-memory framework, Graphiti/Zep (Rasmussen et al., 2025). NWM substantially and significantly outperforms this baseline on multi-hop narratological QA across both corpora, and far exceeds GraphRAG and flat retrieval. The advantage is representational rather than an artifact of extraction: it survives rebuilding the baseline with NWM's own extractor, and traces to its narratology-grounded structure and query-conditioned retrieval, not to graph size or extractor quality.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/11/2607.02995v1-vista-auditing-semantic-divergence-in-vision-language-models",
+      "section": "quick",
+      "title_en": "VISTA: Auditing Semantic Divergence in Vision-Language Models",
+      "authors": "Junchi Liao, Jiawen Deng, Fuji Ren",
+      "date": "2026-07-03",
+      "pdf": "https://arxiv.org/pdf/2607.02995v1",
+      "score": "6.0",
+      "evidence": "语义熵检测模型异常",
+      "tldr": "视觉语言模型在处理包含人口特征、企业标志或意识形态符号的图像时，会产生视觉概念条件下的语义分歧，且这种异常难以被纯文本审计发现。为此，本文提出VISTA，一种黑盒跨模型审计方法，结合语义熵和基于分布的分歧来标记模型特定异常。在19个主题上对6个VLM的审计中，VISTA发现了142个高嫌疑案例，并揭示了“选择性拒绝”这一此前未报告的分歧模式。VISTA为检测VLM中隐蔽的视觉概念偏见提供了有效工具。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Vision-language models can exhibit visual concept-conditioned divergence: given images containing demographic features, corporate logos, or ideological symbols, some models produce unusually uniform responses that differ from what peer models say about the same input. These behaviors evade text-only audits because visual concepts cannot be isolated or substituted the way text tokens can. We present VISTA (Visual Inconsistency Screening Through Analysis), a black-box cross-model audit that couples semantic entropy with distribution-based divergence to flag model-specific anomalies. In a controlled study, we implant concept-conditioned stances in three VLMs via fine-tuning on small biased datasets and confirm that VISTA detects them. Auditing six VLMs across 19 topics, VISTA surfaces 142 high-suspicion cases (1.2%) and identifies selective refusal as a previously unreported divergence pattern, where models refuse demographic queries at rates varying from 0 to 65% across groups.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/11/2607.07724v1-uncertainty-gated-selection-for-block-sparse-attention",
+      "section": "quick",
+      "title_en": "Uncertainty-gated selection for block-sparse attention",
+      "authors": "Thomas Rossi",
+      "date": "2026-07-04",
+      "pdf": "https://arxiv.org/pdf/2607.07724v1",
+      "score": "6.0",
+      "evidence": "防止长上下文块稀疏注意力中丢失答案证据",
+      "tldr": "块稀疏注意力通过top-k选择扩展长上下文模型，但在分数相近时盲目截断，易丢失关键信息。提出信息价值路由器，评估top-k截断的确定性，对截断模糊的查询动态加倍保留块数。在LongBench-v2上召回率从0.47提升至0.75，在128K上下文中保持密集注意力80%以上的准确率，且运行时间仅为密集计算的0.62-0.8倍。该方法与骨干网络无关，可叠加现有块评分方法，有效解决了稀疏注意力中的模糊截断问题，兼顾了长文本性能与计算效率。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Block-sparse attention scales long-context language models by replacing the O(N^2) softmax with a per-query top-k selection over key blocks. This cutoff is myopic: when the k-th and (k+1)-th blocks are nearly tied in score, the selector commits without spending extra budget, and a dropped block carrying answer evidence is unrecoverable downstream. We propose a value-of-information router that measures, for each query, how decisively the top-k cut was made, and doubles the kept set for the queries where that gap is smallest; the rule is backbone-agnostic and stacks with existing block-scoring methods such as Quest. On LongBench-v2 medium at n=215 (the entire dataset subset), router-on-Quest reaches paired recall 0.75 vs. top-k 0.47 -- +28 pp over the SSA-style baseline (McNemar p<0.01) -- and lands within 2 pp of dense on RULER NIAH multikey at the same context. The lift reproduces on four models from three architectures (Qwen2.5, Mistral-Nemo, Qwen3.6). At 128K, the router preserves 0.81 and 0.89 of dense accuracy on Qwen2.5-7B-1M and Qwen3.6 (vs. SSA-style top-k at 0.09 on the former) while the fused selection-plus-kernel pipeline runs at 0.62x and 0.80x dense wall time.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "errors": []
+}
