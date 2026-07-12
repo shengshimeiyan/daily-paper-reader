@@ -1,0 +1,24 @@
+{
+  "label": "2026-07-12",
+  "date": "2026-07-12",
+  "generated_at": "2026-07-12T20:38:31",
+  "count": 1,
+  "papers": [
+    {
+      "paper_id": "202607/12/2607.08377v1-eigenvalue-calibration-for-semantic-embeddings-of-large-language-models",
+      "section": "quick",
+      "title_en": "Eigenvalue Calibration for Semantic Embeddings of Large Language Models",
+      "authors": "Sebastian G. Gruber, Nassim Walha, Francis Bach, Florian Buettner",
+      "date": "2026-07-09",
+      "pdf": "https://arxiv.org/pdf/2607.08377v1",
+      "score": "7.0",
+      "evidence": "LLM可靠性的不确定性量化",
+      "tldr": "大语言模型的不确定性量化高度依赖语义嵌入特征值，但传统针对分类概率的校准方法无法直接应用于特征值。本文提出一种全新的特征值校准框架，将LLM及其语义嵌入解释为密度矩阵预测器，并创新性地对其特征值应用温度缩放。理论推导与多场景实验证明，该方法能优化校准效果，并揭示当前LLM普遍存在系统性过度自信问题。本研究填补了特征值校准的理论空白，推进了语义嵌入不确定性量化的基础与实践。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Uncertainty quantification is central to the reliable deployment of large language models (LLMs), and eigenvalues of semantic embeddings have recently emerged as a key tool in state-of-the-art methods. However, conventional calibration results developed for classification probabilities cannot be directly transferred to eigenvalues. We address this gap by proposing a novel framework for calibrating the eigenvalues of semantic embeddings. We interpret LLMs combined with semantic embeddings of their generated answers as density matrix predictors, and we propose a novel approach to calibrate density matrix predictors by applying temperature scaling to their eigenvalues. We establish entropy-risk equivalence under calibration, derive a central calibration inequality specific to eigenvalues, and prove that temperature-scaled eigenvalues optimize calibration when minimizing proper score risks. Experiments on a variety of real-world settings show that current LLMs are systematically overconfident, and validate our theoretical findings. Together, these results advance the foundations and practice of uncertainty quantification for semantic embeddings.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "errors": []
+}
