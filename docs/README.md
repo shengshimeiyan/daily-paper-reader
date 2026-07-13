@@ -6,25 +6,29 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-12
-- 运行时间：2026-07-12 20:38:09 UTC
+- 最新运行日期：2026-07-13
+- 运行时间：2026-07-13 21:38:07 UTC
 - 运行状态：成功
-- 本次总论文数：1
-- 精读区：0
+- 本次总论文数：2
+- 精读区：1
 - 速读区：1
 
 ### 今日简报（AI）
-今日速读1篇论文，聚焦大模型语义嵌入的特征值校准技术。
-最值得看的方向是如何通过特征值校准优化大语言模型的语义表示（
-- 详情：[/202607/12/README](/202607/12/README)
+- 今日共生成 2 篇推荐（精读 1 篇，速读 1 篇）
+- 精读：《Towards Detecting Inconsistencies in End-to-end Generated TODs》（8.0/10）
+- 速读：《Does It Fail to See or Fail to Know? Attributing Errors in Vision-Language Models》（6.0/10）
+- 这些结果覆盖了当下较热的方向，建议先看精读区论文的关键问题与方法。
+- 详情：[/202607/13/README](/202607/13/README)
 
 ### 精读区论文标签
-- 本次无精读推荐。
+1. [Towards Detecting Inconsistencies in End-to-end Generated TODs](/202607/13/2607.09338v1-towards-detecting-inconsistencies-in-end-to-end-generated-tods)  
+   标签：评分：8.0/10、query:llm-halluc
+   evidence：检测大语言模型生成对话中的不一致性与幻觉
 
 ### 速读区论文标签
-1. [Eigenvalue Calibration for Semantic Embeddings of Large Language Models](/202607/12/2607.08377v1-eigenvalue-calibration-for-semantic-embeddings-of-large-language-models)  
-   标签：评分：7.0/10、query:llm-halluc
-   evidence：LLM可靠性的不确定性量化
+1. [Does It Fail to See or Fail to Know? Attributing Errors in Vision-Language Models](/202607/13/2607.04683v2-does-it-fail-to-see-or-fail-to-know-attributing-errors-in-vision-language-models)  
+   标签：评分：6.0/10、query:llm-halluc
+   evidence：归因视觉语言模型中的失败模式
 
 
 <div class="dpr-home-promo-card">

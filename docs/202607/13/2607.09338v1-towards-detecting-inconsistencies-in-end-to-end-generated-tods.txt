@@ -1,0 +1,484 @@
+Title: Towards Detecting Inconsistencies in End-to-end Generated TODs
+
+URL Source: https://arxiv.org/pdf/2607.09338v1
+
+Published Time: Mon, 13 Jul 2026 01:23:18 GMT
+
+Number of Pages: 8
+
+Markdown Content:
+# Towards Detecting Inconsistencies in End-to-end Generated TODs 
+
+# Tiziano Labruna 
+
+tlabruna@fbk.eu Fondazione Bruno Kessler Povo, Trento, Italy 
+
+# Giovanni Bonetta 
+
+gbonetta@fbk.eu Fondazione Bruno Kessler Povo, Trento, Italy 
+
+# Bernardo Magnini 
+
+magnini@fbk.eu Fondazione Bruno Kessler Povo, Trento, Italy 
+
+## Abstract 
+
+Generative AI is profoundly transforming the core technologies behind conversational systems, shifting from component-based to end-to-end approaches. However, Large Language Models (LLMs) may still generate inconsistencies, a critical issue particularly in Task-Oriented Dialogues (TODs), where system responses must strictly adhere to information from a domain knowledge base (e.g., restaurants in a city). A single hallucination (e.g., suggesting a non-existent restaurant) can lead to severe task failures. We investigate a method for automatically detecting inconsistencies by concep-tualizing TODs as a Constraint Satisfaction Problem (CSP), where variables represent dialogue segments referencing the conversa-tional domain, and constraints among variables capture dialogue properties such as turn coherence and adherence to domain knowl-edge. We propose a pipeline that first identifies variables in a target dialogue and then applies a CSP solver to identify valid solutions. By comparing the target dialogue with valid variable assignments, we can detect inconsistencies and suggest minimal changes to en-sure dialogue consistency. We demonstrate the high accuracy of the CSP-based approach in detecting inconsistencies, and provide a detailed analysis of our findings. 
+
+## CCS Concepts 
+
+• Computing methodologies → Discourse, dialogue and prag-matics ; Natural language generation ; Language resources .
+
+## Keywords 
+
+Task-Oriented Dialogue Systems, Dialogue Consistency, Constraint Satisfaction Problem, Large Language Models. 
+
+ACM Reference Format: 
+
+Tiziano Labruna, Giovanni Bonetta, and Bernardo Magnini. 2026. Towards Detecting Inconsistencies in End-to-end Generated TODs. In Proceedings of Proceedings of the SIGIR Workshop on Search-Oriented Conversational AI (SCAI). ACM, New York, NY, USA, 8 pages. https://doi.org/10.1145/nnnnnnn. nnnnnnn 
+
+## 1 Introduction 
+
+Task-oriented dialogue (TOD) systems [ 3 , 6 , 24 , 28 ] play a crucial role in human-computer interaction, facilitating seamless commu-nication between users and machines to perform specific tasks. In  
+
+> Permission to make digital or hard copies of all or part of this work for personal or classroom use is granted without fee provided that copies are not made or distributed for profit or commercial advantage and that copies bear this notice and the full citation on the first page. Copyrights for components of this work owned by others than the author(s) must be honored. Abstracting with credit is permitted. To copy otherwise, or republish, to post on servers or to redistribute to lists, requires prior specific permission and/or a fee. Request permissions from permissions@acm.org.
+> SCAI, Melbourne, Australia
+> ©2026 Copyright held by the owner/author(s). Publication rights licensed to ACM. ACM ISBN 978-x-xxxx-xxxx-x/YYYY/MM https://doi.org/10.1145/nnnnnnn.nnnnnnn
+
+Knowledge Base ID Name Area Food Price 
+
+R1 Taberna centre spanish cheap R2 Espana centre spanish moderate R3 Beirut centre lebanese cheap 
+
+Dialogue User: I am looking for a restaurant serving Spanish 
+
+food. 
+
+System: There are three restaurants serving Spanish 
+
+food, one is cheap and the other is moderate 
+
+price range. Which price range would you pre-fer? 
+
+User: I am looking for a cheap restaurant in any area that serves Spanish food. 
+
+System: Beirut is cheap and serves Lebanese food. Would you like the location information? 
+
+Figure 1: An inconsistent task-oriented dialogue (TOD) and a restaurant KB with slot-value pairs (N = Name, A = Area, F = Food, P = Price). Bold text highlights slot values in the dialogue. Red values indicate dialogic inconsistencies, while purple values indicate inconsistencies with the KB. 
+
+recent years, transformer-based neural models have become the core technology behind TODs. In particular, pre-trained large lan-guage models (LLMs) allow end-to-end approaches [ 4 , 21 , 28 ] that greatly simplify the development of conversational systems, with respect to more complex component-based pipelines [ 32 ]. However, despite their impressive generative capabilities, it is well known that LLMs exhibit significant limitations in producing outputs that adhere to the requirements of task-specific domains [ 10 , 16 ]. In a recent study [ 19 ] it has been shown that, when asked to generate a dialogue according to a given knowledge base ( 𝐾𝐵 ), as required by TODs, state-of-the-art open source LLMs produce up to 59% of per dialogue disalignments with respect to the underlying KB. Failing to align their outputs with a domain 𝐾𝐵 , leads to inconsistencies that undermine LLMs reliability in real-world applications. Figure 1 shows an example of a fragment of a Knowledge Base (three restaurants in a city) and a short TOD dialogue generated by a LLM. There are two hallucinations in this dialogue: first, at turn S1, the system mentions three restaurants serving Spanish food, which is not consistent with the knowledge base, where there are two such restaurants (this is a domain inconsistency ). Second, at turn S2, the system introduces a Lebanese restaurant, which, although existing in the 𝐾𝐵 , it is not coherent with the previous dialogue turns, as a Spanish restaurant would have been expected (this is a dialogic arXiv:2607.09338v1 [cs.CL] 10 Jul 2026 SCAI, 2026, Melbourne, Australia Labruna et al. 
+
+inconsistency ). Intuitively, both domain and dialogic inconsistencies need the whole dialogue context in order to be detected: for instance, 
+
+Lebanese appears inconsistent because the user is looking for a Spanish restaurant since the beginning of the conversation, while considering turn S2 alone would result in a well formed dialogue. In addition, notice that three changes would make the whole dialogue consistent: (i) changing three with two at turn S1; (ii) changing 
+
+Lebanese with Spanish at turn S2; and (iii) changing Beirut with 
+
+Taberna at turn S2. Detecting TOD inconsistencies and, if possible, suggesting how to solve them, is the goal of this paper. The novel intuition of the paper is to consider dialogue consistency as a kind of Constraint Satisfaction Problem (CSP [ 5]), under the following working hypothesis: (i) first, dialogue consistency can be modeled with a limited number of domain independent constraints that need to be respected by appropriate linguistic realizations; (ii) such constraints can be well represented to define a CSP, whose allowed solutions can be identified by a CSP solver; (iii) a TOD is consistent if its linguistic realizations belong to the set of solutions allowed by a CSP solver for that dialogue. In the paper, we discuss how dialogue constraints are defined, how they can be extracted and modeled as a CSP, and how to set up an experimental setting where we can empirically prove that a CSP solver can detect inconsistencies in a dialogue and suggest possible changes that make the dialogue consistent. The contributions of the paper are the following: 
+
+• We model TOD consistency as a Constraint Satisfaction Prob-lem (CSP): to the best of our knowledge, this is a fully original approach. 
+
+• We set up a reusable experimental setting where TOD con-sistency can be automatically evaluated against a CSP solver. 
+
+• We show that the proposed CSP approach allows for effective detection of inconsistent TODs, achieving an accuracy of 75.9%. 
+
+## 2 Dialogue Consistency as a Constraint Satisfaction Problem 
+
+In this section, we explore the conceptualization of dialogue con-sistency in the CSP framework. We first describe the fundamental component of a conversational domain (Section 2.1), then we eluci-date the various constraints that contribute to dialogue coherence (Section 2.2), encompassing linguistic, dialogic, and domain-based considerations. We finally expound upon the formalization of dia-logue constraints as CSPs (Section 2.3), delineating the process of modeling dialogue coherence as a constraint satisfaction task. 
+
+## 2.1 TOD Conversational Domain 
+
+TODs typically need specific knowledge about the conversational domain (e.g., a database of restaurants, a playlist of songs, etc.). As in literature [ 14 ], we assume a domain ontology providing a schema of the concepts (e.g., Restaurant , Hotel , Movie ), a set of slots 𝑆 (e.g., Food , Area , Price ) for the concepts, and the set of values that each slot can assume (e.g., Expensive , Moderate , and 
+
+Cheap for the Price slot). Then, a domain knowledge base ( 𝐾𝐵 )comprises a collection of instances for the ontology concepts, each consisting of [𝑠𝑙𝑜𝑡 − 𝑣𝑎𝑙𝑢𝑒 ] pairs, adhering to the domain ontology schema. 
+
+## 2.2 Dialogue Consistency 
+
+A TOD can be considered as a sequence of conversational turns between a user and a system aimed at achieving a specific goal. Within this framework, ensuring the consistency of the dialogue is crucial for effective communication between the user and the system. We consider three types of constraints, which need to be respected for a dialogue to be consistent: linguistic, dialogic and domain constraints. Figure 3 provides a concrete example of how violations of these constraints can lead to inconsistencies, show-ing a case where the system response contradicts the underlying knowledge base despite a seemingly coherent dialogue flow. 
+
+Linguistic Constraints. They are necessary to respect general rules of language, including morpho-syntactic rules (e.g., genre and number agreement) and syntax-based rules (e.g., the correct use of a preposition). For instance, consider the following masked utterance: 
+
+U I look for a restaurant in <MASK> .The choice of centre as a substitute for the masked token is valid, whereas expensive would not be suitable because the preposition in 
+
+is rarely used to introduce a price in English. 
+
+Dialogic Constraints. They maintain the semantic coherence across successive turns of the dialogue, ensuring that each utterance logically aligns with the preceding context, thereby facilitating a seamless flow of information. As an example, suppose the following masked dialogue turns: 
+
+U I would like an Italian restaurant. 
+
+S There is no <MASK> restaurant in the centre. Here both Italian and cheap would be eligible choices from a lin-guistic point of view, but only Italian would maintain the coherence with the previous turn in the dialogue. 
+
+Domain Constraints. They ensure alignment between the dia-logue content and the knowledge base of the system, thereby main-taining the dialogue’s alignment with relevant factual information. Consider, for instance, a 𝐾𝐵 with the following restaurants: 
+
+ID Name Area Food Price 
+
+R1 Mario east italian expens. R2 Napoli centre italian cheap And the following piece of masked dialogue: 
+
+U I am looking for an Italian restaurant in the centre .
+
+S We have <MASK> restaurants available for your pref-erences. Then, the only admissible choice for the masked token would be 
+
+one , as selecting any other number would introduce an inconsis-tency with the information provided in the 𝐾𝐵 .Towards Detecting Inconsistencies in End-to-end Generated TODs SCAI, 2026, Melbourne, Australia U:  I'm looking for a  x1=F:Spanish  restaurant               
+
+> S: There are x2=2 restaurants serving x3=F:Spanish cousine.
+> U: I'm looking for a Spanish restaurant
+> S: There are 2 restaurants serving Spanish cousine.
+> R1: N=Taberna A=centre F=spanish P=cheap
+> R2: N=Locos A=north F=spanish P=moderate
+> R3: N=Beirut A=centre F=lebanese P=cheap
+> R4: N=Al-Athir A=south F=lebanese P=cheap
+> x1 = x3
+> # KB[x1] = x2
+> x1 = x3 = Spanish
+> x2 = 2
+> or
+> x1 = x3 = Lebanese
+> x2 = 2
+> Consistent
+> DIALOGUE
+> KNOWLEDGE BASE
+> VARIABLE
+> IDENTIFICATION
+> CONSTRAINTS
+> DEFINITION
+> CSP
+> SOLUTIONS
+> DIALOGUE
+> CONSISTENCY
+> ASSESSMENT
+> Step 1: Step 2: Step 3: Step 4:
+
+Figure 2: Overview of the CSP-based methodology. In step 1 GPT-4o is used to annotate the given dialogue for variable identification. Step 2 allocates the constraints that need to be true for the dialogue to be consistent. Step 3 uses CSP to find the possible solutions, and in step 4 the original dialogue is matched with the CSP solutions to assess its correctness. ID Name Area Food Price 
+
+R1 Mario east italian expens. R2 Napoli centre italian cheap 
+
+U I’m looking for a restaurant serving <MASK> food in any area. 
+
+S There are no <MASK> restaurants in the area. 
+
+U Well, can I get the phone number to a <MASK> restau-rant? 
+
+S Restaurant R2 serves <MASK> food. Their phone number is 01223 355166. Can I help you with anything else? 
+
+U That’s it, goodbye. 
+
+S You’re welcome, goodbye. 
+
+U I’m looking for a restaurant serving italian food in any area. 
+
+S There are no italian restaurants in the area. 
+
+U Well, can I get the phone number to a cheap restau-rant? 
+
+S Restaurant R2 serves italian food. Their phone number is 01223 355166. Can I help you with anything else? 
+
+U That’s it, goodbye. 
+
+S You’re welcome, goodbye. 
+
+Figure 3: Example of an inconsistent re-lexicalization. The system is claiming there are no Italian restaurant, even though there are 2 in the Knowledge Base. 
+
+## 2.3 TOD Consistency as CSP 
+
+A Constraint Satisfaction Problem (CSP) [ 5, 18 ] defines a set of variables, each associated with a finite domain of values, and a set of constraints specifying the allowed combinations of values. A solution is an assignment of values to all variables that satisfies all constraints; if no such assignment exists, the CSP is unsolvable. We model TOD consistency as a CSP, where variables corre-spond to dialogue elements to be instantiated (e.g., 𝑀𝐴𝑆𝐾 tokens), and their domains are derived from the dialogue-specific 𝐾𝐵 . Con-straints capture linguistic, dialogic, and domain requirements (Sec-tion 2.2). Formally, given a dialogue 𝑑 𝑖 with variables 𝑥 1, . . . , 𝑥 𝑛 , domains 
+
+𝐷 1, . . . , 𝐷 𝑛 , and a set of constraints C, the task is to determine whether there exists an assignment 𝐴 = {( 𝑥 1, 𝑎 1), . . . , (𝑥 𝑛 , 𝑎 𝑛 )} 
+
+with 𝑎 𝑖 ∈ 𝐷 𝑖 such that: 
+
+Satisfies (𝐴, 𝐶 𝑗 ) ∀𝐶 𝑗 ∈ C 
+
+where Satisfies (𝐴, 𝐶 𝑗 ) indicates whether assignment 𝐴 satisfies con-straint 𝐶 𝑗 .
+
+## 3 Methodology 
+
+This section outlines the process of modeling a TOD as a CSP, and then to assess the dialogue consistency using a CSP solver. The assessment involves three key steps for a [𝑑, 𝐾𝐵 ] pair, where 𝑑 
+
+is a dialogue and 𝐾𝐵 is a Knowledge Base: (1) identification of the variables within the dialogue 𝑑 (Section 3.1); (2) definition of dialogue constraints and construction of a CSP solver for the [𝑑, 𝐾𝐵 ]
+
+pair (Section 3.2); and (3) application of the CSP solver to determine if the dialogue 𝑑 represents a feasible solution with respect to the defined constraints (Section 3.3). These phases of the methodology are illustrated in Figure 2. 
+
+## 3.1 Identifying TOD Variables 
+
+At step 1 (see Figure 2), we consider a TOD 𝑑 and a 𝐾𝐵 (i.e., a set of entities described by slot-value pairs) related to the conversational domain of the dialogue. We do not assume any particular depen-dency between 𝑑 and 𝐾𝐵 : 𝑑 could be either fully covered by 𝐾𝐵 (i.e., all mentions of slot values in 𝑑 are present in 𝐾𝐵 ), only partially covered, or not covered at all. We consider CSP variables all text portions in 𝑑 either referring to a slot value in 𝐾𝐵 or mentioning amounts of instances in 𝐾𝐵 . The rationale is that both slot values and instance amounts are elements that better characterize a TOD and are responsible for its consistency. In our example in Figure 1, we will obtain the following variables with their assignments, corresponding to highlighted tokens: 
+
+[𝑥 1 = 𝑆𝑝𝑎𝑛𝑖𝑠ℎ ], [𝑥 2 = 𝑡ℎ𝑟𝑒𝑒 ], [𝑥 3 = 𝑆𝑝𝑎𝑛𝑖𝑠ℎ ], [𝑥 4 = 𝑐ℎ𝑒𝑎𝑝 ] ... 
+
+[𝑥 11 = 𝐿𝑒𝑏𝑎𝑛𝑒𝑠𝑒 ].
+
+## 3.2 Defining TOD Constraints 
+
+We have established a set X of variables 𝑥 1, 𝑥 2, ..., 𝑥 𝑛 , where each variable 𝑥 𝑖 can assume a value either from the slot values or from SCAI, 2026, Melbourne, Australia Labruna et al. 
+
+amounts of instances in 𝐾𝐵 . Moving to step 2 in Figure 2, we now define the set of constraints C over the values that can be assigned to X variables. We consider the three categories of constraints introduced in Section 2.2: linguistic, dialogic, and domain-based constraints, and for each category we define a set of domain inde-pendent patterns, which are then instantiated as actual constraints on a TOD. 
+
+Patterns for linguistic constraints. We model linguistic constraints as the need for a variable derived from a slot value to match the semantic type of its slot type. For instance, given the utterance Iam looking for a restaurant at 𝑥 1, the value of the variable 𝑥 1 must belong to the Area type. More precisely, 𝐶 1 is defined as follows: 
+
+𝐶 1 : 𝑥 1 ∈ 𝑉 
+
+where 𝑉 is the set of values belonging to the same slot type as the original value. Constraint 𝐶 1, is meant to avoid that a variable can assume values that are semantically non valid. For instance, avoid-ing that 𝑥 1=north can be assigned to a Food , as in I am looking for a restaurant at indian , which is ungrammatical in English. 
+
+Patterns for dialogic constraints. We consider two dialogic con-straints. 𝐶 2 ensures that variables referring to the same slot-name and slot-value in 𝑑 are assigned to the same value. 𝐶 3 ensures that variables with the same semantic type (i.e., same slot-name) occur-ring in the same utterance are assigned to different values. Given the turn U: I want an 𝑥 1 restaurant. S: There are 3 restaurant that serve 𝑥 2, we define 𝐶 2 as follows: 
+
+𝐶 2 : 𝑥 1 = 𝑥 2
+
+where the aim is to keep internal coherence across the dialogue turns. Given the utterance We have 𝑥 1, 𝑥 2, or 𝑥 3 restaurants. , we define 𝐶 3 as: 
+
+𝐶 3 : 𝑥 1 ≠ 𝑥 2, 𝑥 1 ≠ 𝑥 3, 𝑥 2 ≠ 𝑥 3
+
+which captures non redundancy at the utterance level. 
+
+Patterns for domain-based constraints. We consider three domain-based constraints. All of them are meant to guarantee consistency between the number of instances mentioned in 𝑑 and the actual number of instances present in 𝐾𝐵 . We distinguish three cases: 𝐶 4
+
+covers the cases when an utterance in 𝑑 states that there are no instances in 𝐾𝐵 ; 𝐶 5 covers the cases where it is stated that there is at least one instance; and 𝐶 6 the cases where there are exactly 𝑛 
+
+instances. As for 𝐶 4, consider an utterance indicating no results for a search: 
+
+There are no restaurants serving 𝑥 1 food , assuming that there are no restaurants with [Food= 𝑥 1] in 𝐾𝐵 . For this utterance, 𝐶 4 is defined as: 
+
+𝐶 4 : ¬∃ 𝑖 ∈ 𝐾𝐵 with values 𝑥 1
+
+implying that the variable 𝑥 1 can not assume a value that is present in an instance of the 𝐾𝐵 .As for 𝐶 5, consider the utterance: We have many 𝑥 1 restaurants at 𝑥 2, where at least one restaurant with [Food= 𝑥 1] and [Area= 𝑥 2]
+
+is supposed to exist in 𝐾𝐵 . For this utterance, 𝐶 5 is defined as: 
+
+𝐶 5 : ∃𝑖 ∈ 𝐾𝐵 with values 𝑥 1, 𝑥 2
+
+imposing the existence of at least one instance with values 𝑥 1 and 
+
+𝑥 2. Finally, for 𝐶 6, consider the utterance There are 𝑥 1 restaurants at 𝑥 2. We define the constraint as: 
+
+𝐶 6 : |{ 𝑖 ∈ 𝐾𝐵 with value 𝑥 2 }| = 𝑥 1
+
+to check that the number of instances with value 𝑥 2 is exactly equal to 𝑥 1.To sum up, we have defined six general, domain independent (i.e., in principle they can be applied to any TOD), constraint patterns over the variable of a TOD. 
+
+## 3.3 Assessing Dialogue Consistency 
+
+After identifying all variables and constraints for a dialogue 𝑑 , a CSP solver computes all possible solutions for the variables in 𝑑 based on the knowledge base ( 𝐾𝐵 ) (step 3 in Figure 2). If one of these solutions matches the variable assignments in 𝑑 , the dialogue is consistent with 𝐾𝐵 (step 4 in Figure 2). For example, in Figure 1, the assignment 
+
+[𝑥 2 = three ] violates 𝐶 6 (incorrect count of Spanish instances in 
+
+𝐾𝐵 ), while [𝑥 11 = Lebanese ] violates 𝐶 2 (lack of coherence with prior turns). If the CSP solver finds at least one solution, the variable assignments in the dialogue must match one of those solutions to ensure all constraints are satisfied. Conversely, if no solution exists with respect to 𝐾𝐵 , the variable assignments should either remain empty or include values not present in 𝐾𝐵 to maintain consistency. When at least one solution is found but none matches the variable assignments, the solver identifies the most similar solution and determines the minimal changes required to make the dialogue consistent. This process provides a detailed report highlighting specific inconsistencies and suggesting corrections. 
+
+## 4 Validating CSP Performance 
+
+We evaluate the ability of the CSP-based approach to detect in-consistencies in task-oriented dialogues (TODs) through a con-trolled experiment (Figure 2). We construct a balanced dataset of dialogue–knowledge base pairs [𝑑, 𝐾𝐵 ], with equal proportions of 
+
+consistent and not-consistent instances. Each pair is processed through the pipeline, and the CSP component outputs a binary decision, which is compared against ground truth. 
+
+## 4.1 Experimental Setup 
+
+We construct a balanced dataset of 108 dialogue–KB pairs from Mul-tiWOZ 2.3. While the dataset is assumed to be consistent, manual inspection combined with CSP verification revealed that approxi-mately 10% of dialogues exhibit inconsistencies due to annotation errors; these were removed. The remaining dialogues were split evenly into consistent and not-consistent subsets. Inconsistent dialogues were generated by randomly modifying slot values to violate KB constraints. For each dialogue, a tailored 𝐾𝐵 was con-structed by selecting relevant entities from the global MultiWOZ knowledge base. CSP variables are identified either from MultiWOZ annotations or via GPT-4o, and constraints are instantiated using the six patterns introduced in Section 3.2. We model the problem using MiniZinc [26 ], a declarative constraint programming language. We use the Chuffed solver [11], which is optimized for constraint satisfaction problems and supports efficient search and propagation strategies. Towards Detecting Inconsistencies in End-to-end Generated TODs SCAI, 2026, Melbourne, Australia 
+
+The solver determines whether a valid assignment exists; absence of a solution implies inconsistency. We compare four classification methods: a random baseline, two CSP-based approaches using MultiWOZ annotations (global and local), and a fully automated pipeline using GPT-4o for variable extraction. Performance is measured using accuracy over [𝑑, 𝐾𝐵 ]
+
+pairs. We consider four methods for classifying dialogue consistency: 
+
+• Random Baseline : assigns labels randomly (expected accu-racy: 50%). 
+
+• MWoZ Global + CSP : variables are extracted from full-dialogue annotations and evaluated globally. 
+
+• MWoZ Local + CSP : variables are evaluated independently per turn; a single inconsistent turn marks the dialogue as inconsistent. 
+
+• GPT-4o Global + CSP : variables are extracted automatically using a two-step prompt chain, then evaluated globally. The prompt chain used to annotate the dialogue turns consists of the following two prompts: 
+
+• Prompt-1: Analyze the given user utterance and extract any slot-value pairs. The possible slot types are: Area, Food, Price, Depart, Destination. Return the output as JSON with the dialog-act format. 
+
+• Prompt-2: Refine the given annotation for the user utter-ance. Ensure that only slots related to Area, Food, and Price are included. Correct any errors in the provided annotation, add missing slots, and remove any irrelevant slots. Return the output as JSON with the updated dialog-act format. The GPT-4o response to Prompt-1 is used as input within Prompt-2, and the final output is a JSON file containing annotations about slot variables. The dialog-act referred to in the two prompts is a JSON schema that guides GPT-4o in structured output mode and resembles the MultiWOZ JSON annotation schema.      
+
+> Method accuracy (%)
+> Random Baseline 50.0
+> MWoZ global variables + CSP 91.6
+> MWoZ local variables + CSP 79.0
+> GPT4-o global variables + CSP 75.9
+
+Table 1: Results on assessing CSP performance. 
+
+## 4.2 Results 
+
+Table 1 reports the results. The upper-bound method based on Mul-tiWOZ global annotations achieves 91.6% accuracy, confirming the effectiveness of the CSP formulation and the high coverage of the constraint patterns. Performance drops to 79% when constraints are applied locally, highlighting the importance of global context. The end-to-end pipeline using GPT-4o reaches 75.9%, with errors primarily due to imperfect variable extraction. The results show that (i) CSP-based modeling is effective for detecting dialogue in-consistencies, and (ii) the proposed constraint set provides strong coverage of relevant phenomena. 
+
+## 5 Analysing LLM Behavior 
+
+We investigate how large language models (LLMs) handle dialogue consistency under explicit constraints. Specifically, we study (i) their ability to generate consistent TODs, (ii) the role of different constraint types, and (iii) the localization of inconsistency sources. 
+
+## 5.1 Experimental Setup 
+
+We consider 950 MultiWOZ dialogues across multiple domains. Each dialogue is de-lexicalized by replacing slot values with place-holders. Models are then prompted to reconstruct the original dia-logue by filling these placeholders using the provided Knowledge Base ( 𝐾𝐵 ), thereby generating a re-lexicalized dialogue. All models operate in a zero-shot setting without any fine-tuning. Closed-source models are accessed via APIs, while open-source models are run using HuggingFace checkpoints. The full prompt used in our experiments is reported below. 
+
+System Prompt: 
+
+You are given an instruction that outlines a task, a Knowledge Base containing domain-specific informa-tion, and a dialogue to process. Your goal is to fill in the [MASK] placeholders in the dialogue using only the information provided in the Knowledge Base. 
+
+Task: Replace each [MASK] with the most appropriate value from the Knowledge Base. Preserve the original structure of the dialogue exactly. If a turn does not contain any placeholders, leave it unchanged. Each dialogue turn must start with either User or System .Maintain the original spacing and punctuation (e.g., write “Hi ,” instead of “Hi,”). 
+
+Input Format: 
+
+[Knowledge Base] <key-value pairs> [Dialogue] User: ... System: ... User: ... ... 
+
+Output: 
+
+The same dialogue with all [MASK] tokens replaced accordingly. The generated dialogue is then evaluated using the CSP solver to verify constraint satisfaction. 
+
+5.1.1 Models. We evaluate four language models: LLaMA-3.1 8B, GPT-3.5-Turbo, GPT-4o, and GPT-o1. LLaMA-3.1 8B is a large-scale model fine-tuned for handling complex dialogue contexts and main-taining coherence in text generation [ 13 ]. GPT-3.5-Turbo is a model specifically designed for conversational tasks [ 1 ]. GPT-4o is an ad-vanced language model recognized for its robust performance in various natural language processing tasks [ 15 ]. GPT-o1 is one of the latest update of the GPT series, designed to reason through complex SCAI, 2026, Melbourne, Australia Labruna et al. 
+
+tasks to solve harder problems 1. All models were prompted with both the de-lexicalized dialogue, 𝑑 𝑑𝑒𝑙𝑒𝑥 , and its associated 𝐾𝐵 as in-put, ensuring a comprehensive context for producing dialogues that adhered to implicit constraints. Inference was conducted in zero-shot mode without fine-tuning, leveraging the respective APIs for closed source models and the huggingface checkpoints for the open ones: GPT-3.5-Turbo (2023-05-15), GPT-4o and GPT-o1 (2024-05-13), and LLaMA-3.1 8B (2023-07-10). 
+
+5.1.2 Baselines. To comparison, we included four non-trivial dia-logue re-lexicalization baselines: 
+
+• Random-ALL generates a re-lexicalized dialogue 𝑑 𝑟𝑒𝑙𝑒𝑥 by randomly assigning variables in 𝑑 𝑑𝑒𝑙𝑒𝑥 to any slot values present in the 𝐾𝐵 , regardless of their slot type. 
+
+• Random-SLOT also assigns variables randomly but restricts the selection to values associated with the same slot type as the original. 
+
+• Most Freqent-ALL baseline assigns variables in 𝑑 𝑑𝑒𝑙𝑒𝑥 to the most frequent slot values found across all slots in the 
+
+𝐾𝐵 .
+
+• Most Freqent-SLOT baseline selects the most frequent value from the same slot type as the original. 
+
+5.1.3 Evaluation Metrics. We use Global Consistency Accuracy (GCA) and Variable Consistency Accuracy (VCA) as the metrics to evaluate the adherence of a dialogue to a specific set of constraints. Given a re-lexicalized dialogue 𝑑 𝑟𝑒𝑙𝑒𝑥 where CSP variables are assigned to values, GCA measures the overall accuracy of the assignments for each variable. The average GCA is calculated as the proportion of dialogues that fully comply with all defined constraints: 
+
+𝐺𝐶𝐴 =
+
+Í𝑁 𝑖 =1
+
+Î𝑀 𝑗 =1 Satisfies (𝐴 𝑖 , 𝐶 𝑗 )
+
+
+
+𝑁 
+
+where 𝑁 is the total number of dialogues, and Satisfies (𝐴 𝑖 , 𝐶 𝑗 ) is a binary indicator function that returns 1 if and only if all variable assignments in dialogue 𝑑 𝑖 comply with the constraint 𝑗 , 0 other-wise. On the other hand, VCA assesses the assignment accuracy on individual variables within the dialogue. We compare the dialogue assignment to the solutions of the CSP solver and find the most similar solution; then, we count how many variable assignments coincide with the assignments of the most similar solution. We formally define VCA as follows: 
+
+𝑉𝐶𝐴 =
+
+Í𝑁 𝑖 =1 |CorrectAssignments (𝑑 𝑖 )| 
+
+𝑀 
+
+where 𝑁 is the total number of dialogues, 𝑀 is the total number of variables in the dialogues, and CorrectAssignments (𝑑 𝑖 ) are the vari-able assignments in dialogue 𝑑 𝑖 that coincide with the assignments of the most similar solution provided by the CSP solver. GCA and VCA provide insights into the ability of the dialogue generation system to maintain coherence and fidelity to the underlying domain knowledge while generating responses. Higher values of GCA and VCA indicate better performance in terms of dialogue quality and consistency, unlike traditional dialogue evaluation metrics (e.g., BLEU, ROUGE, or perplexity). 
+
+> 1https://openai.com/o1/
+
+Additionally, the process used for computing VCA can be ex-tended to identify specific errors within a dialogue. In cases where a dialogue is not among the solutions identified by the CSP, the most similar solution can be used to detect erroneous slot-value assignments. Specifically, errors are defined as slot-values that, if corrected, would result in a solution satisfying all constraints. This enables the generation of detailed reports pinpointing the errors in the dialogue, facilitating more targeted improvements. 
+
+Method GCA VCA 
+
+Random-ALL 0.01 0.02 
+
+Random-SLOT 0.01 0.12 
+
+Most Freqent-ALL 0.01 0.11 
+
+Most Freqent-SLOT 0.06 0.23 
+
+Llama-3.1 8B 0.03 0.08 
+
+GPT-3.5-turbo 0.11 0.37 
+
+GPT-4o 0.14 0.41 
+
+GPT-o1 0.14 0.42 Table 2: Baselines and model performance on re-lexicalizing TODs. 
+
+## 5.2 Results 
+
+Table 2 shows that GPT-4o and GPT-o1 outperform other mod-els, although absolute performance remains moderate, indicating that constraint satisfaction is still challenging for LLMs. Perfor-mance improves as the number of valid CSP solutions increases, suggesting that dialogues with higher flexibility are easier to gen-erate correctly. The constraint analysis (Table 4) highlights the importance of domain-level constraints, particularly 𝐶 6, in ensur-ing consistency. These findings indicate that while modern LLMs can partially capture structured constraints, explicit modeling via CSP remains beneficial for enforcing consistency and diagnosing errors. 
+
+5.2.1 Ablation Study. Table 3 presents the results of an ablation study we conducted. The ablation study removes one constraint at a time to measure impact on GCA and VCA. Results indicate that 
+
+𝐶 6 (exact match with KB instances) is the most critical, followed by 𝐶 1 (hard constraints on slot values). 
+
+5.2.2 Additional Results: CSP Solution Distribution. Table 5 reports the distribution of dialogues based on the number of valid CSP solutions. Dialogues with a higher number of solutions tend to allow more flexibility in variable assignments, which correlates with improved LLM performance. 
+
+## 6 Related Work 
+
+TOD systems have been extensively investigated in NLP [ 2]. Recent research has explored the use of neural network architectures for dialogue state tracking [ 20 , 31 , 34 ] and policy learning [ 22 , 30 ]. Sev-eral metrics have been proposed to assess the performance of TOD systems, including task completion rates, user satisfaction scores, and objective measures for system components, such as precision, recall, and F1-score [ 9, 12 , 29 ]. Recent studies have emphasized the Towards Detecting Inconsistencies in End-to-end Generated TODs SCAI, 2026, Melbourne, Australia 
+
+Constraint GCA VCA 
+
+all except C1 0.15 0.45 
+
+all except C2 0.15 0.42 
+
+all except C3 0.15 0.45 
+
+all except C4 0.15 0.46 
+
+all except C5 0.15 0.45 
+
+all except C6 0.21 0.48 
+
+all except dialogic 0.15 0.45 
+
+all except domain 0.23 0.56 Table 3: Ablation study: global and variable consistency under different constraint configurations. Constraint # variables % coverage 
+
+C1 9281 100% 
+
+C2 6084 66% 
+
+C3 1124 12% 
+
+C4 301 3% 
+
+C5 2369 26% 
+
+C6 4257 46% 
+
+Table 4: Number and proportion of variables affected by each constraint. Dataset # dialogues # variables 
+
+All 950 9281 
+
+1 solution 18 54 
+
+2-10 solutions 134 868 
+
+11-100 solutions 286 2332 
+
+101+ solutions 306 3151 
+
+Table 5: Dialogue distribution based on CSP solutions (MiniZ-inc). 
+
+importance of holistic evaluation frameworks that consider mul-tiple aspects of dialogue quality [ 19 , 33 ]. Maintaining consistency and coherence in dialogues is essential for effective communication between users and dialogue systems. Previous research has investi-gated various approaches to ensure dialogue coherence, including coherence modeling [ 8 ], and coherence-based response generation [ 7], aiming to enhance the naturalness and fluency of generated dialogues. Finally, several studies have explored the application of CSPs to language. These include early attempts to ensure co-herence in generated text [ 17 ], model preposition lexicalization using constraints [ 25 ], guide lexical choices through constraints [ 23 ], and treat context-sensitive utterance generation as a CSP [27 ]. Differently to these works, our approach focuses on detecting inconsistencies in already generated TOD dialogues using CSP. 
+
+## 7 Conclusion 
+
+Generative LLMs may produce inconsistent TODs, due to misalign-ment between parametric memory and the TOD 𝐾𝐵 . We have in-troduced a novel approach to detect TOD inconsistencies based on Constraint Satisfaction. Several experiments demonstrate the feasi-bility of the approach, enabling to effectively identify and quantify inconsistencies present in TODs with high accuracy (75.9% with GPT-4o and CSP solver). We also analysed the LLM inconsistencies when tasked to re-lexicalize TODs, finding that they primarily con-cern domain knowledge adherence, resulting in an overall accuracy of only 0.14 at the dialogue level. Our study highlights the potential of CSP-based methodologies in evaluating dialogue consistency and identifying areas for improvement in automated dialogue genera-tion systems. Future research should further explore the application of CSP in task-oriented dialogues and investigate strategies to en-hance the coherence of LLM-generated dialogues, particularly in applications with strong domain knowledge requirements. 
+
+## Limitations 
+
+While the proposed Constraint Satisfaction Problem (CSP)-based approach offers a novel and effective method for detecting incon-sistencies in task-oriented dialogues (TODs), it presents several limitations. The system relies on the explicit mapping of dialogues into variable-constraint representations. Although our method is domain-independent in principle, the process of extracting variables and constraints from dialogues may require customization or adaptation for new domains or dialogue schemas. Our method focuses on identifying inconsistencies and suggest-ing minimal changes for correction, but it does not automatically regenerate fluent or user-aligned responses after such modifications. This leaves the generation of corrected natural language utterances as future work. Finally, although our experimental results are promising, they are based on controlled datasets and manually designed inconsistencies. Further work is needed to assess robustness in more complex or organically generated dialogues. 
+
+## Ethical Considerations 
+
+Use of Scientific Artifacts. We used publicly available task-oriented dialogue datasets for experimentation. These datasets include Mul-tiWOZ [ 6] and variations based on it. Additionally, we used off-the-shelf large language models (LLMs) to generate new dialogues with intentional inconsistencies for controlled evaluation. All code developed for the CSP-based inconsistency detection pipeline is our original contribution and will be made publicly available for research purposes under an open-source license. 
+
+Licensing and Intended Use. All external datasets and models used in this work were employed in accordance with their licenses. Our use was consistent with the intended purpose of the datasets (research), and we explicitly specify that the CSP-based system and associated data artifacts are intended solely for research and edu-cational use. Any derivative dataset created using our framework also inherits this research-only restriction. 
+
+Privacy and Data Integrity. The dialogue data used in this study does not include personally identifiable information (PII), SCAI, 2026, Melbourne, Australia Labruna et al. 
+
+and no effort was made to collect or infer such data. We manually verified the synthetic and benchmark dialogues for inappropriate or offensive content, and none was found. Our system does not involve any human annotation beyond the authors, so no consent or risk disclaimers were required. 
+
+Documentation and Statistics. All artifacts, including the ex-perimental codebase, constraint templates, and synthetic dialogue generation scripts, are provided with the submission. This includes coverage across domains, types of slot-value inconsistencies, and linguistic patterns. We report the number of dialogue examples used in each experiment, as well as their train/test splits, in the ex-perimental section. We also provide accuracy scores as descriptive statistics for the evaluation. 
+
+Computational Resources. Model generation and evaluation were conducted using a single NVIDIA A40 GPU, with a total budget of approximately 40 GPU hours. We do not fine-tune any large models; our work only uses them in inference mode. 
+
+Use of Existing Software. Our system uses standard NLP li-braries such as Hugging Face Transformers and MiniZinc ‘con-straint‘ solver library. All packages were used with default or ex-plicitly documented parameters. 
+
+Human Participants. No human participants were recruited for this study, and no user studies or annotation tasks involving external contributors were conducted. Therefore, issues such as compensation or informed consent do not apply in our setting. 
+
+## References 
+
+[1] Josh Achiam, Steven Adler, Sandhini Agarwal, Lama Ahmad, Ilge Akkaya, Floren-cia Leoni Aleman, Diogo Almeida, Janko Altenschmidt, Sam Altman, Shyamal Anadkat, et al . 2023. Gpt-4 technical report. arXiv preprint arXiv:2303.08774 
+
+(2023). [2] James Allen, George Ferguson, and Amanda Stent. 2001. An architecture for more realistic conversational systems. In Proceedings of the 6th international conference on Intelligent user interfaces . 1–8. [3] Vevake Balaraman, Seyedmostafa Sheikhalishahi, and Bernardo Magnini. 2021. Recent Neural Methods on Dialogue State Tracking for Task-Oriented Dialogue Systems: A Survey. In Proceedings of the 22nd Annual Meeting of the Special Interest Group on Discourse and Dialogue, SIGdial 2021, Singapore and Online, July 29-31, 2021 . Association for Computational Linguistics, 239–251. https: //aclanthology.org/2021.sigdial-1.25 [4] Yejin Bang, Samuel Cahyawijaya, Nayeon Lee, Wenliang Dai, Dan Su, Bryan Wilie, Holy Lovenia, Ziwei Ji, Tiezheng Yu, Willy Chung, et al . 2023. A multitask, multilingual, multimodal evaluation of chatgpt on reasoning, hallucination, and interactivity. arXiv preprint arXiv:2302.04023 (2023). [5] Sally C. Brailsford, Chris N. Potts, and Barbara M. Smith. 1999. Constraint satis-faction problems: Algorithms and applications. European Journal of Operational Research 119, 3 (1999), 557–581. doi:10.1016/S0377-2217(98)00364-6 [6] Paweł Budzianowski, Tsung-Hsien Wen, Bo-Hsiang Tseng, Inigo Casanueva, Stefan Ultes, Osman Ramadan, and Milica Gašić. 2018. MultiWOZ–A Large-Scale Multi-Domain Wizard-of-Oz Dataset for Task-Oriented Dialogue Modelling. 
+
+arXiv preprint arXiv:1810.00278 (2018). [7] Alessandra Cervone and Giuseppe Riccardi. 2020. Is this dialogue coherent? learning from dialogue acts and entities. arXiv preprint arXiv:2006.10157 (2020). [8] Alessandra Cervone, Evgeny Stepanov, and Giuseppe Riccardi. 2018. Coherence models for dialogue. arXiv preprint arXiv:1806.08044 (2018). [9] Hongshen Chen, Xiaorui Liu, Dawei Yin, and Jiliang Tang. 2017. A survey on dialogue systems: Recent advances and new frontiers. Acm Sigkdd Explorations Newsletter 19, 2 (2017), 25–35. [10] Hyundong Cho, Chinnadhurai Sankar, Christopher Lin, Kaushik Ram Sadagopan, Shahin Shayandeh, Asli Celikyilmaz, Jonathan May, and Ahmad Beirami. 2022. Know Thy Strengths: Comprehensive Dialogue State Tracking Diagnostics. In 
+
+Findings of the Association for Computational Linguistics: EMNLP 2022 , Yoav Gold-berg, Zornitsa Kozareva, and Yue Zhang (Eds.). Association for Computational Linguistics, Abu Dhabi, United Arab Emirates, 5345–5359. doi:10.18653/v1/2022. findings-emnlp.391 [11] Geoffrey Chu, Peter J. Stuckey, Anthony Schutt, Thorsten Ehlers, Graeme Gange, and Keith Francis. 2018. Chuffed, a lazy clause generation solver. https://github. com/chuffed/chuffed. [12] Jan Deriu, Alvaro Rodrigo, Arantxa Otegi, Guillermo Echegoyen, Sophie Rosset, Eneko Agirre, and Mark Cieliebak. 2021. Survey on evaluation methods for dialogue systems. Artificial Intelligence Review 54 (2021), 755–810. [13] Abhimanyu Dubey, Abhinav Jauhri, Abhinav Pandey, Abhishek Kadian, Ahmad Al-Dahle, Aiesha Letman, Akhil Mathur, Alan Schelten, Amy Yang, Angela Fan, et al. 2024. The llama 3 herd of models. arXiv preprint arXiv:2407.21783 (2024). [14] Matthew Henderson et al . 2014. The Second Dialog State Tracking Challenge. In 
+
+Proceedings of the 15th Annual Meeting of the Special Interest Group on Discourse and Dialogue (SIGDIAL) . Association for Computational Linguistics, Philadelphia, PA, U.S.A., 263–272. doi:10.3115/v1/W14-4337 [15] Aaron Hurst, Adam Lerer, Adam P Goucher, Adam Perelman, Aditya Ramesh, Aidan Clark, AJ Ostrow, Akila Welihinda, Alan Hayes, Alec Radford, et al . 2024. Gpt-4o system card. arXiv preprint arXiv:2410.21276 (2024). [16] Ziwei Ji et al . 2022. Survey of hallucination in natural language generation. 
+
+Comput. Surveys (2022). [17] Rodger Kibble and Richard Power. 2004. Optimizing referential coherence in text generation. Computational Linguistics 30, 4 (2004), 401–416. [18] Vipin Kumar. 1992. Algorithms for constraint-satisfaction problems: A survey. 
+
+AI magazine 13, 1 (1992), 32–32. [19] Tiziano Labruna, Sofia Brenna, Giovanni Bonetta, and Bernardo Magnini. 2024. Are you a Good Assistant? Assessing LLM Trustability in Task-oriented Dialogues. 
+
+Clic-It 2024 (2024). [20] Tiziano Labruna and Bernardo Magnini. 2023. Addressing Domain Changes in Task-oriented Conversational Agents through Dialogue Adaptation. In Pro-ceedings of the 17th Conference of the European Chapter of the Association for Computational Linguistics: Student Research Workshop . 149–158. [21] Tuan M Lai, Giuseppe Castellucci, Saar Kuzi, Heng Ji, and Oleg Rokhlenko. 2023. External knowledge acquisition for end-to-end document-oriented dialog systems. In Proceedings of the 17th Conference of the European Chapter of the Association for Computational Linguistics . 3633–3647. [22] Bing Liu and Ian Lane. 2017. Iterative policy learning in end-to-end trainable task-oriented neural dialog models. In 2017 IEEE Automatic Speech Recognition and Understanding Workshop (ASRU) . IEEE, 482–489. [23] Kathleen McKeown, Michael Elhadad, and Jacques Robin. 1997. Floating con-straints in lexical choice. (1997). [24] Michael McTear. 2020. Conversational AI: Dialogue Systems, Conversational Agents, and Chatbots. Synthesis Lectures on Human Language Technologies 13, 3 (2020), 1–251. [25] Véronique Moriceau and Patrick Saint-Dizier. 2004. A constraint-based model for preposition choice in natural language generation. Constraint Solving and Language Processing (2004), 124. [26] Nicholas Nethercote, Peter J. Stuckey, Rowan Becket, Simon Brand, Greg J. Duck, and Guido Tack. 2007. MiniZinc: Towards a standard CP modelling language. In CP 2007 (LNCS, Vol. 4741) , Christian Bessiere (Ed.). Springer, 529–543. http: //www.minizinc.org/ [27] Vladimir Popescu, Jean Caelen, and Corneliu Burileanu. 2009. A constraint satisfaction approach to context-sensitive utterance generation in multi-party dialogue systems. International Journal of Speech Technology 12 (2009), 95–112. [28] Libo Qin, Wenbo Pan, Qiguang Chen, Lizi Liao, Zhou Yu, Yue Zhang, Wanxiang Che, and Min Li. 2023. End-to-end Task-oriented Dialogue: A Survey of Tasks, Methods, and Future Directions. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing , Houda Bouamor, Juan Pino, and Kalika Bali (Eds.). Association for Computational Linguistics, Singapore, 5925–5941. doi:10.18653/v1/2023.emnlp-main.363 [29] Sashank Santhanam and Samira Shaikh. 2019. Towards best experiment design for evaluating dialogue system output. arXiv preprint arXiv:1909.10122 (2019). [30] Pei-Hao Su, Milica Gasic, Nikola Mrksic, Lina Rojas-Barahona, Stefan Ultes, David Vandyke, Tsung-Hsien Wen, and Steve Young. 2016. On-line active reward learning for policy optimisation in spoken dialogue systems. arXiv preprint arXiv:1605.07669 (2016). [31] Peng Wu, Bowei Zou, Ridong Jiang, and AiTi Aw. 2020. GCDST: A graph-based and copy-augmented multi-domain dialogue state tracking. In Findings of the Association for Computational Linguistics: EMNLP 2020 . 1063–1073. [32] Steve Young, Milica Gašić, Blaise Thomson, and Jason D Williams. 2013. Pomdp-based statistical spoken dialog systems: A review. Proc. IEEE 101, 5 (2013), 1160–1179. [33] Chen Zhang, Grandee Lee, Luis Fernando D’Haro, and Haizhou Li. 2021. D-score: Holistic dialogue evaluation without reference. IEEE/ACM Transactions on Audio, Speech, and Language Processing 29 (2021), 2502–2516. [34] Jeffrey Zhao, Mahdis Mahdieh, Ye Zhang, Yuan Cao, and Yonghui Wu. 2021. Effective Sequence-to-Sequence Dialogue State Tracking. arXiv preprint arXiv:2108.13990 (2021).

@@ -1,0 +1,39 @@
+{
+  "label": "2026-07-13",
+  "date": "2026-07-13",
+  "generated_at": "2026-07-13T21:38:32",
+  "count": 2,
+  "papers": [
+    {
+      "paper_id": "202607/13/2607.09338v1-towards-detecting-inconsistencies-in-end-to-end-generated-tods",
+      "section": "deep",
+      "title_en": "Towards Detecting Inconsistencies in End-to-end Generated TODs",
+      "authors": "Tiziano Labruna, Giovanni Bonetta, Bernardo Magnini",
+      "date": "2026-07-10",
+      "pdf": "https://arxiv.org/pdf/2607.09338v1",
+      "score": "8.0",
+      "evidence": "检测大语言模型生成对话中的不一致性与幻觉",
+      "tldr": "端到端生成的任务导向对话（TOD）系统中，大语言模型常产生幻觉导致响应与领域知识不一致，引发严重任务失败。本文将TOD概念化为约束满足问题（CSP），把引用领域知识的对话片段作为变量，将轮次连贯性与知识一致性作为约束，构建检测流水线并利用CSP求解器寻找有效解。实验表明，该方法在检测不一致性方面具有高准确性，并能建议最小修改量。该研究为保障端到端TOD系统的可靠性与知识一致性提供了有效的自动化工具。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Generative AI is profoundly transforming the core technologies behind conversational systems, shifting from component-based to end-to-end approaches. However, Large Language Models (LLMs) may still generate inconsistencies, a critical issue particularly in Task-Oriented Dialogues (TODs), where system responses must strictly adhere to information from a domain knowledge base (e.g., restaurants in a city). A single hallucination (e.g., suggesting a non-existent restaurant) can lead to severe task failures. We investigate a method for automatically detecting inconsistencies by conceptualizing TODs as a Constraint Satisfaction Problem (CSP), where variables represent dialogue segments referencing the conversational domain, and constraints among variables capture dialogue properties such as turn coherence and adherence to domain knowledge. We propose a pipeline that first identifies variables in a target dialogue and then applies a CSP solver to identify valid solutions. By comparing the target dialogue with valid variable assignments, we can detect inconsistencies and suggest minimal changes to ensure dialogue consistency. We demonstrate the high accuracy of the CSP-based approach in detecting inconsistencies, and provide a detailed analysis of our findings.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/13/2607.04683v2-does-it-fail-to-see-or-fail-to-know-attributing-errors-in-vision-language-models",
+      "section": "quick",
+      "title_en": "Does It Fail to See or Fail to Know? Attributing Errors in Vision-Language Models",
+      "authors": "Khang Nhat Hoang Vo, Artem Vazhentsev, Artem Shelmanov, Timothy Baldwin, Yova Kementchedjhieva",
+      "date": "2026-07-06",
+      "pdf": "https://arxiv.org/pdf/2607.04683v2",
+      "score": "6.0",
+      "evidence": "归因视觉语言模型中的失败模式",
+      "tldr": "视觉语言模型(VLM)在处理需超越表面视觉的知识时易出错，且现有研究将错误视为整体，缺乏对失败原因的细粒度诊断。本文提出统一框架解耦VLM的感知、识别与知识检索等失败模式，并探究解码前信号对失败源的预测能力。发现识别相关失败由视觉token表征最佳捕获，而识别后失败由提示条件隐藏状态更好捕获，且均可于解码前预测。该预生成信号实现了高效的失败源预测，使不确定样本能被精准路由至图像修复、实体识别或外部检索等针对性干预。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Vision-language models (VLMs) perform well on visual question answering with high-quality images but struggle when questions require knowledge beyond what is clearly and directly visible. In such settings, uncertainty quantification should not only indicate whether the model is likely to fail but also diagnose why it is uncertain, across dimensions such as perception, entity recognition, and knowledge retrieval. While prior work has focused on individual failure modes in isolation or treated incorrect answers as monolithic failures, we propose a unified framework for disentangling these failure modes and investigate whether pre-generation signals can predict these failure sources. Across a range of datasets and model families, we find a consistent pattern in VLM errors: some failures arise from visual or recognition bottlenecks, while others persist after the relevant entity is identified. Our main finding is that these failure sources can be predicted before decoding: recognition-related failures are best captured by visual-token representations, while failures that remain after recognition are better captured by prompt-conditioned hidden states. This pre-generation signal enables efficient failure-source prediction before the model produces an answer, allowing uncertain cases to be routed to targeted interventions such as image repair, entity recognition support, or external retrieval.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "errors": []
+}

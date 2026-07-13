@@ -1,0 +1,95 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-13T21:34:06.837587+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 1,
+    "deep_cap": 6,
+    "deep_selected": 1,
+    "quick_candidates": 1,
+    "quick_skim_target": 11,
+    "quick_selected": 1
+  },
+  "deep_dive": [
+    {
+      "id": "2607.09338v1",
+      "source": "arxiv",
+      "title": "Towards Detecting Inconsistencies in End-to-end Generated TODs",
+      "abstract": "Generative AI is profoundly transforming the core technologies behind conversational systems, shifting from component-based to end-to-end approaches. However, Large Language Models (LLMs) may still generate inconsistencies, a critical issue particularly in Task-Oriented Dialogues (TODs), where system responses must strictly adhere to information from a domain knowledge base (e.g., restaurants in a city). A single hallucination (e.g., suggesting a non-existent restaurant) can lead to severe task failures. We investigate a method for automatically detecting inconsistencies by conceptualizing TODs as a Constraint Satisfaction Problem (CSP), where variables represent dialogue segments referencing the conversational domain, and constraints among variables capture dialogue properties such as turn coherence and adherence to domain knowledge. We propose a pipeline that first identifies variables in a target dialogue and then applies a CSP solver to identify valid solutions. By comparing the target dialogue with valid variable assignments, we can detect inconsistencies and suggest minimal changes to ensure dialogue consistency. We demonstrate the high accuracy of the CSP-based approach in detecting inconsistencies, and provide a detailed analysis of our findings.",
+      "authors": [
+        "Tiziano Labruna",
+        "Giovanni Bonetta",
+        "Bernardo Magnini"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.SC"
+      ],
+      "published": "2026-07-10T12:19:59+00:00",
+      "link": "https://arxiv.org/pdf/2607.09338v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Detecting inconsistencies and hallucinations in LLM-generated dialogues",
+      "llm_evidence_cn": "检测大语言模型生成对话中的不一致性与幻觉",
+      "llm_evidence": "检测大语言模型生成对话中的不一致性与幻觉",
+      "canonical_evidence": "检测大语言模型生成对话中的不一致性与幻觉",
+      "llm_tldr_en": "LLMs in task-oriented dialogues often generate inconsistencies or hallucinations. This paper proposes a method to automatically detect these by modeling the dialogue as a Constraint Satisfaction Problem, ensuring responses adhere to domain knowledge.",
+      "llm_tldr_cn": "大语言模型在端到端任务导向对话中容易产生不一致或幻觉响应，例如推荐不存在的餐厅，这会导致严重的任务失败。针对此问题，本文提出一种自动检测不一致性的创新方法，将任务导向对话概念化为约束满足问题，其中变量表示引用对话领域的对话片段，约束捕捉领域关系，从而有效检测并定位对话中的幻觉内容，提升系统可靠性。",
+      "llm_tldr": "大语言模型在端到端任务导向对话中容易产生不一致或幻觉响应，例如推荐不存在的餐厅，这会导致严重的任务失败。针对此问题，本文提出一种自动检测不一致性的创新方法，将任务导向对话概念化为约束满足问题，其中变量表示引用对话领域的对话片段，约束捕捉领域关系，从而有效检测并定位对话中的幻觉内容，提升系统可靠性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.04683v2",
+      "source": "arxiv",
+      "title": "Does It Fail to See or Fail to Know? Attributing Errors in Vision-Language Models",
+      "abstract": "Vision-language models (VLMs) perform well on visual question answering with high-quality images but struggle when questions require knowledge beyond what is clearly and directly visible. In such settings, uncertainty quantification should not only indicate whether the model is likely to fail but also diagnose why it is uncertain, across dimensions such as perception, entity recognition, and knowledge retrieval. While prior work has focused on individual failure modes in isolation or treated incorrect answers as monolithic failures, we propose a unified framework for disentangling these failure modes and investigate whether pre-generation signals can predict these failure sources. Across a range of datasets and model families, we find a consistent pattern in VLM errors: some failures arise from visual or recognition bottlenecks, while others persist after the relevant entity is identified. Our main finding is that these failure sources can be predicted before decoding: recognition-related failures are best captured by visual-token representations, while failures that remain after recognition are better captured by prompt-conditioned hidden states. This pre-generation signal enables efficient failure-source prediction before the model produces an answer, allowing uncertain cases to be routed to targeted interventions such as image repair, entity recognition support, or external retrieval.",
+      "authors": [
+        "Khang Nhat Hoang Vo",
+        "Artem Vazhentsev",
+        "Artem Shelmanov",
+        "Timothy Baldwin",
+        "Yova Kementchedjhieva"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.CL"
+      ],
+      "published": "2026-07-06T05:11:45+00:00",
+      "link": "https://arxiv.org/pdf/2607.04683v2",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Attributing failure modes in VLMs",
+      "llm_evidence_cn": "归因视觉语言模型中的失败模式",
+      "llm_evidence": "归因视觉语言模型中的失败模式",
+      "canonical_evidence": "归因视觉语言模型中的失败模式",
+      "llm_tldr_en": "This paper proposes a unified framework to disentangle failure modes in VLMs (perception, entity recognition, knowledge retrieval) and investigates using pre-generation signals to predict these error sources.",
+      "llm_tldr_cn": "视觉语言模型在处理需要超越视觉可见知识的问题时容易出错，且现有方法未能细粒度区分失败原因。本文提出了一个统一框架来解耦感知、实体识别和知识检索等失败模式，并研究了利用生成前信号预测这些错误源的方法。实验表明该框架能有效归因错误来源，有助于提升模型的不确定性量化与可靠性。",
+      "llm_tldr": "视觉语言模型在处理需要超越视觉可见知识的问题时容易出错，且现有方法未能细粒度区分失败原因。本文提出了一个统一框架来解耦感知、实体识别和知识检索等失败模式，并研究了利用生成前信号预测这些错误源的方法。实验表明该框架能有效归因错误来源，有助于提升模型的不确定性量化与可靠性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}
