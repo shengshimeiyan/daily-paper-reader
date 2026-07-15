@@ -6,29 +6,44 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-13
-- 运行时间：2026-07-13 21:38:07 UTC
+- 最新运行日期：2026-07-15
+- 运行时间：2026-07-15 20:22:14 UTC
 - 运行状态：成功
-- 本次总论文数：2
-- 精读区：1
-- 速读区：1
+- 本次总论文数：7
+- 精读区：5
+- 速读区：2
 
 ### 今日简报（AI）
-- 今日共生成 2 篇推荐（精读 1 篇，速读 1 篇）
-- 精读：《Towards Detecting Inconsistencies in End-to-end Generated TODs》（8.0/10）
-- 速读：《Does It Fail to See or Fail to Know? Attributing Errors in Vision-Language Models》（6.0/10）
+- 今日共生成 7 篇推荐（精读 5 篇，速读 2 篇）
+- 精读：《Hallucination Detector: A hybrid LLM and Semantic Scholar tool calling for detecting hallucination in scientific literature on AtomGPT.org》（9.0/10）, 《Hallucination Detection in Large Language Models Using Diversion Decoding》（9.0/10）
+- 速读：《The Illusion of Robustness: Aggregate Accuracy Hides Prediction Flips under Task-Irrelevant Context》（7.0/10）, 《Tool-Adaptive LLM Reranker》（6.0/10）
 - 这些结果覆盖了当下较热的方向，建议先看精读区论文的关键问题与方法。
-- 详情：[/202607/13/README](/202607/13/README)
+- 详情：[/202607/15/README](/202607/15/README)
 
 ### 精读区论文标签
-1. [Towards Detecting Inconsistencies in End-to-end Generated TODs](/202607/13/2607.09338v1-towards-detecting-inconsistencies-in-end-to-end-generated-tods)  
+1. [Hallucination Detector: A hybrid LLM and Semantic Scholar tool calling for detecting hallucination in scientific literature on AtomGPT.org](/202607/15/2607.09774v1-hallucination-detector-a-hybrid-llm-and-semantic-scholar-tool-calling-for-detecting-hallucination-in-scientific-literature-on-atomgptorg)  
+   标签：评分：9.0/10、query:llm-halluc
+   evidence：检测科学文献中的幻觉引用
+2. [Hallucination Detection in Large Language Models Using Diversion Decoding](/202607/15/2607.10476v1-hallucination-detection-in-large-language-models-using-diversion-decoding)  
+   标签：评分：9.0/10、query:llm-halluc
+   evidence：使用分流解码检测幻觉
+3. [To Answer or to Abstain: Mitigating Search-Agent Hallucinations via Abstention-Aware Reinforcement Learning](/202607/15/2607.10738v1-to-answer-or-to-abstain-mitigating-search-agent-hallucinations-via-abstention-aware-reinforcement-learning)  
+   标签：评分：9.0/10、query:llm-halluc
+   evidence：通过强化学习缓解搜索智能体幻觉
+4. [EvidentialRAG: Quantifying and Mitigating Information Conflict in Multi-Source Retrieval-Augmented Generation via Evidential Deep Learning](/202607/15/2607.10491v1-evidentialrag-quantifying-and-mitigating-information-conflict-in-multi-source-retrieval-augmented-generation-via-evidential-deep-learning)  
    标签：评分：8.0/10、query:llm-halluc
-   evidence：检测大语言模型生成对话中的不一致性与幻觉
+   evidence：缓解检索增强生成中的信息冲突
+5. [Knowledgeless Language Models: Suppressing Parametric Recall for Evidence-Grounded Language Modeling](/202607/15/2607.12831v1-knowledgeless-language-models-suppressing-parametric-recall-for-evidence-grounded-language-modeling)  
+   标签：评分：8.0/10、query:llm-halluc
+   evidence：抑制参数化回忆以实现基于证据的推理
 
 ### 速读区论文标签
-1. [Does It Fail to See or Fail to Know? Attributing Errors in Vision-Language Models](/202607/13/2607.04683v2-does-it-fail-to-see-or-fail-to-know-attributing-errors-in-vision-language-models)  
+1. [The Illusion of Robustness: Aggregate Accuracy Hides Prediction Flips under Task-Irrelevant Context](/202607/15/2607.12963v1-the-illusion-of-robustness-aggregate-accuracy-hides-prediction-flips-under-task-irrelevant-context)  
+   标签：评分：7.0/10、query:llm-halluc
+   evidence：长无关上下文中的预测不稳定性
+2. [Tool-Adaptive LLM Reranker](/202607/15/2607.10555v1-tool-adaptive-llm-reranker)  
    标签：评分：6.0/10、query:llm-halluc
-   evidence：归因视觉语言模型中的失败模式
+   evidence：通过自适应工具调用缓解事实幻觉
 
 
 <div class="dpr-home-promo-card">
