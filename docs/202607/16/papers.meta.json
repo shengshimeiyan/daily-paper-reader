@@ -1,0 +1,54 @@
+{
+  "label": "2026-07-16",
+  "date": "2026-07-16",
+  "generated_at": "2026-07-16T21:26:42",
+  "count": 3,
+  "papers": [
+    {
+      "paper_id": "202607/16/2607.13596v1-protective-capacity-hallucination-when-large-language-models-claim-nonexistent-capabilities",
+      "section": "deep",
+      "title_en": "Protective Capacity Hallucination: When Large Language Models Claim Nonexistent Capabilities",
+      "authors": "Eunna Lee, Jungpyo Nam, Sunjun Hwang",
+      "date": "2026-07-15",
+      "pdf": "https://arxiv.org/pdf/2607.13596v1",
+      "score": "9.0",
+      "evidence": "识别和分析大语言模型中的保护能力幻觉",
+      "tldr": "当大语言模型扮演弱势用户保护者且未明确能力边界时，常会虚构自身无法执行的物理或机构保护行动，此现象被称为保护能力幻觉（PCH）。研究通过8个模型和13600次会话的三阶段实验发现，PCH受情境严重度与交互格式共同调节。多方对话输入在普通服务领域极易诱发PCH，但在安全对齐覆盖的亲密伴侣冲突中则被抑制。这揭示了角色分配与能力边界规范间的部署设计鸿沟，指出在部署端明确能力边界是关键缓解目标。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "When cast as the protector of a vulnerable user yet given no explicit capability boundary, a large language model (LLM) may respond not by acknowledging its limits but by claiming to have taken -- or to be taking -- a real-world protective action it cannot perform, such as contacting emergency services or administering care. We term this phenomenon Protective Capacity Hallucination (PCH): a self-referential misattribution in which a model, acting in a protective role, asserts physical or institutional agency exceeding its affordances as a language model. In a three-phase study spanning eight LLMs and 13{,}600 sessions, we find PCH jointly gated by situational severity and interactional format: multi-party dialogic input drives it toward ceiling in most models across ordinary service domains, whereas in intimate-partner conflict -- a domain explicitly covered by safety alignment -- it remains at floor in all eight models despite greater physical severity. We interpret PCH as the signature of a deployment-design gap between role assignment and capability-boundary specification: a by-product of partial alignment in which a universally trained pressure to help outruns a domain-selective specification of how to help. Because suppression tracks alignment coverage rather than severity, deployment-side specification of capability boundaries emerges as a general mitigation target.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/16/2607.13712v1-groc-po-grounded-context-preference-optimization-for-truthful-multimodal-llms",
+      "section": "deep",
+      "title_en": "Groc-PO: Grounded Context Preference Optimization for Truthful Multimodal LLMs",
+      "authors": "Zhixiao Zheng, Zheren Fu, Zhiyuan Yao, Chunxiao Liu, Dongming Zhang, Zhendong Mao",
+      "date": "2026-07-15",
+      "pdf": "https://arxiv.org/pdf/2607.13712v1",
+      "score": "8.0",
+      "evidence": "缓解多模态大语言模型中的视觉幻觉和不忠实推理",
+      "tldr": "多模态大语言模型常受视觉幻觉和内容捏造等不真实问题困扰。现有基于人类偏好的对齐方法如DPO通常仅在最终答案层面优化，难以纠正早期基础阶段的错误传播。为此，本文提出Groc-PO框架，构建包含对象基础、上下文基础和基础推理三阶段的GCPD数据集，通过在多阶段引入显式偏好监督抑制错误传播。实验表明，Groc-PO在缓解幻觉和忠实推理上优于标准DPO，证明了显式基础监督对可信多模态推理的价值。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Despite the rapid progress of Multimodal Large Language Models (MLLMs), they still suffer from untruthfulness issues, such as visual hallucinations, content fabrication, and unfaithful reasoning, which substantially undermine their faithfulness and practical utility. Alignment methods based on human preference, such as Direct Preference Optimization (DPO), have been widely adopted to address these issues. However, multimodal reasoning errors often propagate across stages, and final-answer errors can often be traced to mistakes in early grounding stages, yet standard DPO typically applies preference optimization at the final-answer level. This credit-assignment challenge means that supervision for early grounding stages is indirect rather than stage-specific, making it difficult to suppress error propagation arising from grounding drift and context inconsistency. To address this, we propose Grounded Context Preference Optimization (Groc-PO), a grounded preference optimization framework for MLLMs. We further construct the Grounded Context Preference Dataset (GCPD), organizing multi-stage preference samples around three stages of Object Grounding, Contextual Grounding, and Grounded Reasoning, to capture the formation, integration, and utilization of grounded context. By introducing more explicit preference supervision over multiple grounded stages, Groc-PO strengthens context-dependent reasoning and mitigates cross-stage error propagation. Extensive experiments show that, compared with standard DPO and other strong baselines, Groc-PO achieves improved performance in hallucination mitigation, faithful reasoning, and overall reliability, supporting the value of more explicit grounded supervision for trustworthy multimodal reasoning.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/16/2607.10034v1-mlps-are-hebbians-constructing-efficient-fact-storing-mlps-for-transformers",
+      "section": "quick",
+      "title_en": "MLPs are Hebbians: Constructing Efficient Fact-Storing MLPs for Transformers",
+      "authors": "Roberto Garcia, Jerry Liu, Ronny Junkins, Sabri Eyuboglu, Atri Rudra, Christopher Ré",
+      "date": "2026-07-10",
+      "pdf": "https://arxiv.org/pdf/2607.10034v1",
+      "score": "6.0",
+      "evidence": "LLM中事实存储的机制可解释性",
+      "tldr": "大语言模型将事实知识存储在MLP层中，但现有机制可解释性模型无法解释其为何能达到信息论最优存储率。本文通过分析MLP的解码裕度，提出了首个与Transformer兼容的存储事实的MLP闭式构造方法。该构造在各向同性嵌入下实现了信息论最优存储容量扩展，在相同事实数量下所需参数比先前构造少10至104倍，且在Transformer中同样有效。本研究不仅从理论上解释了最优存储现象，还证明了通过替换MLP实现模块化事实编辑的可行性。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Large language models (LLMs) store factual knowledge in their parameters. While recent work has shown that this knowledge resides in MLP layers, existing constructive and mechanistic interpretability models of fact-storage in LLMs fail to explain the surprising empirical phenomenon that they store facts at an information-theoretically optimal rate. In this work, we develop a theoretical account of this phenomenon. We develop the first Transformer-compatible fact-storing MLP closed-form construction that satisfies the following three properties empirically observed in LLMs: it (i) attains optimal fact storage scaling, (ii) handles arbitrary input/output geometries, and (iii) works inside Transformers. Key to our work is to analyze the decoding margin of MLPs, whereas prior work only studies MLP fact storage. Under isotropic embeddings, our construction achieves information-theoretically optimal storage capacity scaling and requires $10$-$104\\times$ fewer parameters at matched fact count than prior constructions. For arbitrary key and value embeddings, we show that our construction attains the same storage capacity scaling, up to penalization factors depending on the embedding geometries. Moreover, we demonstrate that our constructed MLPs can be used within Transformer blocks for factual recall tasks at optimal capacity scaling, requiring $15$-$63\\times$ fewer parameters at matched fact count than prior constructions. Finally, as a proof-of-concept, we show that fact-storing MLPs enable modular fact editing by swapping a Transformer's MLP with a new one.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "errors": []
+}

@@ -6,44 +6,32 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-15
-- 运行时间：2026-07-15 20:22:14 UTC
+- 最新运行日期：2026-07-16
+- 运行时间：2026-07-16 21:26:17 UTC
 - 运行状态：成功
-- 本次总论文数：7
-- 精读区：5
-- 速读区：2
+- 本次总论文数：3
+- 精读区：2
+- 速读区：1
 
 ### 今日简报（AI）
-- 今日共生成 7 篇推荐（精读 5 篇，速读 2 篇）
-- 精读：《Hallucination Detector: A hybrid LLM and Semantic Scholar tool calling for detecting hallucination in scientific literature on AtomGPT.org》（9.0/10）, 《Hallucination Detection in Large Language Models Using Diversion Decoding》（9.0/10）
-- 速读：《The Illusion of Robustness: Aggregate Accuracy Hides Prediction Flips under Task-Irrelevant Context》（7.0/10）, 《Tool-Adaptive LLM Reranker》（6.0/10）
+- 今日共生成 3 篇推荐（精读 2 篇，速读 1 篇）
+- 精读：《Protective Capacity Hallucination: When Large Language Models Claim Nonexistent Capabilities》（9.0/10）, 《Groc-PO: Grounded Context Preference Optimization for Truthful Multimodal LLMs》（8.0/10）
+- 速读：《MLPs are Hebbians: Constructing Efficient Fact-Storing MLPs for Transformers》（6.0/10）
 - 这些结果覆盖了当下较热的方向，建议先看精读区论文的关键问题与方法。
-- 详情：[/202607/15/README](/202607/15/README)
+- 详情：[/202607/16/README](/202607/16/README)
 
 ### 精读区论文标签
-1. [Hallucination Detector: A hybrid LLM and Semantic Scholar tool calling for detecting hallucination in scientific literature on AtomGPT.org](/202607/15/2607.09774v1-hallucination-detector-a-hybrid-llm-and-semantic-scholar-tool-calling-for-detecting-hallucination-in-scientific-literature-on-atomgptorg)  
+1. [Protective Capacity Hallucination: When Large Language Models Claim Nonexistent Capabilities](/202607/16/2607.13596v1-protective-capacity-hallucination-when-large-language-models-claim-nonexistent-capabilities)  
    标签：评分：9.0/10、query:llm-halluc
-   evidence：检测科学文献中的幻觉引用
-2. [Hallucination Detection in Large Language Models Using Diversion Decoding](/202607/15/2607.10476v1-hallucination-detection-in-large-language-models-using-diversion-decoding)  
-   标签：评分：9.0/10、query:llm-halluc
-   evidence：使用分流解码检测幻觉
-3. [To Answer or to Abstain: Mitigating Search-Agent Hallucinations via Abstention-Aware Reinforcement Learning](/202607/15/2607.10738v1-to-answer-or-to-abstain-mitigating-search-agent-hallucinations-via-abstention-aware-reinforcement-learning)  
-   标签：评分：9.0/10、query:llm-halluc
-   evidence：通过强化学习缓解搜索智能体幻觉
-4. [EvidentialRAG: Quantifying and Mitigating Information Conflict in Multi-Source Retrieval-Augmented Generation via Evidential Deep Learning](/202607/15/2607.10491v1-evidentialrag-quantifying-and-mitigating-information-conflict-in-multi-source-retrieval-augmented-generation-via-evidential-deep-learning)  
+   evidence：识别和分析大语言模型中的保护能力幻觉
+2. [Groc-PO: Grounded Context Preference Optimization for Truthful Multimodal LLMs](/202607/16/2607.13712v1-groc-po-grounded-context-preference-optimization-for-truthful-multimodal-llms)  
    标签：评分：8.0/10、query:llm-halluc
-   evidence：缓解检索增强生成中的信息冲突
-5. [Knowledgeless Language Models: Suppressing Parametric Recall for Evidence-Grounded Language Modeling](/202607/15/2607.12831v1-knowledgeless-language-models-suppressing-parametric-recall-for-evidence-grounded-language-modeling)  
-   标签：评分：8.0/10、query:llm-halluc
-   evidence：抑制参数化回忆以实现基于证据的推理
+   evidence：缓解多模态大语言模型中的视觉幻觉和不忠实推理
 
 ### 速读区论文标签
-1. [The Illusion of Robustness: Aggregate Accuracy Hides Prediction Flips under Task-Irrelevant Context](/202607/15/2607.12963v1-the-illusion-of-robustness-aggregate-accuracy-hides-prediction-flips-under-task-irrelevant-context)  
-   标签：评分：7.0/10、query:llm-halluc
-   evidence：长无关上下文中的预测不稳定性
-2. [Tool-Adaptive LLM Reranker](/202607/15/2607.10555v1-tool-adaptive-llm-reranker)  
+1. [MLPs are Hebbians: Constructing Efficient Fact-Storing MLPs for Transformers](/202607/16/2607.10034v1-mlps-are-hebbians-constructing-efficient-fact-storing-mlps-for-transformers)  
    标签：评分：6.0/10、query:llm-halluc
-   evidence：通过自适应工具调用缓解事实幻觉
+   evidence：LLM中事实存储的机制可解释性
 
 
 <div class="dpr-home-promo-card">

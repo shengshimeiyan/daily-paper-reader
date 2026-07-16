@@ -1,0 +1,135 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-16T21:20:46.195486+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 2,
+    "deep_cap": 6,
+    "deep_selected": 2,
+    "quick_candidates": 1,
+    "quick_skim_target": 11,
+    "quick_selected": 1
+  },
+  "deep_dive": [
+    {
+      "id": "2607.13596v1",
+      "source": "arxiv",
+      "title": "Protective Capacity Hallucination: When Large Language Models Claim Nonexistent Capabilities",
+      "abstract": "When cast as the protector of a vulnerable user yet given no explicit capability boundary, a large language model (LLM) may respond not by acknowledging its limits but by claiming to have taken -- or to be taking -- a real-world protective action it cannot perform, such as contacting emergency services or administering care. We term this phenomenon Protective Capacity Hallucination (PCH): a self-referential misattribution in which a model, acting in a protective role, asserts physical or institutional agency exceeding its affordances as a language model. In a three-phase study spanning eight LLMs and 13{,}600 sessions, we find PCH jointly gated by situational severity and interactional format: multi-party dialogic input drives it toward ceiling in most models across ordinary service domains, whereas in intimate-partner conflict -- a domain explicitly covered by safety alignment -- it remains at floor in all eight models despite greater physical severity. We interpret PCH as the signature of a deployment-design gap between role assignment and capability-boundary specification: a by-product of partial alignment in which a universally trained pressure to help outruns a domain-selective specification of how to help. Because suppression tracks alignment coverage rather than severity, deployment-side specification of capability boundaries emerges as a general mitigation target.",
+      "authors": [
+        "Eunna Lee",
+        "Jungpyo Nam",
+        "Sunjun Hwang"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-15T08:39:10+00:00",
+      "link": "https://arxiv.org/pdf/2607.13596v1",
+      "tags": [
+        "keyword:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Identifying and analyzing Protective Capacity Hallucination in LLMs",
+      "llm_evidence_cn": "识别和分析大语言模型中的保护能力幻觉",
+      "llm_evidence": "识别和分析大语言模型中的保护能力幻觉",
+      "canonical_evidence": "识别和分析大语言模型中的保护能力幻觉",
+      "llm_tldr_en": "Identifies Protective Capacity Hallucination (PCH) where LLMs falsely claim real-world protective actions they cannot perform. A study of eight LLMs reveals PCH is driven by situational severity and multi-party dialogic input, highlighting risks in safety-critical applications.",
+      "llm_tldr_cn": "本文揭示了一种名为保护能力幻觉（PCH）的大语言模型幻觉现象，即模型在充当保护者时虚假声称正在执行其无法完成的现实保护行动。通过对八个大语言模型和13600个会话的三阶段系统研究发现，PCH的发生受情境严重性和多方对话输入的共同驱动，多轮对话输入会显著加剧该现象，这凸显了安全关键应用中的潜在风险。",
+      "llm_tldr": "本文揭示了一种名为保护能力幻觉（PCH）的大语言模型幻觉现象，即模型在充当保护者时虚假声称正在执行其无法完成的现实保护行动。通过对八个大语言模型和13600个会话的三阶段系统研究发现，PCH的发生受情境严重性和多方对话输入的共同驱动，多轮对话输入会显著加剧该现象，这凸显了安全关键应用中的潜在风险。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "hallucination in large language models",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.13712v1",
+      "source": "arxiv",
+      "title": "Groc-PO: Grounded Context Preference Optimization for Truthful Multimodal LLMs",
+      "abstract": "Despite the rapid progress of Multimodal Large Language Models (MLLMs), they still suffer from untruthfulness issues, such as visual hallucinations, content fabrication, and unfaithful reasoning, which substantially undermine their faithfulness and practical utility. Alignment methods based on human preference, such as Direct Preference Optimization (DPO), have been widely adopted to address these issues. However, multimodal reasoning errors often propagate across stages, and final-answer errors can often be traced to mistakes in early grounding stages, yet standard DPO typically applies preference optimization at the final-answer level. This credit-assignment challenge means that supervision for early grounding stages is indirect rather than stage-specific, making it difficult to suppress error propagation arising from grounding drift and context inconsistency. To address this, we propose Grounded Context Preference Optimization (Groc-PO), a grounded preference optimization framework for MLLMs. We further construct the Grounded Context Preference Dataset (GCPD), organizing multi-stage preference samples around three stages of Object Grounding, Contextual Grounding, and Grounded Reasoning, to capture the formation, integration, and utilization of grounded context. By introducing more explicit preference supervision over multiple grounded stages, Groc-PO strengthens context-dependent reasoning and mitigates cross-stage error propagation. Extensive experiments show that, compared with standard DPO and other strong baselines, Groc-PO achieves improved performance in hallucination mitigation, faithful reasoning, and overall reliability, supporting the value of more explicit grounded supervision for trustworthy multimodal reasoning.",
+      "authors": [
+        "Zhixiao Zheng",
+        "Zheren Fu",
+        "Zhiyuan Yao",
+        "Chunxiao Liu",
+        "Dongming Zhang",
+        "Zhendong Mao"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.AI",
+        "cs.CL",
+        "cs.MM"
+      ],
+      "published": "2026-07-15T11:28:27+00:00",
+      "link": "https://arxiv.org/pdf/2607.13712v1",
+      "tags": [
+        "keyword:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Mitigating visual hallucinations and unfaithful reasoning in MLLMs",
+      "llm_evidence_cn": "缓解多模态大语言模型中的视觉幻觉和不忠实推理",
+      "llm_evidence": "缓解多模态大语言模型中的视觉幻觉和不忠实推理",
+      "canonical_evidence": "缓解多模态大语言模型中的视觉幻觉和不忠实推理",
+      "llm_tldr_en": "To address visual hallucinations in Multimodal LLMs, this paper proposes Grounded Context Preference Optimization (Groc-PO). It applies preference optimization at early grounding stages to correct error propagation, improving faithfulness and mitigating hallucinations effectively.",
+      "llm_tldr_cn": "针对多模态大语言模型中存在的视觉幻觉、内容捏造和不忠实推理等不真实问题，本文提出了基于上下文的偏好优化方法（Groc-PO）。由于多模态推理错误往往跨阶段传播，标准偏好优化难以纠正早期错误，因此该方法在早期基础阶段应用偏好优化以解决信用分配挑战，从而有效提升了模型的忠实度并缓解了幻觉现象。",
+      "llm_tldr": "针对多模态大语言模型中存在的视觉幻觉、内容捏造和不忠实推理等不真实问题，本文提出了基于上下文的偏好优化方法（Groc-PO）。由于多模态推理错误往往跨阶段传播，标准偏好优化难以纠正早期错误，因此该方法在早期基础阶段应用偏好优化以解决信用分配挑战，从而有效提升了模型的忠实度并缓解了幻觉现象。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.10034v1",
+      "source": "arxiv",
+      "title": "MLPs are Hebbians: Constructing Efficient Fact-Storing MLPs for Transformers",
+      "abstract": "Large language models (LLMs) store factual knowledge in their parameters. While recent work has shown that this knowledge resides in MLP layers, existing constructive and mechanistic interpretability models of fact-storage in LLMs fail to explain the surprising empirical phenomenon that they store facts at an information-theoretically optimal rate. In this work, we develop a theoretical account of this phenomenon. We develop the first Transformer-compatible fact-storing MLP closed-form construction that satisfies the following three properties empirically observed in LLMs: it (i) attains optimal fact storage scaling, (ii) handles arbitrary input/output geometries, and (iii) works inside Transformers. Key to our work is to analyze the decoding margin of MLPs, whereas prior work only studies MLP fact storage. Under isotropic embeddings, our construction achieves information-theoretically optimal storage capacity scaling and requires $10$-$104\\times$ fewer parameters at matched fact count than prior constructions. For arbitrary key and value embeddings, we show that our construction attains the same storage capacity scaling, up to penalization factors depending on the embedding geometries. Moreover, we demonstrate that our constructed MLPs can be used within Transformer blocks for factual recall tasks at optimal capacity scaling, requiring $15$-$63\\times$ fewer parameters at matched fact count than prior constructions. Finally, as a proof-of-concept, we show that fact-storing MLPs enable modular fact editing by swapping a Transformer's MLP with a new one.",
+      "authors": [
+        "Roberto Garcia",
+        "Jerry Liu",
+        "Ronny Junkins",
+        "Sabri Eyuboglu",
+        "Atri Rudra",
+        "Christopher Ré"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-07-10T23:22:48+00:00",
+      "link": "https://arxiv.org/pdf/2607.10034v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Mechanistic interpretability of fact-storage in LLMs",
+      "llm_evidence_cn": "LLM中事实存储的机制可解释性",
+      "llm_evidence": "LLM中事实存储的机制可解释性",
+      "canonical_evidence": "LLM中事实存储的机制可解释性",
+      "llm_tldr_en": "This paper develops a theoretical account of how LLMs store factual knowledge at an optimal rate, proposing the first Transformer-compatible fact-storing MLP closed-form construction that achieves optimal scaling and handles arbitrary geometries.",
+      "llm_tldr_cn": "现有大模型事实存储的机制可解释性模型无法解释其以信息论最优速率存储事实的现象。本文提出首个与Transformer兼容的事实存储MLP闭式构造，证明了其能达到最优事实存储缩放、处理任意输入输出几何形状并在Transformer内工作，为理解大模型事实存储与幻觉问题提供了理论基础。",
+      "llm_tldr": "现有大模型事实存储的机制可解释性模型无法解释其以信息论最优速率存储事实的现象。本文提出首个与Transformer兼容的事实存储MLP闭式构造，证明了其能达到最优事实存储缩放、处理任意输入输出几何形状并在Transformer内工作，为理解大模型事实存储与幻觉问题提供了理论基础。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "factual consistency in text generation",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}
