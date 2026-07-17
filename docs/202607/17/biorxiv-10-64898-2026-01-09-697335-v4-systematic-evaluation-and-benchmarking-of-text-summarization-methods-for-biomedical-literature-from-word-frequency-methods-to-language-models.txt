@@ -1,0 +1,2005 @@
+Title: A systematic evaluation and benchmarking of text summarization methods for biomedical literature: From word-frequency methods to language models
+
+URL Source: https://www.biorxiv.org/content/10.64898/2026.01.09.697335v4.full.pdf
+
+Number of Pages: 33
+
+Markdown Content:
+A systematic evaluation and benchmarking of text summarization methods for 1
+
+biomedical literature: From word-frequency methods to language models 2
+
+Fabio Baumg ¨ artel 1,4 , Enrico Bono 1,2,4 , Lucas Fillinger 1, Louiza Galou 1,2 , Kinga Keska-Izworska 1,3
+
+Samuel M Walter 1, Peter Andorfer 1, Klaus Kratochwill 1,2 , Paul Perco 1,3 , and Matthias Ley 1,2,5,* 
+
+> 4
+> 1
+
+Delta4 GmbH, Vienna, Austria 5
+
+> 2
+
+Division of Pediatric Nephrology and Gastroenterology, Department of Pediatrics and 6
+
+Adolescent Medicine, Comprehensive Center for Pediatrics, Medical University Vienna, Vienna, 7
+
+Austria 8
+
+> 3
+
+Department of Internal Medicine IV, Medical University Innsbruck, Innsbruck, Austria 9
+
+> 4
+
+These authors contributed equally 10 
+
+> 5
+
+Lead contact 11 
+
+> *
+
+matthias.ley@delta4.ai 12 
+
+# Summary 13 
+
+The rapid expansion of biomedical literature demands automated summarization tools that reli-14 
+
+ably condense research articles into concise, accurate summaries. We benchmarked 62 sum-15 
+
+marization methods, ranging from frequency-based and TextRank extractors to encoder-decoder 16 
+
+models (EDMs) and large language models (LLMs), on 1,000 biomedical abstracts from 20 jour-17 
+
+nals across ScienceDirect and Cell Press , using author-written highlights as reference sum-18 
+
+maries. Models were evaluated with a composite suite of lexical, semantic, and factual metrics, 19 
+
+including ROUGE, BLEU, METEOR, embedding-based similarity, and factuality scores. General-20 
+
+purpose models (e.g., Mistral, GPT, Llama) achieved the highest overall performance across lexi-21 
+
+cal and semantic dimensions, outperforming reasoning-oriented (e.g., DeepSeek, Magistral) and 22 
+
+domain-specific (e.g., BioGPT, BioMistral) models. Notably, medium-sized models outperformed 23 
+
+large-scale models, suggesting an optimal balance between model capacity and efficiency, while 24 
+
+classical extractive methods lagged behind neural approaches. These findings provide a system-25 
+
+atic reference for selecting biomedical summarization tools and highlight that broad pretraining 26 
+
+outperforms narrow domain adaptation. 27 
+
+# Keywords 28 
+
+biomedical text summarization, natural language processing, large language models, bench-29 
+
+marking 30 
+
+# Introduction 31 
+
+The exponential growth of scientific literature has created a demand for text summarization meth-32 
+
+ods to support scientists in prioritizing articles, extracting relevant information, and interpreting 33 
+
+research findings. Automatic text summarization (ATS) methods have evolved from statistical 34 
+
+approaches to deep learning-based models, thus becoming increasingly sophisticated and reli-35 
+
+able in capturing the essential parts of complex research articles. Although ATS methods have 36 
+
+been previously evaluated and described 1,2 , only a few have focused on scientific literature 3,4 .37 
+
+1
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Recent work has begun to benchmark large language models (LLMs) on biomedical summariza-38 
+
+tion, though only for a limited set of models and typically against abstract-based references 5–7 .39 
+
+A systematic comparison from word-frequency methods to state-of-the-art LLMs is still lacking. 40 
+
+Over time, these methods have developed into distinct approaches that differ in how they 41 
+
+identify or generate summary content. Early pre-neural summarization was mainly character-42 
+
+ized by unsupervised extractive approaches that rank sentences by word or concept frequencies 43 
+
+to identify relevant sentences. The field was initially shaped by Luhn’s assumption that recur-44 
+
+rent words signal importance 8 and Edmundson’s use of cue words, title words, and sentence 45 
+
+position 9. Later work adopting weighting term frequency-inverse document frequency (TF-IDF) 46 
+
+refined this idea by down-weighting frequent, low-specificity terms 10 , laying the foundation for 47 
+
+more advanced methods in scientific text summarization 11 . Graph-based methods judged the 48 
+
+importance against the document’s global structure rather than local word counts. TextRank, 49 
+
+widely used in the biomedical domain, applies the PageRank algorithm to a sentence-similarity 50 
+
+graph to select top-ranked sentences 12 .51 
+
+The advent of sequence-to-sequence (Seq2seq) frameworks shifted the field toward neural 52 
+
+approaches capable of paraphrasing and condensing text using encoder-decoder architectures, 53 
+
+originally implemented with recurrent neural networks (RNNs), long short-term memory (LSTM) 54 
+
+networks, and gated recurrent units (GRUs) 13,14 , while self-attention enabled parallel process-55 
+
+ing of sequences and modeling of long-range context 15 . This laid the foundation for trans-56 
+
+former architectures that quickly gained popularity in performing a wide range of natural lan-57 
+
+guage processing (NLP) tasks. Building on bidirectional encoder representations from trans-58 
+
+formers (BERT) 16 , several abstractive summarization models have emerged, including bidirec-59 
+
+tional and auto-regressive transformer (BART), a denoising autoencoder for pretraining Seq2seq 60 
+
+models 17 and its biomedical adaptations 18,19 ; the unified text-to-text transfer transformer (T5) 61 
+
+model 20 ; Pre-training with extracted gap-sentences for abstractive summarization sequence-to-62 
+
+sequence (PEGASUS) 21 , including domain-specific PubMed variants; and Longformer-based 63 
+
+models 22 that can handle longer inputs 23 . These models are typically pretrained independently, 64 
+
+while Longformer-based variants may additionally leverage RoBERTa, an optimized version of 65 
+
+BERT trained on a larger corpus. 66 
+
+More recently, the field of ATS has quickly moved toward decoder-only architectures at the 67 
+
+core of LLMs, which capture semantic relations with greater flexibility and specificity. LLMs 68 
+
+can be classified as (i) general-purpose models, which apply broad domain knowledge across 69 
+
+diverse NLP tasks, such as the proprietary generative pre-trained transformer (GPT) 24 and 70 
+
+Claude 25 series and the open-source large language model Meta AI (Llama) 26 and Gemma 27 
+
+> 71
+
+families; (ii) reasoning-oriented models, characterized by logical text understanding through it-72 
+
+erative chain-of-thought processing and instruction tuning 28 such as DeepSeek-R1 29 , Qwen3 30 ,73 
+
+and Mistral’s Magistral 31 , together with the reasoning tiers of the proprietary families (e.g., GPT-74 
+
+5 and Claude Opus 4); and (iii) domain-specific models, tailored for specialized tasks or spe-75 
+
+cific scientific domains , such as the biomedical models OpenBioLLM-Llama3 32 , BioGPT 33 , and 76 
+
+BioMistral 34 , and SciLitLLM 35 for scientific literature. The complete set of models evaluated in 77 
+
+this study is listed in Table 2 in the Materials and Methods. 78 
+
+Despite this range of approaches, these method families have not been evaluated together on 79 
+
+biomedical literature, leaving little guidance on which to choose. This study addresses this gap 80 
+
+by systematically evaluating 62 text summarization models, ranging from word-frequency meth-81 
+
+ods to state-of-the-art LLMs, using a dataset of 1,000 biomedical abstracts and corresponding 82 
+
+highlights sections as reference summaries. We provide recommendations for selecting appro-83 
+
+priate tools to accelerate knowledge discovery in biomedical sciences and discuss the strengths 84 
+
+and limitations of each approach. 85 
+
+2
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+# Materials and Methods 86 
+
+Study Design 87 
+
+This study was designed as a systematic evaluation and comparative benchmark of ATS meth-88 
+
+ods for biomedical literature and is reported in accordance with the transparent reporting of 89 
+
+a multivariable prediction model for individual prognosis or diagnosis (TRIPOD)-LLM reporting 90 
+
+guideline 36 . Summarization quality was assessed quantitatively using a suite of lexical, semantic, 91 
+
+and factual metrics, normalized and aggregated into an Overall Performance Score for ranking, 92 
+
+and complemented by a blinded expert assessment of a subset of models. Differences across 93 
+
+model categories and families were then compared statistically. The evaluation metrics and 94 
+
+statistical tests were chosen during the analysis rather than pre-specified in a study protocol. 95 
+
+Figure 1 provides an overview of the complete benchmarking workflow of this study from 96 
+
+dataset construction and model inference to metric computation, score aggregation, and statis-97 
+
+tical analysis. 98 
+
+Figure 1: Overview of the benchmarking workflow: (1) Construction of a gold-standard dataset comprising 1,000 biomedical titles, abstracts, and author-provided highlight sections. (2) Suite of 62 diverse summarization models. (3) Uniform prompting of all models to generate summaries for each abstract. (4–5) Computation of summary quality metrics capturing lexical overlap, semantic similarity, and factual consistency. (6) Standardization of metric scores using z-score normalization to ensure comparability across evaluation dimensions. (7) Ranking of models based on overall performance scores. (8) Quality assessment of generated summaries across four quality dimensions (coherence, fluency, relevance, consistency), combining expert human evaluation on a subset of models with (9) LLM-as-a-judge evaluation from three provider-independent judges run across all models. 
+
+Gold-Standard Dataset 99 
+
+We generated a gold-standard benchmarking dataset comprising 1,000 biomedical peer-reviewed 100 
+
+articles from ScienceDirect and Cell Press , as these publishers provide standardized highlights 101 
+
+3
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+sections - concise bullet points capturing an article’s main findings 37,38 . The concatenated high-102 
+
+lights served as reference summaries in our evaluation, while the corresponding titles and ab-103 
+
+stracts were used as input texts for the summarization task. While summarization is inherently 104 
+
+subjective, author-generated highlights represent the most credible and standardized source, 105 
+
+ensuring the captured content reflects the study’s intended key messages. 106 
+
+Articles were collected systematically across a variety of journals from the two publishers 107 
+
+to ensure coverage of different fields within molecular sciences, including among others drug 108 
+
+discovery, genomics, proteomics, biotechnology, and biochemistry. We considered only English-109 
+
+language, research-focused content that provided an author-written highlights section together 110 
+
+with a DOI, title, and abstract. From each of the 20 journals, we then selected the 50 most recent 111 
+
+eligible articles available at the time of dataset construction, yielding 1,000 papers (Table 1) 112 
+
+with publication dates ranging from October 2015 to November 2025. Because selection was 113 
+
+performed per journal, journals with fewer highlights-bearing articles contributed some older 114 
+
+publications, though 95% of the corpus was published from 2024 onward. Selecting the most 115 
+
+recent articles also minimizes overlap with the models’ pretraining data and thus the risk of data 116 
+
+leakage. 117 
+
+This setup provided standardized pairs of abstracts and reference summaries subsequently 118 
+
+used in our systematic evaluation and benchmarking of ATS methods. 119 
+
+Table 1: Overview of journals included in the gold-standard dataset: Each journal contributed 50 articles, resulting in 500 articles from ScienceDirect and 500 articles from Cell Press .
+
+Publisher Journals 
+
+ScienceDirect Cytokine; Developmental Cell; Drug Discovery Today; FEBS Letters; Gene; Genomics; Journal of Biotechnology; Journal of Molecular Biology; Journal of Proteomics; The International Journal of Biochemistry & Cell Biology 
+
+Cell Press Cancer Cell; Cell; Cell Chemical Biology; Cell Genomics; Cell Host & Microbe; Cell Metabolism; Cell Reports; Cell Reports Medicine; Cell Stem Cell; Cell Systems 
+
+Summarization Methods 120 
+
+We evaluated 62 models for text summarization, ranging from simple frequency-based algo-121 
+
+rithms to small language models (SLMs) and LLMs. These models were classified into five 122 
+
+categories, as listed in Table 2. We obtained the pre-trained encoder-decoder models (EDMs) 123 
+
+through the Hugging Face library, selecting architectures widely used for abstractive summa-124 
+
+rization to ensure established neural approaches are covered in our benchmark. Additionally, 125 
+
+we evaluated a range of SLMs and LLMs, defining SLMs as models with fewer than 10 billion 126 
+
+parameters 39 . Both SLMs and LLMs with advanced reasoning capabilities were categorized as 127 
+
+“reasoning-oriented” to investigate how multi-step problem solving affects summarization perfor-128 
+
+mance. Similarly, models fine-tuned on scientific/biomedical data or specifically tailored for text 129 
+
+summarization were classified as “domain-specific” to assess the impact of domain adaptation. 130 
+
+Overall, this selection covers various model sizes and release dates, ensuring a representative 131 
+
+mix of both, widely adopted and recent, architectures. 132 
+
+Exceptionally large models, such as LLaMA 3.1 405B, were excluded to keep the benchmark 133 
+
+reproducible on single-GPU setups typical of biomedical research groups. Each of the 62 models 134 
+
+was tasked with generating summaries for the 1,000 abstracts in the dataset, resulting in a total 135 
+
+of 62,000 generated summaries for evaluation. 136 
+
+4
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Table 2: Overview of summarization methods evaluated in this study: Models organized by category. 
+
+Category Methods/Models 
+
+Traditional models frequency; textrank General-purpose EDMs facebook/bart-base; google/pegasus-large; google-t5/t5-base; google-t5/t5-large Domain-specific EDMs csebuetnlp/mT5 multilingual XLSum; facebook/bart-large-cnn; google/bigbird-pegasuslarge-pubmed; google/pegasus-cnn dailymail; google/pegasus-pubmed; google/pegasusxsum; led large 16384 arxiv summarization General-purpose SLMs chat swiss-ai/Apertus-8B-Instruct-2509; gemma3:1b; gemma3:270M; gemma3:4b; gpt-4.1-mini; gpt-4o-mini; gran-ite3.3:2b; granite3.3:8b; granite4:micro; granite4:micro-h; granite4:small-h; granite4:tiny-h; llama3.1:8b; llama3.2:1b; llama3.2:3b; mistral:7b; PetrosStav/gemma3-tools:4b; phi3:3.8b General-purpose LLMs claude-3-5-haiku-20241022; gemma3:12b; gpt-3.5-turbo; gpt-4.1; gpt-4o; mistral-large-2411; mistral-medium-2505; mistral-nemo:12b; mistral-small-2506; mistral-small3.2:24b; phi4:14b Reasoning-oriented SLMs deepseek-r1:1.5b; deepseek-r1:7b; deepseek-r1:8b; qwen3:4b; qwen3:8b Reasoning-oriented LLMs claude-opus-4-1-20250805; claude-opus-4-20250514; claude-sonnet-4-20250514; deepseek-r1:14b; gpt-5-2025-08-07; gpt-5-mini-2025-08-07; gpt-5-nano-2025-08-07; gpt-oss:20b; magistral-medium-2509 Domain-specific SLMs chat aaditya/OpenBioLLM-Llama3-8B; chat Uni-SMART/SciLitLLM1.5-7B; completion microsoft/biogpt; con-versational BioMistral/BioMistral-7B; medllama2:7b Domain-specific LLMs chat Uni-SMART/SciLitLLM1.5-14B 
+
+Prompt Design 137 
+
+We used an identical prompt across all prompt-based models to ensure compatibility, asking for 138 
+
+concise summaries focused on the main findings of each publication while excluding unneces-139 
+
+sary background or methodological details. The prompt was developed iteratively on a small 140 
+
+number of sample abstracts and then frozen. Each model received the publication title and ab-141 
+
+stract as an input and was asked to produce an output of 15–100 words. A post-hoc check 142 
+
+confirmed that models adhered well to this length constraint, with the large majority of sum-143 
+
+maries falling within the target range across methods. A full per-method breakdown is provided 144 
+
+in Supplementary Figure 7. If the abstract did not contain any substantive results or conclu-145 
+
+sions, the model was instructed to return the predefined token INSUFFICIENT FINDINGS. This 146 
+
+gave models an explicit exit path for cases where an abstract contained no actual findings to 147 
+
+summarize, preventing them from fabricating content simply to fill the response. 148 
+
+The exact prompt used for all models was as follows: 149 
+
+Summarize the provided publication (title and abstract) in 15-100 words. 
+
+5
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Key requirements: - Identify main findings, results, or contributions - Preserve essential context and nuance - Exclude background, methods unless crucial to conclusions - Write concisely and objectively - Avoid repetition and unnecessary qualifiers If no substantial findings exist, respond: 'INSUFFICIENT_FINDINGS' 
+
+Evaluation Metrics 150 
+
+As there is no single metric that can fully reflect summary quality, especially in the biomedical 151 
+
+field where both coverage of key information and factual correctness are critical, we employed 152 
+
+both surface-level metrics based on lexical overlap, referred to as lexical-based metrics, and 153 
+
+embedding-level metrics. The latter includes metrics based on semantic similarity, denoted as 154 
+
+semantic-based metrics, as well as metrics that evaluate factual consistency. 155 
+
+Surface-level Metrics 156 
+
+Surface-level metrics compare the generated summaries with the reference summaries mainly 157 
+
+at the word or phrase level. While they do not capture meaning beyond surface overlap, they 158 
+
+remain common metrics in summarization research and provide a straightforward foundation for 159 
+
+evaluation. We used three recall-oriented understudy for gisting evaluation (ROUGE) variants 160 
+
+(ROUGE-1, ROUGE-2, ROUGE-L) 40 , bilingual evaluation understudy (BLEU) 41 , and metric for 161 
+
+evaluation of translation with explicit ordering (METEOR) 42 . ROUGE-1 and ROUGE-2 measure 162 
+
+how many unigrams (single words) or bigrams (word pairs) from the reference appear in the 163 
+
+generated output, while ROUGE-L identifies the longest sequence of words shared between 164 
+
+the two. BLEU calculates how many n-grams in the output also occur in the reference, em-165 
+
+phasizing precision over recall and applying a brevity penalty to counteract the tendency toward 166 
+
+overly short summaries. METEOR extends n-gram matching by considering word stems and 167 
+
+synonyms, making it more robust to wording variations. Together, these metrics offer a simple 168 
+
+but transparent point of reference. 169 
+
+Embedding-based Metrics 170 
+
+To capture similarity beyond surface-level word overlap, we included a set of embedding-based 171 
+
+metrics built on pre-trained transformer models. These methods generate vector representations 172 
+
+of text, allowing them to capture semantic similarity rather than just word overlap. We measured 173 
+
+semantic similarity using BERT-score 43 , which compares two texts by matching their contextual 174 
+
+token embeddings and averaging the resulting cosine similarities. Because BERT-score needs 175 
+
+a pre-trained encoder to produce these embeddings, we ran it with two well-established choices: 176 
+
+Robustly optimized BERT approach (RoBERTa) 44 and decoding-enhanced BERT with disentan-177 
+
+gled attention (DeBERTa) 45 . This lets the metrics recognize when two summaries express the 178 
+
+same content even if the wording differs. 179 
+
+We further included all-mpnet-base-v2 46 , a transformer model fine-tuned for sentence sim-180 
+
+ilarity. Unlike BERT-score, which matches summaries token by token, masked and permuted 181 
+
+pre-training (MPNet) was trained with a focus on alignment at the sentence-level. This charac-182 
+
+teristic makes it a useful complement to the other metrics, as it is particularly sensitive to whether 183 
+
+the overall meaning of a reference summary is preserved in the system output. 184 
+
+6
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Finally, to evaluate factual consistency, we included metrics designed to assess whether 185 
+
+statements in a generated summary are supported by the source text. These included Align-186 
+
+Score 47 , SummaC 48 , and two variants of MiniCheck (FT5 and 7B) 49 . In contrast to the other 187 
+
+metrics, these approaches compare the generated output directly to the source text itself (i.e., 188 
+
+the publication abstract) rather than the reference summary (i.e., the highlights section), as fac-189 
+
+tual accuracy can only be assessed relative to the original input text. This addition ensures 190 
+
+that our evaluation captures hallucinations and unsupported statements that might otherwise be 191 
+
+overlooked. 192 
+
+Overall Performance Metric 193 
+
+To comprehensively assess the performance of each model on the summarization task, we em-194 
+
+ployed a multi-metric framework covering three dimensions: lexical (n=5), semantic (n=3), and 195 
+
+factual (n=4). To prevent the impact of dimension imbalance, we computed an average score for 196 
+
+each dimension as follows: 197       
+
+> avg lex = ROUGE -1 + ROUGE -2 + ROUGE -L + METEOR + BLEU 5(1)
+> avg sem = RoBERTa + DeBERTa + all -mpnet -base -v2 3(2)
+> avg fact = AlignScore + SummaC + MiniCheck -FT5 + MiniCheck -7B 4(3)
+
+To examine how the different evaluation metrics relate to each other, we computed pairwise 198 
+
+Spearman correlation coefficients across all models (Figure 2). Averaging metrics within each 199 
+
+dimension ensured that highly correlated measures such as ROUGE-1, ROUGE-2, and ROUGE-200 
+
+L do not dominate the overall evaluation. 201 
+
+As the different metric dimensions operate on different value ranges, we applied z-score 202 
+
+normalization to the dimension-wise averages across all models, ensuring that lexical, semantic, 203 
+
+and factual metrics contribute comparably to the final evaluation. 204             
+
+> Zlex = avg lex −mean(avg lex )std(avg lex )(4)
+> Zsem = avg sem −mean(avg sem )std(avg sem )(5)
+> Zfact = avg fact −mean(avg fact )std(avg fact )(6)
+
+The Overall Performance Score (OPS) was computed as the mean of the normalized dimen-205 
+
+sion scores: 206       
+
+> OPS = Zlex +Zsem +Zfact
+> 3(7)
+
+We finally ranked models by overall performance, resulting in the performance rank, with 207 
+
+lower ranks indicating better performance. To examine which model performed best in each 208 
+
+dimension (lexical, semantic, factual), we additionally computed per-dimension ranks, reported 209 
+
+alongside the overall rank. 210 
+
+Differences in overall performance between model categories and families were assessed 211 
+
+using Welch’s analysis of variance (ANOVA), followed by pairwise post-hoc comparisons with 212 
+
+Games-Howell tests. This procedure is well suited for groups with unequal sample sizes and 213 
+
+heterogeneous variances, conditions that apply to our benchmark due to the heterogeneity of 214 
+
+models within each category and family. Adjusted p-values were used to determine the statistical 215 
+
+significance of between-group differences. 216 
+
+7
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Data Leakage Analysis 217 
+
+To assess whether benchmark articles were part of the models’ pretraining data, we conducted 218 
+
+a data leakage analysis by comparing their publication dates against reported model training 219 
+
+cutoff dates. If an article was published before a model’s training cutoff date, it may have been 220 
+
+included in the model’s internal knowledge, potentially giving the model access to information 221 
+
+beyond the input provided (title and abstract). 222 
+
+Publication dates for all benchmark articles were retrieved using the Crossref API. For each 223 
+
+model, the reported training cutoff date was collected from official model documentation (i.e., 224 
+
+provider-released model descriptions) or, when unavailable, from community-curated sources 50 .225 
+
+In total, 21 cutoff dates were confirmed from primary sources, 9 were obtained from community 226 
+
+sources, 17 were estimated based on publicly available information (e.g., Hugging Face docu-227 
+
+mentation or associated publications), and 13 (primarily from newer and less-well documented 228 
+
+models) remained unknown. We then compared article publication dates with model cutoff dates 229 
+
+to determine the proportion of benchmark articles published on or before each model’s training 230 
+
+cutoff. This proportion represents the theoretical maximum share of benchmark articles that 231 
+
+could have been present in the model’s training data. 232 
+
+To further investigate models with high potential overlap, we performed an abstract com-233 
+
+pletion probe. Notably, all models included in this abstract completion probe had cutoff dates 234 
+
+confirmed from either official or community sources. In this test, models were prompted in com-235 
+
+pletion mode with the first sentence of an article abstract and asked to generate the continuation. 236 
+
+For each model, this procedure was done separately for abstracts published before and after 237 
+
+the model’s training cutoff date. The similarity between generated summaries and the original 238 
+
+abstracts were measured using ROUGE-L scores, as ROUGE-L is based on the longest com-239 
+
+mon subsequence (LCS), which makes it sensitive to long in-order token overlaps. If models 240 
+
+had memorized benchmark articles during training, completions for pre-cutoff abstracts would 241 
+
+be expected to show significantly higher similarity scores compared to post-cutoff abstracts. 242 
+
+Differences in ROUGE-L similarity between pre- and post-cutoff articles were assessed using 243 
+
+one-sided Mann-Whitney U tests. 244 
+
+This two-stage analysis provides a practical estimation of whether benchmark articles have 245 
+
+influenced model outputs through previous exposure during pretraining. 246 
+
+Expert Assessment 247 
+
+To assess whether automatic evaluation metrics align with human judgments, we conducted an 248 
+
+expert evaluation of the generated summaries. Eight evaluators with professional backgrounds 249 
+
+in biomedical research and drug discovery participated. A web-based questionnaire was devel-250 
+
+oped and evaluators were asked to rate generated summaries using the four quality dimensions 251 
+
+defined in the SummEval framework 51 , a widely adopted standard for summarization evaluation 252 
+
+that has also been used in recent LLM-based evaluation frameworks such as G-Eval 52 . The 253 
+
+evaluated dimensions were: coherence (logical structure and organization of the summary), flu-254 
+
+ency (grammatical correctness and readability), relevance (coverage of important information), 255 
+
+and consistency (factual alignment with the reference). Each dimension was rated on a five-point 256 
+
+Likert scale ranging from 1 to 5. 257 
+
+The assessment was conducted on summaries generated by the two highest-ranked and the 258 
+
+two lowest-ranked models identified in the automated benchmark: mistral-small3.2:24b, mistral-259 
+
+small-2506, bigbird-pegasus-large-pubmed, and mT5 multilingual XLSum. For evaluation, one 260 
+
+article was randomly selected from each journal category, resulting in 20 biomedical articles and 261 
+
+80 assessments per expert. 262 
+
+8
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Each evaluator assessed the same set of summaries, but to reduce potential ordering effects, 263 
+
+the presentation order was randomized. Model identities were hidden to ensure an unbiased, 264 
+
+blinded evaluation. For each paper, the evaluation followed a two-step process. In the first 265 
+
+step, evaluators were shown the author-written highlights along with the generated summary 266 
+
+and asked to rate coherence, fluency, and relevance. The author-written highlights served as a 267 
+
+reference for the key findings, allowing evaluators to assess whether the generated summaries 268 
+
+captured the most important information and enabling comparison of human judgments with 269 
+
+lexical and semantic evaluation metrics. 270 
+
+In the second step, evaluators were shown the title and abstract of the original article along-271 
+
+side the generated summary to assess factual consistency and detect potential hallucinations. 272 
+
+This mirrors the input used for the automatic factuality metrics, enabling direct comparison. 273 
+
+Inter-rater agreement was quantified using Gwet’s AC2 coefficient 53 with quadratic weights, 274 
+
+chosen for its robustness to skewed score distributions and capturing absolute agreement, to-275 
+
+gether with the mean pairwise Spearman’s ρ, capturing agreement in relative ranking. Pairwise 276 
+
+differences in ratings between models were tested using Mann-Whitney U tests with Bonferroni 277 
+
+correction for multiple comparisons. 278 
+
+LLM-as-a-judge evaluation 279 
+
+We complement the evaluation metrics with an LLM-as-a-judge approach 54 using three models 280 
+
+from distinct providers (Anthropic, OpenAI, Mistral) in a panel-of-evaluators design 55 to reduce 281 
+
+intra-model bias relative to any single judge. We deliberately used mid-tier models while limit-282 
+
+ing reasoning efforts, rather than using each provider’s flagship model, to prevent overthinking. 283 
+
+Each judge emitted a brief rationale before scoring (explain-then-rate, which aids alignment with 284 
+
+human ratings 56 ), rating each of the four rubric dimensions on a 1 to 5 scale via forced structured 285 
+
+outputs and receiving the same evidence as the human experts (title, abstract, reference high-286 
+
+lights, and the summary). The panel score for each summary-dimension is the median across 287 
+
+the three judges. This test was introduced as a bias-control and robustness measure rather 288 
+
+than as a source of additional independent signal (see Limitations). We validated the judge 289 
+
+panel against the 80 expert assessments using summary-level Spearman correlation and then 290 
+
+applied it to all 62 models on the same 20 publications (one per journal), rather than the full 291 
+
+1,000-document benchmark. All correlations use scipy.stats.spearmanr .292 
+
+Benchmarking Framework 293 
+
+The benchmark framework, including all downstream statistical tests and supplementary anal-294 
+
+yses, was implemented in Python 3.12. Gold standard data were retrieved from open-access 295 
+
+articles published by ScienceDirect and Cell Press through manual extraction of titles, abstracts, 296 
+
+and highlights sections, along with metadata including publication URLs, identifiers, section 297 
+
+types, and article types where available. Extraction followed an identical procedure for both 298 
+
+publishers, and each record was checked for completeness of the required fields. All data were 299 
+
+stored in machine-readable JSON format. 300 
+
+The framework was implemented using the Python standard library supplemented by sev-301 
+
+eral specialized packages: pandas 57 for data import and export, scikit-learn 58 for computing 302 
+
+cosine similarities of embeddings and TF-IDF vectors, networkx 59 for graph construction and 303 
+
+the PageRank algorithm 60 . Additional evaluation metrics were computed using NLTK 61 for ME-304 
+
+TEOR and BLEU scores, ROUGE-score, BERT-score 43 , AlignScore 47 , the summac package 305 
+
+implementing the SummaC-ZS model 48 , MiniCheck 49 , and sentence-transformers 62 with the all-306 
+
+mpnet-base-v2 model 46 . Statistical analyses used pingouin for Welch’s ANOVA and Games-307 
+
+9
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Howell tests, SciPy for Spearman correlations and Mann-Whitney U tests, and a custom imple-308 
+
+mentation of Gwet’s AC2 available in the project repository. 309 
+
+Communication with proprietary closed-source LLMs was facilitated through the official Python 310 
+
+APIs provided by Anthropic, Mistral AI, and OpenAI. Local LLM execution was performed on a 311 
+
+workstation equipped with a NVIDIA RTX A4000 GPU (16GB VRAM) running Ollama as a back-312 
+
+end service, accessed through its Python API along with the transformers library 63 .313 
+
+All LLMs were configured with a temperature parameter of 0.2 to optimize reproducibility 314 
+
+while avoiding completely deterministic outputs. For the latest generation of OpenAI models 315 
+
+featuring adaptive reasoning capabilities, the configuration was set to text.verbosity = low 316 
+
+and reasoning.effort = minimal . The full set of parameters and prompts are documented in 317 
+
+the config.py file in the GitHub repository. 318 
+
+Data Availability 319 
+
+The source code, documentation, gold standard dataset, and processed results are available at: 320 
+
+github.com/Delta4AI/LLMTextSummarizationBenchmark .321 
+
+# Results 322 
+
+Our benchmark results offer a comparative view of summarization performance across all eval-323 
+
+uated models. We first examined the correlations among the chosen evaluation metrics and, 324 
+
+based on the findings, identified the best-performing model across lexical, semantic, and factual 325 
+
+dimensions. Next, we compared model performance across categories and families to identify 326 
+
+significant differences. We additionally performed a data leakage analysis to ensure that inclu-327 
+
+sion of benchmarking data in training data had no impact on the results. We then analyzed how 328 
+
+well automatic metrics aligned with human judgment based on expert level result assessment, 329 
+
+and finally assessed whether an LLM-as-a-judge panel could reproduce these rankings. 330 
+
+Metric Correlations 331 
+
+Pairwise Spearman correlations were computed to analyze the relationships between the dif-332 
+
+ferent evaluation metrics (Figure 2). Strong positive correlations were observed among most 333 
+
+lexical-based metrics (ROUGE-1/2/L, METEOR, and BLEU), with the correlation between METEOR 334 
+
+and BLEU marking an exception ( ρ = 0 .23 ). ROUGE variants showed almost identical behavior 335 
+
+(ρ ≥ 0.88 ), while BLEU and METEOR demonstrated slightly weaker but still substantial alignment 336 
+
+with ROUGE measures ( ρ = 0 .51 − 0.82 ). 337 
+
+Most semantic-based metrics (RoBERTa, DeBERTa, and all-mpnet-base-v2) showed high in-338 
+
+ternal consistency ( ρ > 0.5), reflecting their shared focus on semantic similarity. When compared 339 
+
+with lexical-based metrics, correlations were moderate to strong in most cases, indicating that 340 
+
+both categories capture related but not identical dimensions of summary quality. 341 
+
+Concerning factual consistency metrics, AlignScore and the two MiniCheck variants exhibited 342 
+
+very strong correlations with each other ( ρ = 0 .82 − 0.94 ), while SummaC showed moderately 343 
+
+positive correlations with the other factual metrics ( ρ = 0 .41 − 0.69 ). This likely reflects method-344 
+
+ological differences, as SummaC relies on zero-shot natural language inference over sentence 345 
+
+pairs, while MiniCheck and AlignScore use models specifically optimized for factual consistency 346 
+
+assessment. When compared with lexical- and semantic-based metrics, correlations were gen-347 
+
+erally weaker and, in some cases, even slightly negative. This pattern can largely be attributed 348 
+
+to the different point of reference used by factual metrics. 349 
+
+10 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Overall, these relationships demonstrate that the various metrics are broadly consistent while 350 
+
+providing complementary perspectives. This supports the use of an aggregated “Overall Perfor-351 
+
+mance Score” as a balanced indicator of overall summarization performance. 352 
+
+Figure 2: Spearman correlation between evaluation metrics: Spearman correlation coefficients ( ρ) between two metrics based on their mean scores across all models are given. Metric categories (lexical, semantic, factual) are indicated on the x and y axes. For visualization purposes, cells with values higher than 0.8 are shown with white text. 
+
+Overall Model Performance 353 
+
+Based on overall performance ranks, referred to as “Performance Rank” and derived from our 354 
+
+multi-metric evaluation framework ( Overall Performance Metric), models from the Mistral family 355 
+
+were top-ranked across the three evaluated metric dimensions, as depicted in Figure 3. 356 
+
+The mistral-small3.2:24b model ranked first, followed by mistral-small-2506 and mistral-medium-357 
+
+2505. The lowest-ranked models included OpenBioLLM-Llama3-8B, bigbird-pegasus-large-pubmed 358 
+
+and pegasus-pubmed from the PEGASUS family, and mT5 multilingual XLSum from the T5 fam-359 
+
+ily. Overall, domain-specific SLMs and EDM models showed poor performance across all the 360 
+
+different dimensions of metrics. 361 
+
+Among the ten top-ranked models, six were general-purpose LLMs and four were general-362 
+
+purpose SLMs. A similar trend was observed in the top half of the ranking (positions 1 to 31) with 363 
+
+the presence of just a few reasoning-oriented and domain-specific models. In contrast, in the 364 
+
+lower half of the ranking, where models performed poorly across most metric dimensions, the 365 
+
+majority were reasoning-oriented SLMs, general-purpose EDMs, domain-specific EDMs, and 366 
+
+traditional models. 367 
+
+Considering each metric dimension separately, several Mistral models ranked high in the 368 
+
+lexical dimension, with GPT-5-nano, a reasoning-oriented LLM from the GPT family, ranking 369 
+
+third. In the semantic dimension, Mistral models achieved high ranks, but the highest positions 370 
+
+were occupied by the Phi4:14b general-purpose LLM and several Granite models, including 371 
+
+11 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+granite4:tiny-h and granite3.3:2b. Finally, the highest ranks based on the factual dimension were 372 
+
+covered by traditional models and some EDMs. Detailed performance indications for each model 373 
+
+across all individual ranked metrics are provided in supplementary Figure 8. 374 
+
+Models could also decline to summarize by returning the INSUFFICIENT FINDINGS token. 375 
+
+This was rare overall, occurring in 736 of 62,000 generated summaries (1.2%) and exclusively 376 
+
+among prompt-based models. Usage was concentrated in the two domain-specific biomed-377 
+
+ical models OpenBioLLM-Llama3-8B (20.0%) and medllama2 (9.7%), while all other models 378 
+
+returned it in fewer than 6% of cases. 379 
+
+12 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Figure 3: Ranking of summarization models: Overview of the performance of all evaluated models across lexical, semantic, and factual metric dimensions. Each row corresponds to one model. Columns show the overall Performance Rank and independent ranks for each metric dimension, with lower ranks indicating better performance. The figure displays each model’s family and category. Models are sorted by the overall Performance Rank. Ranks are displayed using a continuous diverging color gradient, ranging from navy-blue tones for top-performing models through light neutral shades for mid-ranked models to dark red tones for low-performing models. 13 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Category Comparisons 380 
+
+To compare model performance across categories, we displayed the distribution of overall perfor-381 
+
+mance scores within each category, along with the best- and worst-performing individual models 382 
+
+(Figure 4a). Results of the Games-Howell post-hoc comparisons between individual groups are 383 
+
+given in Figure 4b. 384 
+
+All general-purpose LLMs achieved high overall scores, thus forming the top category of 385 
+
+models, with general-purpose SLMs following second, however showing a slightly wider spread 386 
+
+in performance scores. Domain-specific LLMs and reasoning-oriented LLMs followed in third 387 
+
+and fourth place based on average overall performance. 388 
+
+Domain-specific EDMs, domain-specific SLMs, traditional models, and general-purpose EDMs 389 
+
+performed significantly worse as compared to general-purpose language models (LMs). Domain-390 
+
+specific EDMs and domain-specific SLMs displayed the widest spread of performance (Fig-391 
+
+ure 4a). 392 
+
+Family Comparisons 393 
+
+To complement the category-level findings, we examined performance across model families, 394 
+
+since models within the same family often share architectural features or training strategies 395 
+
+that may cause consistent performance trends. Figure 5a shows the distribution of overall per-396 
+
+formance scores across all model families. Similar to the category-level analysis, there were 397 
+
+clear performance differences between architectural lineages. The Mistral family achieved the 398 
+
+strongest overall results, with several members ranking among the top performers in the bench-399 
+
+mark. Families dominated by modern LLM or SLM architectures, such as Granite, Claude, 400 
+
+and Gemma, consistently outperformed more traditional extractive approaches and families built 401 
+
+on encoder-decoder architectures such as longformer encoder-decoder (LED), BART, T5 and 402 
+
+PEGASUS. 403 
+
+In particular, the GPT and Llama families showed lower performance scores than expected 404 
+
+given the competitive performance of their top models. This was primarily due to the inclu-405 
+
+sion of domain-specific small models, such as BioGPT and OpenBioLLM-Llama3-8B, which per-406 
+
+formed substantially worse than their general-purpose counterparts and therefore pulled down 407 
+
+the family-level averages. 408 
+
+Regarding the Games-Howell post-hoc matrix in the family comparison (Figure 5b), a combi-409 
+
+nation of significant and non-significant differences between families was observed, reflecting the 410 
+
+greater heterogeneity within some lineages. While many high-performing families differed sig-411 
+
+nificantly from traditional and encoder-decoder dominated families, several comparisons among 412 
+
+modern SLMs and LLMs dominated families did not reach statistical significance. 413 
+
+14 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Figure 4: (a) Overall performance of model categories: Distributions of overall performance scores across the nine model categories, with each model represented by a black dot. Categories are ordered from lowest to highest-performing according to the median performance score. The best- and worst-performing models of each category are highlighted. (b) Games-Howell Post-hoc Test across model categories: Games–Howell pairwise adjusted 
+
+p-value matrix comparing all category pairs. Each cell shows the adjusted p-value for the difference in metric mean scores between two categories, with white-to-gray shading indicating smaller p-values. 15 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Figure 5: (a) Overall performance of model families: Distributions of overall performance scores across all model families, with each model represented by a black dot. Families are ordered from lowest to highest-performing according to the performance score. The best- and worst-performing models of each family are highlighted. (b) Games-Howell Post-hoc Test across model families: Games–Howell pairwise adjusted p-value matrix comparing all family pairs. Each cell shows the adjusted p-value for the difference in metric mean scores between two families, with white-to-gray shading indicating smaller p-values. 16 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Data Leakage Assessment 414 
+
+Cutoff Overlap Results 415 
+
+Across the evaluated models, potential overlap ranged from minimal levels of 5% for earlier 416 
+
+models with training cutoffs prior to 2024, up to 40.2% for more recent LLMs with reported cutoff 417 
+
+dates in early 2025. Most models showed low overlap ( ≤ 20% ), indicating that the majority 418 
+
+of benchmark articles were published after their respective training cutoff dates. A subset of 419 
+
+eight models, including recent versions of Claude, Deepseek, and one GPT model, exhibited 420 
+
+moderate levels of potential overlap ( 24 − 40 .2% ) and were further analyzed via an abstract 421 
+
+completion probe in the next step. 422 
+
+A complete overview of training cutoff dates and corresponding potential overlap values for 423 
+
+all models is provided in Supplementary Table 8. 424 
+
+Abstract Completion Probe 425 
+
+To assess whether high potential overlap translated into memorization effects, we conducted an 426 
+
+abstract completion probe for the eight models showing moderate levels of potential overlap. For 427 
+
+each model ROUGE-L scores between generated completions and the original abstracts were 428 
+
+compared for articles published before and after the respective training cutoff dates. 429 
+
+Average ROUGE-L scores were nearly identical for pre-cutoff and post-cutoff articles (both at 430 
+
+approximately 13.5%) and there were only negligible differences at the individual model level (Ta-431 
+
+ble 3). Statistical testing using a one-sided Mann-Whitney U test revealed no significant increase 432 
+
+in similarity for pre-cutoff articles in any of the tested models. Effect sizes were consistently close 433 
+
+to zero, which further indicates that there is no systematic difference between the two groups. 434 
+
+If memorization effects had occurred, substantially higher similarity scores would be expected 435 
+
+for abstracts from pre-cutoff articles. As this was not the case, we concluded that the models 436 
+
+were not reproducing memorized content from their training data. 437 
+
+Table 3: Abstract completion probe results. Shows ROUGE-L scores for completions of abstracts published before (pre-cutoff) and after (post-cutoff) the respective training cutoff dates. ∆ denotes the difference between both groups. Statistical significance was assessed using a one-sided Mann-Whitney U test.                                                                
+
+> Model Cutoff Pre ROUGE-L Post ROUGE-L ∆95% CI p-value Effect( r)
+> claude-sonnet-4-20250514 (closed-source) 2025-03 15.2 15.2 +0.0 [-0.5, +0.4] 0.598 +0.01 claude-opus-4-20250514 (closed-source) 2025-03 15.3 15.0 +0.2 [-0.3, +0.8] 0.239 -0.03 claude-opus-4-1-20250805 (closed-source) 2025-03 15.2 14.9 +0.3 [-0.2, +0.8] 0.161 -0.04 deepseek-r1:1.5b 2025-01 10.3 10.5 -0.1 [-0.7, +0.4] 0.598 +0.01 deepseek-r1:7b 2025-01 11.7 11.9 -0.2 [-0.6, +0.3] 0.524 +0.00 deepseek-r1:8b 2025-01 13.2 13.5 -0.3 [-0.7, +0.2] 0.834 +0.04 deepseek-r1:14b 2025-01 13.4 13.4 -0.1 [-0.4, +0.3] 0.662 +0.02 gpt-5-2025-08-07 (closed-source) 2024-10 13.7 13.5 +0.2 [-0.2, +0.7] 0.399 -0.01
+
+Expert Assessment Results 438 
+
+The results of the expert assessment are summarized in Figure 6 and Table 4. Values are 439 
+
+reported as mean ± standard error of the mean (SEM). The two Mistral-based models (mistral-440 
+
+small3.2:24b and mistral-small-2506) consistently outperformed the two EDMs (bigbird-pegasus-441 
+
+large-pubmed and mT5 multilingual XLSum) across all four evaluation dimensions. 442 
+
+For coherence and fluency, both Mistral models scored substantially higher than the EDMs. 443 
+
+In coherence, they reached scores of 4.83 ± 0.03 and 4.82 ± 0.04, compared with 3.20 ± 0.10 444 
+
+17 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+for mT5 and 2.08 ± 0.08 for bigbird-pegasus. The same pattern was observed for fluency, where 445 
+
+the Mistral models achieved scores of 4.86 ± 0.03 and 4.90 ± 0.03, clearly exceeding mT5 (3.67 446 
+
+± 0.09) and bigbird-pegasus (2.23 ± 0.07). All pairwise comparisons between Mistral models 447 
+
+and EDMs were statistically significant (all p < 0.001 after Bonferroni correction). The two EDMs 448 
+
+also differed significantly from each other in both dimensions, while no significant differences 449 
+
+were found between the two Mistral models. 450 
+
+Differences were even more pronounced for relevance and consistency. The Mistral models 451 
+
+again achieved high scores in relevance (4.07 ± 0.07 and 4.09 ± 0.07), while mT5 (1.54 ±452 
+
+0.06) and bigbird-pegasus (1.40 ± 0.05) scored markedly lower. A similar pattern was seen 453 
+
+for consistency, where the Mistral models reached scores of 4.56 ± 0.06 and 4.59 ± 0.05, 454 
+
+compared to 2.17 ± 0.09 for mT5 and 1.41 ± 0.05 for bigbird-pegasus. Again, all Mistral versus 455 
+
+EDM comparisons were statistically significant ( p < 0.001 ). The EDMs differed significantly in 456 
+
+consistency, but not in relevance ( p = 0 .7308 ), and no significant differences were found between 457 
+
+the two Mistral models. 458 
+
+Inter-rater agreement was strong on both measures. Gwet’s AC2 indicated substantial abso-459 
+
+lute agreement across all dimensions, ranging from 0.713 (relevance) to 0.794 (fluency), with an 460 
+
+overall value of AC2 = 0.725. Mean pairwise Spearman correlations were likewise strong across 461 
+
+all dimensions, ranging from ρ = 0 .707 (coherence) to ρ = 0 .801 (consistency), with an overall 462 
+
+mean of ρ = 0 .765 (all p < 0.001 ). These results show that evaluators consistently agreed both 463 
+
+on the absolute quality of the summaries and on the relative ranking between models. 464 
+
+Figure 6: Expert assessment results across four quality dimensions: Distribution of expert ratings for coherence, fluency, relevance, and consistency for each model are shown with average ratings shown above the box-violin plots. 18 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Table 4: Expert assessment results (mean ± SEM, n=160 per model): Gwet’s AC2 (quadratic weights) and mean pairwise Spearman’s ρ measure inter-rater agreement. Model Coherence Fluency Relevance Consistency BigBird-Pegasus 2.08 ± 0.08 2.23 ± 0.07 1.40 ± 0.05 1.41 ± 0.05 
+
+mT5-XLSum 3.20 ± 0.10 3.67 ± 0.09 1.54 ± 0.06 2.17 ± 0.09 
+
+Mistral-Small-3.2 (24B) 4.83 ± 0.03 4.86 ± 0.03 4.07 ± 0.07 4.56 ± 0.06 
+
+Mistral-Small-2506 4.82 ± 0.04 4.90 ± 0.03 4.09 ± 0.07 4.59 ± 0.05 
+
+Gwet’s AC2 0.735 0.794 0.713 0.735 
+
+Spearman’s ρ (mean) 0.707 0.722 0.799 0.801 
+
+Overall AC2 = 0 .725 , Overall ρ = 0 .765 
+
+LLM-as-a-judge evaluation 465 
+
+The LLM-as-a-judge panel agreed closely with expert assessments on every dimension (Ta-466 
+
+ble 5). To benchmark against human reliability, we computed a leave-one-out ceiling on the 467 
+
+same target the judges were scored against: each expert’s ratings were correlated against the 468 
+
+mean of the remaining experts. The judge’s mean agreement ( ρ = 0 .87 ) exceeded this ceiling 469 
+
+(ρ = 0 .82 ), leading to the assumption that it tracked the expert consensus at least as closely as 470 
+
+a typical individual expert. 471 
+
+Table 5: LLM-as-a-judge panel vs. expert assessments (Spearman’s ρ, n = 80 summaries). 
+
+Diagonal : judge dimension vs. the same expert dimension. Leave-one-out ceiling : each expert vs. the mean of the others (fair, same-target human upper bound). Pairwise : raw inter-rater agreement between two individual experts. Dimension Judge ρ Leave-one-out ceiling Pairwise Coherence 0.88 0.78 0.71 Fluency 0.87 0.80 0.72 Relevance 0.88 0.84 0.80 Consistency 0.87 0.84 0.80 Mean 0.87 0.82 0.76 The judge panel did not separate the four dimensions well. Its agreement with the match-472 
+
+ing expert dimension (diagonal ρ = 0 .87 ) was barely higher than its agreement with the other 473 
+
+dimensions (off-diagonal ρ = 0 .85 ), a gap of only 0.02 . In effect the judge measured a sin-474 
+
+gle overall-quality signal rather than four independent constructs, so its per-dimension scores 475 
+
+should not be over-interpreted. 476 
+
+We questioned whether the LLM-as-a-judge panel was capable of ranking the 62 models in a 477 
+
+comparable manner to the evaluation metrics (Table 6). The judge ranking agreed strongly with 478 
+
+the lexical, semantic, and composite performance ranks ( ρ = 0 .75 -0.83 ). The factual metrics were 479 
+
+an exception ( ρ = 0 .09 , n.s.), as they reward verbatim copying, so extractive systems (TextRank, 480 
+
+frequency, T5, PEGASUS) ranked highly on factuality but performed poorly under the judge - a 481 
+
+construct difference rather than a judge failure. 482 
+
+To analyze the tendency of judges to favor their own model family, we computed, for each 483 
+
+judge, how far its score sat above or below the mean of the other two judges, and contrasted 484 
+
+its own-family models with all others (Table 7). Anthropic exhibited a clear self-preference effect 485 
+
+(+0 .30 on the 1-5 scale), whereas OpenAI and Mistral showed no detectable differential effect 486 
+
+19 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+Table 6: System-level rank concordance between the LLM-as-a-judge ranks and each evaluation metric category across all n = 62 models. Judge ranks derive from the 20-publication subset, metric ranks use the full benchmark. This measures agreement between two automatic methods, not human validation. Metric family ρ τ p
+
+Lexical 0.75 0.57 < 10 −11 
+
+Semantic 0.83 0.64 < 10 −15 
+
+Performance 0.78 0.61 < 10 −12 
+
+Factual 0.09 0.06 0.48 (n.s.) Table 7: LLM-as-a-judge self-preference: a judge’s mean score for its own model family minus its score for other systems, each measured relative to the other two judges (1-5 scale). Positive values indicate inflation of the judge’s own family. Judge provider Self-preference effect Anthropic +0 .30 
+
+OpenAI −0.08 
+
+Mistral −0.02 
+
+(≤ 0.08 in magnitude). The direction is consistent with self-preference reported for rubric-based 487 
+
+judging 64,65 . Taking the median across the three judges damped this bias in the final scores. 488 
+
+# Discussion 489 
+
+Our benchmarking analysis of 62 text summarization models revealed clear performance dif-490 
+
+ferences. General-purpose LLMs achieved the highest summarization quality across all metric 491 
+
+dimensions, closely followed by general-purpose SLMs, domain-specific LLMs, and reasoning-492 
+
+oriented LLMs. In contrast, domain-specific SLMs, encoder–decoder architectures, and tradi-493 
+
+tional extractive methods performed significantly worse regarding overall performance. These 494 
+
+results highlight the clear progression from extractive and encoder–decoder approaches toward 495 
+
+transformer-based models, while also showing that domain-specific fine-tuning alone does not 496 
+
+necessarily lead to improved summarization quality. 497 
+
+Comparing models by architecture, size, and domain focus shows that, overall, LLMs perform 498 
+
+best, likely due to their large number of parameters, which enable them to better understand the 499 
+
+complex context typical for biomedical literature. While lightweight models like Gemma3:270M 500 
+
+may lack the capacity to handle this complexity, SLMs remain competitive, with some models, 501 
+
+such as mistral:7b and granite4:tiny-h, even outperforming several LLMs across the three metric 502 
+
+dimensions. This may be attributed to the fact that smaller datasets are often more curated and 503 
+
+of higher quality compared to the large amount of data required to train a large model 66 .504 
+
+Interestingly, medium-sized models (e.g., many models in the Mistral family) outperform larger 505 
+
+proprietary ones. These models seem to reach an optimal balance between parameter count 506 
+
+and performance, where additional parameters could disrupt this equilibrium, potentially leading 507 
+
+to over-fitting or plateaus 67 .508 
+
+We also found that overall general-purpose models outperform both domain-specific models 509 
+
+specialized in the biomedical domain and those specialized for text summarization, regardless 510 
+
+of size. A possible explanation might be that domain-specific models fine-tuned on biomedical 511 
+
+20 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+text might be better for learning and understanding the complex biomedical terminology or lex-512 
+
+ical patterns but fail in summarization tasks. On the other hand, models specifically designed 513 
+
+for text summarization might be good at summarizing in general but fail at capturing the com-514 
+
+plex biomedical meaning. Therefore, generalist models, leveraging their broad knowledge, seem 515 
+
+to perform better 68 . Additionally, domain-specific models can “forget” the general knowledge 516 
+
+acquired during the pre-training phase, experiencing a phenomenon called “catastrophic forget-517 
+
+ting”, which represents an issue when the task requires both biomedical knowledge and context 518 
+
+understanding for text summarization 69 .519 
+
+Most reasoning-oriented models ranked in the middle, indicating moderate performance. This 520 
+
+likely reflects their multi-step reasoning nature, which can be advantageous for tasks that require 521 
+
+breaking down problems into sequential steps, such as mathematical operations or computer 522 
+
+programming, but seems less suited for text summarization, which requires semantic compres-523 
+
+sion and factual grounding 70 .524 
+
+Traditional models ranked highest on the factual dimension, likely because their extractive ap-525 
+
+proach generates summaries closely aligned with the source abstracts, which factuality metrics 526 
+
+reward by design 71 .527 
+
+The expert assessment supported the findings of the automated benchmark. The two highest-528 
+
+ranked models consistently outperformed the two lowest-ranked models across all four evalua-529 
+
+tion dimensions. This alignment suggests that the automatic metrics capture relevant aspects of 530 
+
+summary quality and are broadly consistent with human judgments. 531 
+
+The results of this benchmark provide useful guidance for selecting summarization models 532 
+
+in biomedical and scientific settings. The strong performance of general-purpose LMs indicates 533 
+
+that broad, diverse pretraining is often more advantageous than narrow domain adaptation when 534 
+
+dealing with unseen scientific content. 535 
+
+Another key consideration is the trade-off between output quality and processing efficiency. 536 
+
+While LLMs achieved the highest overall scores, SLMs deliver competitive results at substantially 537 
+
+lower computational cost 72 , which makes them especially attractive for large-scale or resource-538 
+
+constrained applications. Choosing between large and small models therefore depends not only 539 
+
+on desired output quality but also on the intended scale of summarization. 540 
+
+Overall, the findings suggest that general-purpose LMs currently offer the most reliable and 541 
+
+practical choice for biomedical text summarization. Their consistent performance across eval-542 
+
+uation criteria demonstrates that broad generalization outweighs the marginal gains from more 543 
+
+narrowly specialized or fine-tuned approaches, many of which are not primarily optimized for text 544 
+
+summarization. 545 
+
+Limitations of the study 546 
+
+Even though our results are based on a robust evaluation framework, several limitations of our 547 
+
+study warrant discussion. Model access methods varied across the evaluation due to differing 548 
+
+application programming interface (API) capabilities and requirements. Hugging Face models 549 
+
+were accessed through their supported interfaces: the pipeline API with task=”summarization” 550 
+
+where available, or chat/completion formats for models that did not support the pipeline ap-551 
+
+proach. Ollama models required use of the generate endpoint with merged prompts, while 552 
+
+OpenAI, Anthropic, and Mistral models each mandated their respective provider-specific APIs 553 
+
+(responses.create, messages.create, and chat.complete) with distinct message structures. We 554 
+
+applied hyperparameter normalization where possible, though API-level constraints prevented 555 
+
+full standardization. For example, GPT-5 does not support temperature control, instead offering 556 
+
+only reasoning-specific parameters. Additionally, proprietary middleware layers may transform 557 
+
+requests and responses in undocumented ways, potentially affecting outputs independently of 558 
+
+21 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+the underlying model architectures. These necessary methodological variations warrant con-559 
+
+sideration when interpreting performance differences across models. Furthermore, all models 560 
+
+received an identical summarization prompt. While this ensures a controlled comparison, it 561 
+
+may disadvantage models whose instruction tuning differs from the chosen phrasing. Per-model 562 
+
+prompt optimization (e.g. via DSPy 73,74 ) could yield different absolute scores and rankings. Our 563 
+
+results therefore reflect performance under a fixed instruction, not each model’s attainable ceil-564 
+
+ing. 565 
+
+Reference-based evaluation cannot fully capture every valid way a good summary might be 566 
+
+written, as summarization is largely a subjective exercise. To account for this, we tried to capture 567 
+
+summary quality along diverse, complementary dimensions by combining lexical, semantic, and 568 
+
+factual metrics, and as a further assessment included a blinded expert evaluation as an indepen-569 
+
+dent check on the automatic scores. Nonetheless, since automatic metrics and human ratings 570 
+
+have not fully aligned in other settings 5,6 , we cannot formally guarantee that our metrics capture 571 
+
+the full space of valid summaries, which remains an important direction for future work. 572 
+
+Regarding our LLM-as-a-judge results, it is notable that the three judges are not indepen-573 
+
+dent: correlated errors mean the panel yields far fewer effective votes than its size suggests, 574 
+
+and a strong single judge can match it 75 . We therefore treat the panel median as bias-control, 575 
+
+not a route to higher accuracy, and its edge over the human leave-one-out ceiling reflects me-576 
+
+dian smoothing rather than above-human reliability. Furthermore, the summary-level agreement 577 
+
+pools models of very different quality. Within-model agreement is much lower, so the judge ranks 578 
+
+models reliably but separates similar-quality summaries weakly. Finally, the system-level agree-579 
+
+ment compares two automatic methods, not validation against humans (infeasible with only four 580 
+
+expert-rated models). 581 
+
+Another limitation of this benchmarking study is that we focused on a single summarization 582 
+
+task: generating concise summaries from biomedical abstracts. This setup provides a clear and 583 
+
+well-defined evaluation framework, but the findings may not fully extend to other forms of sci-584 
+
+entific or biomedical summarization, including full-text articles, clinical trial data, or lay-oriented 585 
+
+summaries. Given the rapid evolution of LLMs, these results just capture a specific snapshot in 586 
+
+time and may change as newer architectures and models become available. 587 
+
+A related consideration is our choice of reference summary. We used author-written high-588 
+
+lights as the reference against which summaries were evaluated, but condensing an abstract (let 589 
+
+alone a full publication) into a few bullet points is inherently subjective, and highlights inevitably 590 
+
+emphasize some findings over others. We nonetheless regard them as the most suitable refer-591 
+
+ence available, since they are author-generated, standardized across both publishers, and well 592 
+
+matched to our target of concise summaries within limited length. 593 
+
+Finally, although we deliberately drew articles from 20 journals spanning a broad range of 594 
+
+biomedical and translational fields, our corpus inevitably covers only part of this very diverse 595 
+
+domain. We cannot rule out that summarization performance, and the resulting model rankings, 596 
+
+would differ for subfields not well presented in our selection, leaving open how well these results 597 
+
+generalize across the biomedical domain. 598 
+
+# Conclusion 599 
+
+This benchmark provides a comprehensive evaluation of 62 text summarization methods on a 600 
+
+dataset of 1,000 biomedical abstracts paired with standardized highlights sections. Across all 601 
+
+lexical overlap, semantic similarity, and factual consistency metrics, general-purpose LLMs were 602 
+
+the best-performing models. Their ability to incorporate broad pretraining with strong semantic 603 
+
+understanding enabled them to outperform reasoning-oriented models, domain-specific mod-604 
+
+els, and encoder-decoder architectures. Especially medium-sized models achieved the highest 605 
+
+22 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+overall rankings, which indicates that increased scale beyond this range does not automatically 606 
+
+translate to improved summarization quality for biomedical text. 607 
+
+SLMs remain competitive for settings where computational resources are limited as they 608 
+
+offer balance between efficiency and output quality. In contrast, domain-specific models did not 609 
+
+show a systematic advantage, showing that narrow fine-tuning alone is insufficient to match the 610 
+
+generalization of broadly trained LLMs for this task. 611 
+
+Overall, this benchmark provides a systematic reference point for selecting summarization 612 
+
+models in biomedical research. By assessing a broad spectrum of architectures under a unified 613 
+
+framework we underline the strengths and limitations of currently available systems and high-614 
+
+light the superiority of general-purpose LLMs for scientific text summarization. These insights 615 
+
+can support researchers and practitioners in choosing models that balance output quality, com-616 
+
+putational cost, and practical usability in biomedical workflows. 617 
+
+23 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+# Supplemental information 618 
+
+Figure 7: Summary length compliance per method: Proportion of generated summaries that fell within the target length of 15–100 words, were too short, or were too long, shown for each of the 62 evaluated methods. Methods are ordered by decreasing share of within-bounds summaries, with the within-bounds percentage annotated at the right of each bar. 24 
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint Figure 8: Model performance across metrics: Overview of the performance of all evaluated models across all metrics. 25 
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint Table 8: Training cutoff dates and potential overlap for all evaluated models: The training cutoff indicates the latest point in time up to which a model may have been trained; the source of this information is given in a separate column (confirmed, community, estimated, or unknown). Potential overlap describes the percentage of benchmark articles published on or before the respective cutoff date and therefore represents the theoretical maximum share of articles that could have been present in the model’s training data. Closed-source models are marked accordingly. Models are ordered by decreasing potential overlap. 
+
+Model Training cutoff Source Potential overlap (%) 
+
+claude-sonnet-4-20250514 (closed-source) 2025-03 confirmed 40.2 claude-opus-4-20250514 (closed-source) 2025-03 confirmed 40.2 claude-opus-4-1-20250805 (closed-source) 2025-03 community 40.2 deepseek-r1:1.5b 2025-01 community 33.1 deepseek-r1:7b 2025-01 community 33.1 deepseek-r1:8b 2025-01 community 33.1 deepseek-r1:14b 2025-01 community 33.1 gpt-5-2025-08-07 (closed-source) 2024-10 community 24.0 gemma3:270M 2024-08 confirmed 20.3 gemma3:1b 2024-08 confirmed 20.3 gemma3:4b 2024-08 confirmed 20.3 gemma3:12b 2024-08 confirmed 20.3 PetrosStav/gemma3-tools:4b 2024-08 confirmed 20.3 phi4:14b 2024-06 confirmed 13.8 gpt-oss:20b 2024-06 community 13.8 gpt-4.1 (closed-source) 2024-06 confirmed 13.8 gpt-4.1-mini (closed-source) 2024-06 confirmed 13.8 gpt-5-nano-2025-08-07 (closed-source) 2024-05 community 11.8 gpt-5-mini-2025-08-07 (closed-source) 2024-05 community 11.8 granite3.3:2b 2024-04 estimated 10.3 granite3.3:8b 2024-04 estimated 10.3 claude-3-5-haiku-20241022 (closed-source) 2024-04 confirmed 10.3 swiss-ai/Apertus-8B-Instruct-2509 2024-03 confirmed 8.5 Uni-SMART/SciLitLLM1.5-7B 2024 estimated 6.6 Uni-SMART/SciLitLLM1.5-14B 2024 estimated 6.6 facebook/bart-large-cnn 2019 estimated 5.0 facebook/bart-base 2019 estimated 5.0 google-t5/t5-base 2019-04 estimated 5.0 google-t5/t5-large 2019-04 estimated 5.0 csebuetnlp/mT5 multilingual XLSum 2020 estimated 5.0 google/pegasus-xsum 2020 estimated 5.0 google/pegasus-large 2020 estimated 5.0 google/pegasus-cnn dailymail 2020 estimated 5.0 AlgorithmicResearchGroup/led large 16384 arxiv summarization 2020 estimated 5.0 google/pegasus-pubmed 2020 estimated 5.0 google/bigbird-pegasus-large-pubmed 2020 estimated 5.0 microsoft/biogpt 2021 estimated 5.0 aaditya/OpenBioLLM-Llama3-8B 2023-03 confirmed 5.0 BioMistral/BioMistral-7B 2023 estimated 5.0 llama3.1:8b 2023-12 confirmed 5.0 llama3.2:1b 2023-12 confirmed 5.0 llama3.2:3b 2023-12 confirmed 5.0 medllama2:7b 2022-09 confirmed 5.0 phi3:3.8b 2023-10 confirmed 5.0 gpt-3.5-turbo (closed-source) 2021-09 confirmed 5.0 gpt-4o (closed-source) 2023-10 confirmed 5.0 gpt-4o-mini (closed-source) 2023-10 confirmed 5.0 mistral:7b — unknown —mistral-nemo:12b — unknown —mistral-small3.2:24b — unknown —qwen3:4b — unknown —qwen3:8b — unknown —granite4:micro — unknown —granite4:micro-h — unknown —granite4:tiny-h — unknown —granite4:small-h — unknown —mistral-medium-2505 (closed-source) — unknown —magistral-medium-2509 (closed-source) — unknown —mistral-large-2411 (closed-source) — unknown —mistral-small-2506 (closed-source) — unknown —
+
+26 
+
+.CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint Acknowledgments 619 
+
+Enrico Bono is supported by a grant from the European Union’s Horizon Europe Marie Skłodowska-620 
+
+Curie Actions Doctoral Networks program project PICKED (HORIZON–MSCA–2023–DN-01, 621 
+
+grant number 101168626). Louiza Galou is supported by a grant from the European Union’s 622 
+
+Horizon Europe Marie Skłodowska-Curie Actions Doctoral Networks Industrial Doctorates pro-623 
+
+gram project PROMOTE (HORIZON–MSCA–2023–DN-01, grant number 101169245). Paul 624 
+
+Perco and Matthias Ley are members of and would like to cordially thank the COST Action 625 
+
+PerMediK, CA21165, supported by COST (European Cooperation in Science and Technology). 626 
+
+We gratefully acknowledge Dorota Wojenska for her support in optimizing the overview workflow 627 
+
+figure (Figure 1). 628 
+
+# Author contributions 629 
+
+Conceptualization: M.L., P.P., E.B. and F.B.; Methodology: M.L., P.P., E.B. and F.B.; Software: 630 
+
+M.L.; Formal analysis: F.B., E.B., P.P. and M.L.; Validation: E.B., F.B., L.F., P.P., M.L., L.G., 631 
+
+K.K.-I., S.W., P.A. and K.K.; Writing—original draft: F.B., E.B., M.L. and P.P.; Writing—review & 632 
+
+editing: E.B., F.B., P.P., M.L., K.K., L.G., L.F., K.K.-I., P.A. and S.W.; Visualization: F.B. and E.B.; 633 
+
+Supervision: M.L. and P.P.; All authors have read and agreed to the published version of the 634 
+
+manuscript. 635 
+
+# Declaration of interests 636 
+
+K.K. is co-founder and shareholder of Delta4 GmbH (Vienna, Austria). F.B., E.B., L.F., L.G., 637 
+
+K.K.-I., S.W., P.A., P.P. and M.L. are employees of Delta4 GmbH (Vienna, Austria). 638 
+
+# Declaration of generative AI and AI-assisted technologies in 639 
+
+# the writing process 640 
+
+During the preparation of this work the author(s) used Anthropic (Claude Opus 4.5) and OpenAI 641 
+
+(GPT-5) in order to enhance textual clarity and readability without introducing of new hypotheses 642 
+
+or data. After using this tool/service, the author(s) reviewed and edited the content as needed 643 
+
+and take(s) full responsibility for the content of the published article. 644 
+
+# References 645 
+
+1. Zhang, Y., Jin, H., Meng, D., Wang, J., and Tan, J. (2025). A comprehensive survey 646 
+
+on process-oriented automatic text summarization with exploration of llm-based methods. 647 
+
+URL: https://arxiv.org/abs/2403.02901 . arXiv:2403.02901 .648 
+
+2. Zhang, H., Yu, P. S., and Zhang, J. (2024). A systematic survey of text summarization: From 649 
+
+statistical methods to large language models. URL: https://arxiv.org/abs/2406.11289 .650 
+
+arXiv:2406.11289 .651 
+
+3. Rohil, M. K., and Magotra, V. (2022). An exploratory study of automatic text summa-652 
+
+rization in biomedical and healthcare domain. Healthcare Analytics 2, 100058. URL: 653 
+
+27 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+https://www.sciencedirect.com/science/article/pii/S2772442522000223 . doi: https: 654 
+
+//doi.org/10.1016/j.health.2022.100058 .655 
+
+4. Xie, Q., Luo, Z., Wang, B., and Ananiadou, S. (2023). A survey for biomedical text summa-656 
+
+rization: From pre-trained to large language models. URL: https://arxiv.org/abs/2304. 657 
+
+08763 . arXiv:2304.08763 .658 
+
+5. Chen, Q., Hu, Y., Peng, X., Xie, Q., Jin, Q., Gilson, A., Singer, M. B., Ai, X., Lai, P.-T., 659 
+
+Wang, Z., Keloth, V. K., Raja, K., Huang, J., He, H., Lin, F., Du, J., Zhang, R., Zheng, 660 
+
+W. J., Adelman, R. A., Lu, Z., and Xu, H. (2025). Benchmarking large language models 661 
+
+for biomedical natural language processing applications and recommendations. Nature 662 
+
+Communications 16 , 3280. URL: https://doi.org/10.1038/s41467-025-56989-2 . doi: 10. 663 
+
+1038/s41467-025-56989-2 .664 
+
+6. Celikten, T., and Onan, A. (2025). Benchmarking large language models for biomedi-665 
+
+cal literature summarization: Abstractive versus extractive paradigms. IEEE Access 13 ,666 
+
+152682–152715. URL: https://doi.org/10.1109/ACCESS.2025.3604351 . doi: 10.1109/ 667 
+
+ACCESS.2025.3604351 .668 
+
+7. Toprak, A. G., and Onan, A. (2025). Benchmarking intelligent large language models for 669 
+
+biomedical text summarization: A performance evaluation. In: Intelligent and Fuzzy Sys-670 
+
+tems (INFUS 2025) vol. 1529 of Lecture Notes in Networks and Systems . Springer ( 492– 671 
+
+500). doi: 10.1007/978-3-031-97992-7\_55 .672 
+
+8. Luhn, H. P. (1958). The automatic creation of literature abstracts. IBM J. Res. Dev. 2, 159– 673 
+
+165. URL: https://api.semanticscholar.org/CorpusID:15475171 .674 
+
+9. Edmundson, H. P. (1969). New methods in automatic extracting. J. ACM 16 , 264–285. URL: 675 
+
+https://doi.org/10.1145/321510.321519 . doi: 10.1145/321510.321519 .676 
+
+10. Robertson, S. (2004). Understanding inverse document frequency: On theoretical ar-677 
+
+guments for idf. Journal of Documentation - J DOC 60 , 503–520. doi: 10.1108/ 678 
+
+00220410410560582 .679 
+
+11. Reeve, L. H., Han, H., Nagori, S. V., Yang, J. C., Schwimmer, T. A., and Brooks, A. D. (2006). 680 
+
+Concept frequency distribution in biomedical text summarization. In: Proceedings of the 681 
+
+15th ACM International Conference on Information and Knowledge Management. CIKM ’06 682 
+
+New York, NY, USA: Association for Computing Machinery. ISBN 1595934332 ( 604–611). 683 
+
+URL: https://doi.org/10.1145/1183614.1183701 . doi: 10.1145/1183614.1183701 .684 
+
+12. Mihalcea, R., and Tarau, P. (2004). TextRank: Bringing order into text. In: Lin, D., and Wu, 685 
+
+D., eds. Proceedings of the 2004 Conference on Empirical Methods in Natural Language 686 
+
+Processing. Barcelona, Spain: Association for Computational Linguistics ( 404–411). URL: 687 
+
+https://aclanthology.org/W04-3252/ .688 
+
+13. Afzal, M., Alam, F., Malik, K. M., and Malik, G. M. (2020). Clinical context–aware biomed-689 
+
+ical text summarization using deep neural network: Model development and validation. J 690 
+
+Med Internet Res 22 , e19810. URL: http://www.jmir.org/2020/10/e19810/ . doi: 10.2196/ 691 
+
+19810 .692 
+
+14. Almasoud, A., Hassine, S., Al-Wesabi, F., Nour, M., Hilal, A., Al Duhayyim, M., Hamza, A., 693 
+
+and Motwakel, A. (2022). Automated multi-document biomedical text summarization using 694 
+
+deep learning model. Computers, Materials & Continua 71 , 5800. doi: 10.32604/cmc.2022. 695 
+
+024556 .696 
+
+28 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+15. Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, L., and 697 
+
+Polosukhin, I. (2023). Attention is all you need. URL: https://arxiv.org/abs/1706.03762 .698 
+
+arXiv:1706.03762 .699 
+
+16. Devlin, J., Chang, M.-W., Lee, K., and Toutanova, K. (2019). Bert: Pre-training of deep bidi-700 
+
+rectional transformers for language understanding. URL: https://arxiv.org/abs/1810. 701 
+
+04805 . arXiv:1810.04805 .702 
+
+17. Lewis, M., Liu, Y., Goyal, N., Ghazvininejad, M., Mohamed, A., Levy, O., Stoyanov, V., 703 
+
+and Zettlemoyer, L. (2019). BART: denoising sequence-to-sequence pre-training for natural 704 
+
+language generation, translation, and comprehension. CoRR abs/1910.13461 . URL: http: 705 
+
+//arxiv.org/abs/1910.13461 . arXiv:1910.13461 .706 
+
+18. Yuan, H., Yuan, Z., Gan, R., Zhang, J., Xie, Y., and Yu, S. (2022). BioBART: Pretraining and 707 
+
+evaluation of a biomedical generative language model. In: Demner-Fushman, D., Cohen, 708 
+
+K. B., Ananiadou, S., and Tsujii, J., eds. Proceedings of the 21st Workshop on Biomedical 709 
+
+Language Processing. Dublin, Ireland: Association for Computational Linguistics ( 97–109). 710 
+
+URL: https://aclanthology.org/2022.bionlp-1.9/ . doi: 10.18653/v1/2022.bionlp-1.9 .711 
+
+19. Abinaya, S., Vigil, M., Keerthika, K., and Varshasri, R. (2024). Medical text summarization 712 
+
+using bart with lora-based parameter efficient fine tuning. 713 
+
+20. Raffel, C., Shazeer, N., Roberts, A., Lee, K., Narang, S., Matena, M., Zhou, Y., Li, W., and 714 
+
+Liu, P. J. (2020). Exploring the limits of transfer learning with a unified text-to-text trans-715 
+
+former. Journal of Machine Learning Research 21 , 1–67. URL: http://jmlr.org/papers/ 716 
+
+v21/20-074.html .717 
+
+21. Zhang, J., Zhao, Y., Saleh, M., and Liu, P. J. (2020). Pegasus: Pre-training with extracted 718 
+
+gap-sentences for abstractive summarization. URL: https://arxiv.org/abs/1912.08777 .719 
+
+arXiv:1912.08777 .720 
+
+22. Beltagy, I., Peters, M. E., and Cohan, A. (2020). Longformer: The long-document trans-721 
+
+former. URL: https://arxiv.org/abs/2004.05150 . arXiv:2004.05150 .722 
+
+23. Steblianko, O., Shymkovych, V., Kravets, P., Novatskyi, A., and Shymkovych, L. (2024). 723 
+
+Scientific article summarization model with unbounded input length. Information, Computing 724 
+
+and Intelligent systems ( 150–158). doi: 10.20535/2786-8729.5.2024.314724 .725 
+
+24. Radford, A., and Narasimhan, K. (2018). Improving language understanding by generative 726 
+
+pre-training. URL: https://api.semanticscholar.org/CorpusID:49313245 .727 
+
+25. Bai, Y., Kadavath, S., Kundu, S., Askell, A., Kernion, J., Jones, A., Chen, A., Goldie, A., 728 
+
+Mirhoseini, A., McKinnon, C. et al. (2022). Constitutional ai: Harmlessness from ai feed-729 
+
+back. URL: https://arxiv.org/abs/2212.08073 . arXiv:2212.08073 .730 
+
+26. Grattafiori, A., Dubey, A., Jauhri, A., Pandey, A., Kadian, A., Al-Dahle, A., Letman, A., 731 
+
+Mathur, A., Schelten, A., Vaughan, A. et al. (2024). The llama 3 herd of models. URL: 732 
+
+https://arxiv.org/abs/2407.21783 . arXiv:2407.21783 .733 
+
+27. Team, G., Kamath, A., Ferret, J., Pathak, S., Vieillard, N., Merhej, R., Perrin, S., Mate-734 
+
+jovicova, T., Ram ´ e, A., Rivi ` ere, M. et al. (2025). Gemma 3 technical report. URL: 735 
+
+https://arxiv.org/abs/2503.19786 . arXiv:2503.19786 .736 
+
+29 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+28. Plaat, A., Wong, A., Verberne, S., Broekens, J., van Stein, N., and Back, T. (2025). Multi-737 
+
+step reasoning with large language models, a survey. URL: https://arxiv.org/abs/2407. 738 
+
+11511 . arXiv:2407.11511 .739 
+
+29. Wang, C., and Kantarcioglu, M. (2025). A review of deepseek models’ key innovative tech-740 
+
+niques. URL: https://arxiv.org/abs/2503.11486 . arXiv:2503.11486 .741 
+
+30. Team, Q. (2025). Qwen3 technical report. URL: https://arxiv.org/abs/2505.09388 .742 
+
+arXiv:2505.09388 .743 
+
+31. Mistral-AI, :, Rastogi, A., Jiang, A. Q., Lo, A., Berrada, G., Lample, G., Rute, J., Barmentlo, 744 
+
+J., Yadav, K., Khandelwal, K. et al. (2025). Magistral. URL: https://arxiv.org/abs/2506. 745 
+
+10910 . arXiv:2506.10910 .746 
+
+32. Ankit Pal, M. S. (2024). Openbiollms: Advancing open-source large language models for 747 
+
+healthcare and life sciences. https://huggingface.co/aaditya/OpenBioLLM-Llama3-70B 748 
+
+Hugging Face. 749 
+
+33. Luo, R., Sun, L., Xia, Y., Qin, T., Zhang, S., Poon, H., and Liu, T.-Y. (2022). BioGPT: gener-750 
+
+ative pre-trained transformer for biomedical text generation and mining. Briefings in Bioin-751 
+
+formatics 23 . URL: https://doi.org/10.1093/bib/bbac409 . doi: 10.1093/bib/bbac409 .752 
+
+arXiv:https://academic.oup.com/bib/article-pdf/23/6/bbac409/47144271/bbac409.pdf .753 
+
+Bbac409. 754 
+
+34. Labrak, Y., Bazoge, A., Morin, E., Gourraud, P.-A., Rouvier, M., and Dufour, R. (2024). 755 
+
+Biomistral: A collection of open-source pretrained large language models for medical do-756 
+
+mains. arXiv:2402.10373 .757 
+
+35. Li, S., Huang, J., Zhuang, J., Shi, Y., Cai, X., Xu, M., Wang, X., Zhang, L., Ke, G., and 758 
+
+Cai, H. (2025). Scilitllm: How to adapt llms for scientific literature understanding. URL: 759 
+
+https://arxiv.org/abs/2408.15545 . arXiv:2408.15545 .760 
+
+36. Gallifant, J., Afshar, M., Ameen, S., Aphinyanaphongs, Y., Chen, S., Cacciamani, G., 761 
+
+Demner-Fushman, D., Dligach, D., Daneshjou, R., Fernandes, C., Hansen, L., Landman, 762 
+
+A., Lehmann, L., McCoy, L., Miller, T., Moreno, A., Munch, N., Restrepo, D., Savova, G., 763 
+
+Umeton, R., Gichoya, J., Collins, G., Moons, K., Celi, L., and Bitterman, D. (2025). The 764 
+
+tripod-llm reporting guideline for studies using large language models. Nature medicine 31 ,765 
+
+60–69. doi: 10.1038/s41591-024-03425-5 . Publisher Copyright: © The Author(s), under 766 
+
+exclusive licence to Springer Nature America, Inc. 2025. 767 
+
+37. Elsevier (2024). Highlights. https://www.elsevier.com/researcher/author/ 768 
+
+tools-and-resources/highlights (accessed: 2025-08-07). 769 
+
+38. Cell Press (2024). Final submission: Other components: Highlights. https://www.cell. 770 
+
+com/cell/information-for-authors/final-submission (accessed: 2025-08-07). 771 
+
+39. Belcak, P., Heinrich, G., Diao, S., Fu, Y., Dong, X., Muralidharan, S., Lin, Y. C., and 772 
+
+Molchanov, P. (2025). Small language models are the future of agentic ai. URL: https: 773 
+
+//arxiv.org/abs/2506.02153 . arXiv:2506.02153 .774 
+
+40. Lin, C.-Y. (2004). ROUGE: A package for automatic evaluation of summaries. In: Text 775 
+
+Summarization Branches Out. Barcelona, Spain: Association for Computational Linguistics 776 
+
+( 74–81). URL: https://aclanthology.org/W04-1013/ .777 
+
+30 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+41. Papineni, K., Roukos, S., Ward, T., and Zhu, W.-J. (2002). Bleu: a method for auto-778 
+
+matic evaluation of machine translation. In: Isabelle, P., Charniak, E., and Lin, D., eds. 779 
+
+Proceedings of the 40th Annual Meeting of the Association for Computational Linguistics. 780 
+
+Philadelphia, Pennsylvania, USA: Association for Computational Linguistics ( 311–318). 781 
+
+URL: https://aclanthology.org/P02-1040/ . doi: 10.3115/1073083.1073135 .782 
+
+42. Banerjee, S., and Lavie, A. (2005). METEOR: An automatic metric for MT evaluation with 783 
+
+improved correlation with human judgments. In: Goldstein, J., Lavie, A., Lin, C.-Y., and 784 
+
+Voss, C., eds. Proceedings of the ACL Workshop on Intrinsic and Extrinsic Evaluation Mea-785 
+
+sures for Machine Translation and/or Summarization. Ann Arbor, Michigan: Association for 786 
+
+Computational Linguistics ( 65–72). URL: https://aclanthology.org/W05-0909/ .787 
+
+43. Zhang, T., Kishore, V., Wu, F., Weinberger, K. Q., and Artzi, Y. (2020). Bertscore: Evaluating 788 
+
+text generation with bert. URL: https://arxiv.org/abs/1904.09675 . arXiv:1904.09675 .789 
+
+44. Liu, Y., Ott, M., Goyal, N., Du, J., Joshi, M., Chen, D., Levy, O., Lewis, M., Zettlemoyer, L., 790 
+
+and Stoyanov, V. (2019). Roberta: A robustly optimized bert pretraining approach. URL: 791 
+
+https://arxiv.org/abs/1907.11692 . arXiv:1907.11692 .792 
+
+45. He, P., Liu, X., Gao, J., and Chen, W. (2021). Deberta: Decoding-enhanced bert with 793 
+
+disentangled attention. URL: https://arxiv.org/abs/2006.03654 . arXiv:2006.03654 .794 
+
+46. Song, K., Tan, X., Qin, T., Lu, J., and Liu, T.-Y. (2020). Mpnet: Masked and per-795 
+
+muted pre-training for language understanding. URL: https://arxiv.org/abs/2004. 796 
+
+09297 . arXiv:2004.09297 .797 
+
+47. Zha, Y., Yang, Y., Li, R., and Hu, Z. (2023). Alignscore: Evaluating factual consistency with a 798 
+
+unified alignment function. URL: https://arxiv.org/abs/2305.16739 . arXiv:2305.16739 .799 
+
+48. Laban, P., Schnabel, T., Bennett, P. N., and Hearst, M. A. (2021). Summac: Re-visiting 800 
+
+nli-based models for inconsistency detection in summarization. URL: https://arxiv.org/ 801 
+
+abs/2111.09525 . arXiv:2111.09525 .802 
+
+49. Tang, L., Laban, P., and Durrett, G. (2024). Minicheck: Efficient fact-checking of llms on 803 
+
+grounding documents. URL: https://arxiv.org/abs/2404.10774 . arXiv:2404.10774 .804 
+
+50. GitHub (2026). Llm knowledge cut-off dates summary. https://github.com/HaoooWang/ 805 
+
+llm-knowledge-cutoff-dates (accessed: 2026-04-09). 806 
+
+51. Fabbri, A. R., Kry´ sci ´ nski, W., McCann, B., Xiong, C., Socher, R., and Radev, D. (2021). 807 
+
+Summeval: Re-evaluating summarization evaluation. URL: https://arxiv.org/abs/2007. 808 
+
+12626 . arXiv:2007.12626 .809 
+
+52. Liu, Y., Iter, D., Xu, Y., Wang, S., Xu, R., and Zhu, C. (2023). G-eval: Nlg evalua-810 
+
+tion using gpt-4 with better human alignment. URL: https://arxiv.org/abs/2303.16634 .811 
+
+arXiv:2303.16634 .812 
+
+53. Gwet, K. Handbook of inter-rater reliability: The definitive guide to measuring the extent of 813 
+
+agreement among raters (2012). 814 
+
+54. Zheng, L., Chiang, W.-L., Sheng, Y., Zhuang, S., Wu, Z., Zhuang, Y., Lin, Z., Li, Z., Li, D., 815 
+
+Xing, E., Zhang, H., Gonzalez, J., and Stoica, I. (2023). Judging LLM-as-a-judge with MT-816 
+
+bench and chatbot arena. In: Oh, A., Naumann, T., Globerson, A., Saenko, K., Hardt, M., 817 
+
+and Levine, S., eds. Advances in Neural Information Processing Systems vol. 36. Curran 818 
+
+Associates, Inc. ( 46595–46623). 819 
+
+31 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+55. Verga, P., Hofstatter, S., Althammer, S., Su, Y., Piktus, A., Arkhangorodsky, A., Xu, 820 
+
+M., White, N., and Lewis, P. (2024). Replacing Judges with Juries: Evaluating LLM 821 
+
+Generations with a Panel of Diverse Models. arXiv. doi: 10.48550/arXiv.2404.18796 .822 
+
+arXiv:2404.18796 .823 
+
+56. Liu, Y., Iter, D., Xu, Y., Wang, S., Xu, R., and Zhu, C. (2023). G-Eval: NLG Evalu-824 
+
+ation using Gpt-4 with Better Human Alignment. In: Bouamor, H., Pino, J., and Bali, 825 
+
+K., eds. Proceedings of the 2023 Conference on Empirical Methods in Natural Lan-826 
+
+guage Processing. Singapore: Association for Computational Linguistics ( 2511–2522). 827 
+
+doi: 10.18653/v1/2023.emnlp-main.153 .828 
+
+57. McKinney, W. (2010). Data structures for statistical computing in python. In: van der Walt, 829 
+
+S., and Millman, J., eds. Proceedings of the 9th Python in Science Conference. ( 51 – 56). 830 
+
+58. Pedregosa, F., Varoquaux, G., Gramfort, A., Michel, V., Thirion, B., Grisel, O., Blondel, 831 
+
+M., Prettenhofer, P., Weiss, R., Dubourg, V. et al. (2011). Scikit-learn: Machine learning in 832 
+
+Python. Journal of Machine Learning Research 12 , 2825–2830. 833 
+
+59. Hagberg, A., Swart, P., and S Chult, D. Exploring network structure, dynamics, and function 834 
+
+using networkx. Tech. Rep. Los Alamos National Lab.(LANL), Los Alamos, NM (United 835 
+
+States) (2008). 836 
+
+60. Brin, S., and Page, L. (1998). The anatomy of a large-scale hypertextual web 837 
+
+search engine. Computer Networks and ISDN Systems 30 , 107–117. URL: https: 838 
+
+//www.sciencedirect.com/science/article/pii/S016975529800110X . doi: https://doi. 839 
+
+org/10.1016/S0169-7552(98)00110-X . Proceedings of the Seventh International World 840 
+
+Wide Web Conference. 841 
+
+61. Bird, S., Klein, E., and Loper, E. Natural language processing with Python: analyzing text 842 
+
+with the natural language toolkit. ” O’Reilly Media, Inc.” (2009). 843 
+
+62. Reimers, N., and Gurevych, I. (2019). Sentence-bert: Sentence embeddings using siamese 844 
+
+bert-networks. URL: https://arxiv.org/abs/1908.10084 . arXiv:1908.10084 .845 
+
+63. Wolf, T., Debut, L., Sanh, V., Chaumond, J., Delangue, C., Moi, A., Cistac, P., Rault, T., Louf, 846 
+
+R., Funtowicz, M. et al. (2020). Transformers: State-of-the-art natural language process-847 
+
+ing. In: Proceedings of the 2020 Conference on Empirical Methods in Natural Language 848 
+
+Processing: System Demonstrations. Online: Association for Computational Linguistics ( 849 
+
+38–45). URL: https://www.aclweb.org/anthology/2020.emnlp-demos.6 .850 
+
+64. Panickssery, A., Bowman, S. R., and Feng, S. (2024). LLM Evaluators Recognize and Favor 851 
+
+Their Own Generations. In: Advances in Neural Information Processing Systems vol. 37. 852 
+
+Curran Associates, Inc. ( 68772–68802). doi: 10.52202/079017-2197 .853 
+
+65. Pombal, J., Rei, R., and Martins, A. F. T. (2026). Self-Preference Bias in Rubric-854 
+
+Based Evaluation of Large Language Models. arXiv. doi: 10.48550/arXiv.2604.06996 .855 
+
+arXiv:2604.06996 .856 
+
+66. Xu, B., Chen, Y., Wen, Z., Liu, W., and He, B. (2025). Evaluating small language models 857 
+
+for news summarization: Implications and factors influencing performance. URL: https: 858 
+
+//arxiv.org/abs/2502.00641 . arXiv:2502.00641 .859 
+
+32 
+
+> .CC-BY 4.0 International license made available under a (which was not certified by peer review) is the author/funder, who has granted bioRxiv a license to display the preprint in perpetuity. It is The copyright holder for this preprint this version posted July 16, 2026. ;https://doi.org/10.64898/2026.01.09.697335 doi: bioRxiv preprint
+
+67. Muennighoff, N., Rush, A. M., Barak, B., Scao, T. L., Piktus, A., Tazi, N., Pyysalo, S., 860 
+
+Wolf, T., and Raffel, C. (2025). Scaling data-constrained language models. URL: https: 861 
+
+//arxiv.org/abs/2305.16264 . arXiv:2305.16264 .862 
+
+68. Dorfner, F. J., Dada, A., Busch, F., Makowski, M. R., Han, T., Truhn, D., Kleesiek, J., Sushil, 863 
+
+M., Lammert, J., Adams, L. C., and Bressem, K. K. (2024). Biomedical large languages 864 
+
+models seem not to be superior to generalist models on unseen medical data. URL: https: 865 
+
+//arxiv.org/abs/2408.13833 . arXiv:2408.13833 .866 
+
+69. Zhou, Y., Liu, X., Zhang, X., Ning, C., Wang, S., Hu, G., and Wu, J. (2025). Investigating and 867 
+
+mitigating catastrophic forgetting in medical knowledge injection through internal knowledge 868 
+
+augmentation learning. OpenReview. Preprint. Available online: https://openreview.net/ 869 
+
+forum?id=i9RDDi2SZC .870 
+
+70. Jin, K., Wang, Y., Santos, L., Fang, T., Yang, X., Im, S. K., and Oliveira, H. G. (2025). Rea-871 
+
+soning or not? a comprehensive evaluation of reasoning llms for dialogue summarization. 872 
+
+URL: https://arxiv.org/abs/2507.02145 . arXiv:2507.02145 .873 
+
+71. Durmus, E., He, H., and Diab, M. (2020). FEQA: A question answering evaluation 874 
+
+framework for faithfulness assessment in abstractive summarization. In: Jurafsky, D., 875 
+
+Chai, J., Schluter, N., and Tetreault, J., eds. Proceedings of the 58th Annual Meet-876 
+
+ing of the Association for Computational Linguistics. Online: Association for Computa-877 
+
+tional Linguistics ( 5055–5070). URL: https://aclanthology.org/2020.acl-main.454/ .878 
+
+doi: 10.18653/v1/2020.acl-main.454 .879 
+
+72. Irugalbandara, C., Mahendra, A., Daynauth, R., Arachchige, T. K., Dantanarayana, J., 880 
+
+Flautner, K., Tang, L., Kang, Y., and Mars, J. (2024). Scaling down to scale up: A cost-881 
+
+benefit analysis of replacing openai’s llm with open source slms in production. URL: 882 
+
+https://arxiv.org/abs/2312.14972 . arXiv:2312.14972 .883 
+
+73. Khattab, O., Singhvi, A., Maheshwari, P., Zhang, Z., Santhanam, K., Vardhamanan, S., Haq, 884 
+
+S., Sharma, A., Joshi, T. T., Moazam, H., Miller, H., Zaharia, M., and Potts, C. (2023). Dspy: 885 
+
+Compiling declarative language model calls into self-improving pipelines. URL: https:// 886 
+
+arxiv.org/abs/2310.03714 . arXiv:2310.03714 .887 
+
+74. Khattab, O., Santhanam, K., Li, X. L., Hall, D., Liang, P., Potts, C., and Zaharia, M. (2023). 888 
+
+Demonstrate-search-predict: Composing retrieval and language models for knowledge-889 
+
+intensive nlp. URL: https://arxiv.org/abs/2212.14024 . arXiv:2212.14024 .890 
+
+75. Kohli, G. (2026). Nine Judges, Two Effective Votes: Correlated Errors Undermine LLM 891 
+
+Evaluation Panels. arXiv. doi: 10.48550/arXiv.2605.29800 . arXiv:2605.29800 .892 
+
+33

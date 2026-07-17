@@ -1,0 +1,140 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-17T20:46:17.391618+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 1,
+    "deep_cap": 6,
+    "deep_selected": 1,
+    "quick_candidates": 2,
+    "quick_skim_target": 11,
+    "quick_selected": 2
+  },
+  "deep_dive": [
+    {
+      "id": "2607.14658v1",
+      "source": "arxiv",
+      "title": "TopoAgent: A Self-Evolving Topological Agent for Multimodal Scientific Reasoning",
+      "abstract": "While Multimodal Large Language Models (MLLMs) excel in general tasks, rigorous scientific reasoning remains challenging due to the limitations of monolithic, linear planning. Such sequential designs often suffer from visual-semantic misalignment, long-context hallucinations, and brittle execution under fixed task granularity. We propose TopoAgent, a self-evolving topological framework that replaces linear trajectories with dynamic, state-isolated graph evolution. TopoAgent first employs a front-end decomposer to fracture complex queries into visually-grounded atoms. These atoms are organized into a Directed Acyclic Graph (DAG) based on their dependencies, enabling strict context isolation to shield the reasoning engine from irrelevant historical noise. Furthermore, we introduce adaptive atomic fission, which dynamically splits bottleneck nodes into finer-grained sub-atoms at runtime when tool capability boundaries are exceeded. Extensive experiments across mathematics, physics, and chemistry benchmarks demonstrate that TopoAgent significantly outperforms state-of-the-art linear agent frameworks, providing a robust, noise-resistant, and self-correcting paradigm for autonomous scientific reasoning.",
+      "authors": [
+        "Mingze Xu",
+        "Yinghui Li",
+        "Jiayi Kuang",
+        "Zhanhui Kang",
+        "Di Yin",
+        "Ying Shen",
+        "Xing Sun",
+        "Yuxing Han"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-16T07:22:59+00:00",
+      "link": "https://arxiv.org/pdf/2607.14658v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Mitigating long-context hallucinations via context isolation",
+      "llm_evidence_cn": "通过上下文隔离缓解长上下文幻觉",
+      "llm_evidence": "通过上下文隔离缓解长上下文幻觉",
+      "canonical_evidence": "通过上下文隔离缓解长上下文幻觉",
+      "llm_tldr_en": "Monolithic linear planning in multimodal LLMs suffers from visual-semantic misalignment and long-context hallucinations. We propose TopoAgent, a self-evolving topological framework that uses directed acyclic graphs and strict context isolation to shield reasoning from irrelevant history, effectively mitigating long-context hallucinations.",
+      "llm_tldr_cn": "多模态大语言模型中的单体线性规划常受视觉语义错位和长上下文幻觉的困扰。本文提出TopoAgent，一种自进化拓扑框架，通过前端分解器将复杂查询分解为视觉基础原子，并基于依赖关系组织为有向无环图，实施严格的上下文隔离以保护推理引擎免受无关历史影响。该方法有效缓解了长上下文幻觉，并在固定任务粒度下提升了执行的鲁棒性，为多模态科学推理提供了新范式。",
+      "llm_tldr": "多模态大语言模型中的单体线性规划常受视觉语义错位和长上下文幻觉的困扰。本文提出TopoAgent，一种自进化拓扑框架，通过前端分解器将复杂查询分解为视觉基础原子，并基于依赖关系组织为有向无环图，实施严格的上下文隔离以保护推理引擎免受无关历史影响。该方法有效缓解了长上下文幻觉，并在固定任务粒度下提升了执行的鲁棒性，为多模态科学推理提供了新范式。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "hallucination in long context language models",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.12963v2",
+      "source": "arxiv",
+      "title": "The Illusion of Robustness: Aggregate Accuracy Hides Prediction Flips under Task-Irrelevant Context",
+      "abstract": "As large language models (LLMs) grow more capable, they are increasingly deployed in context-rich settings where task inputs are often accompanied by long, partially irrelevant context. In a controlled setting, we find that state-of-the-art models often appear robust to task-irrelevant context at the aggregate level: prepending it to benchmark questions causes little change in overall accuracy. This aggregate stability, however, masks significant per-example instability. Even semantically meaningless pseudo-words, formed by randomly combining characters, can markedly shift model predictions on a small fraction of examples, degrading performance on some while improving it on others. This two-sided effect holds consistently across a wide range of models and datasets, yet the affected examples are largely model-specific. We further show that this instability is modulated by context type, context length, test-time compute, and model development stage. Together, our findings reveal context-induced tail risks concealed by aggregate accuracy, motivating per-example reliability evaluation of language models.",
+      "authors": [
+        "Yanzhe Zhang",
+        "Sanmi Koyejo",
+        "Diyi Yang"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-07-14T17:01:12+00:00",
+      "link": "https://arxiv.org/pdf/2607.12963v2",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Instability and prediction flips in long context LLMs",
+      "llm_evidence_cn": "长上下文大模型中的不稳定性和预测翻转",
+      "llm_evidence": "长上下文大模型中的不稳定性和预测翻转",
+      "canonical_evidence": "长上下文大模型中的不稳定性和预测翻转",
+      "llm_tldr_en": "This paper reveals that while LLMs appear robust to long, task-irrelevant context at an aggregate level, they exhibit significant per-example instability and prediction flips, highlighting hidden vulnerabilities in context-rich settings.",
+      "llm_tldr_cn": "大语言模型在包含长无关上下文的场景中，虽然在聚合指标上表现出鲁棒性，但掩盖了单样本级别的显著不稳定性。研究发现，即使是语义上无意义的伪词也能导致模型预测发生翻转，这种双向效应在长上下文场景中持续存在，揭示了模型潜在的事实不一致风险。",
+      "llm_tldr": "大语言模型在包含长无关上下文的场景中，虽然在聚合指标上表现出鲁棒性，但掩盖了单样本级别的显著不稳定性。研究发现，即使是语义上无意义的伪词也能导致模型预测发生翻转，这种双向效应在长上下文场景中持续存在，揭示了模型潜在的事实不一致风险。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "hallucination in long context language models",
+      "matched_requirement_id": "req-6",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "biorxiv-10-64898-2026-01-09-697335-v4",
+      "source": "biorxiv",
+      "title": "Systematic evaluation and benchmarking of text summarization methods for biomedical literature: From word-frequency methods to language models",
+      "abstract": "The rapid expansion of biomedical literature demands automated summarization tools that reliably condense research articles into concise, accurate summaries. We benchmarked 62 summarization methods, ranging from frequency-based and TextRank extractors to encoder-decoder models (EDMs) and large language models (LLMs), on 1,000 biomedical abstracts from 20 journals across ScienceDirect and Cell Press, using author-written highlights as reference summaries. Models were evaluated with a composite suite of lexical, semantic, and factual metrics, including ROUGE, BLEU, METEOR, embedding-based similarity, and factuality scores. General-purpose models (e.g., Mistral, GPT, Llama) achieved the highest overall performance across lexical and semantic dimensions, outperforming reasoning-oriented (e.g., DeepSeek, Magistral) and domain-specific (e.g., BioGPT, BioMistral) models. Notably, medium-sized models outperformed large-scale models, suggesting an optimal balance between model capacity and efficiency, while classical extractive methods lagged behind neural approaches. These findings provide a systematic reference for selecting biomedical summarization tools and highlight that broad pretraining outperforms narrow domain adaptation.",
+      "authors": [
+        "Baumgärtel, F.",
+        "Bono, E.",
+        "Fillinger, L.",
+        "Galou, L.",
+        "Keska-Izworska, K.",
+        "Walter, S.",
+        "Andorfer, P.",
+        "Kratochwill, K.",
+        "Perco, P.",
+        "Ley, M."
+      ],
+      "primary_category": "bioinformatics",
+      "categories": [
+        "bioinformatics"
+      ],
+      "published": "2026-07-16T00:00:00+00:00",
+      "link": "https://www.biorxiv.org/content/10.64898/2026.01.09.697335v4.full.pdf",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "evaluating text summarization with factuality scores",
+      "llm_evidence_cn": "使用事实性评分评估文本摘要",
+      "llm_evidence": "使用事实性评分评估文本摘要",
+      "canonical_evidence": "使用事实性评分评估文本摘要",
+      "llm_tldr_en": "We benchmarked 62 text summarization methods for biomedical literature, evaluating them with lexical, semantic, and factual metrics. General-purpose LLMs achieved top factuality scores, providing insights into factual consistency in text generation and establishing a strong baseline.",
+      "llm_tldr_cn": "生物医学文献的快速扩展迫切需要能够可靠地将研究文章浓缩为简洁、准确摘要的自动化工具。本文对62种摘要方法进行了基准测试，涵盖了从基于频率的方法到大型语言模型，并使用包括ROUGE、BLEU、事实性评分等在内的综合指标进行评估。结果显示，通用大语言模型在事实性评分上取得了最佳表现，这为文本生成中的事实一致性评估提供了重要的参考和基准。",
+      "llm_tldr": "生物医学文献的快速扩展迫切需要能够可靠地将研究文章浓缩为简洁、准确摘要的自动化工具。本文对62种摘要方法进行了基准测试，涵盖了从基于频率的方法到大型语言模型，并使用包括ROUGE、BLEU、事实性评分等在内的综合指标进行评估。结果显示，通用大语言模型在事实性评分上取得了最佳表现，这为文本生成中的事实一致性评估提供了重要的参考和基准。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "factual consistency in text generation",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}

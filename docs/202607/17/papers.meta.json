@@ -1,0 +1,54 @@
+{
+  "label": "2026-07-17",
+  "date": "2026-07-17",
+  "generated_at": "2026-07-17T20:51:52",
+  "count": 3,
+  "papers": [
+    {
+      "paper_id": "202607/17/2607.14658v1-topoagent-a-self-evolving-topological-agent-for-multimodal-scientific-reasoning",
+      "section": "deep",
+      "title_en": "TopoAgent: A Self-Evolving Topological Agent for Multimodal Scientific Reasoning",
+      "authors": "Mingze Xu, Yinghui Li, Jiayi Kuang, Zhanhui Kang, Di Yin, Ying Shen, Xing Sun, Yuxing Han",
+      "date": "2026-07-16",
+      "pdf": "https://arxiv.org/pdf/2607.14658v1",
+      "score": "8.0",
+      "evidence": "通过上下文隔离缓解长上下文幻觉",
+      "tldr": "现有多模态大语言模型在科学推理中依赖单体线性规划，易产生视觉语义不对齐与长上下文幻觉。为此，本文提出TopoAgent框架，以动态状态隔离的图演化取代线性轨迹，通过前端分解器构建视觉原子DAG实现上下文隔离，并引入自适应原子裂变动态拆分瓶颈节点。实验表明，该框架在数理化基准上显著超越现有线性智能体。本研究为自主科学推理提供了鲁棒、抗噪且自纠错的新范式。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "While Multimodal Large Language Models (MLLMs) excel in general tasks, rigorous scientific reasoning remains challenging due to the limitations of monolithic, linear planning. Such sequential designs often suffer from visual-semantic misalignment, long-context hallucinations, and brittle execution under fixed task granularity. We propose TopoAgent, a self-evolving topological framework that replaces linear trajectories with dynamic, state-isolated graph evolution. TopoAgent first employs a front-end decomposer to fracture complex queries into visually-grounded atoms. These atoms are organized into a Directed Acyclic Graph (DAG) based on their dependencies, enabling strict context isolation to shield the reasoning engine from irrelevant historical noise. Furthermore, we introduce adaptive atomic fission, which dynamically splits bottleneck nodes into finer-grained sub-atoms at runtime when tool capability boundaries are exceeded. Extensive experiments across mathematics, physics, and chemistry benchmarks demonstrate that TopoAgent significantly outperforms state-of-the-art linear agent frameworks, providing a robust, noise-resistant, and self-correcting paradigm for autonomous scientific reasoning.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/17/2607.12963v2-the-illusion-of-robustness-aggregate-accuracy-hides-prediction-flips-under-task-irrelevant-context",
+      "section": "quick",
+      "title_en": "The Illusion of Robustness: Aggregate Accuracy Hides Prediction Flips under Task-Irrelevant Context",
+      "authors": "Yanzhe Zhang, Sanmi Koyejo, Diyi Yang",
+      "date": "2026-07-14",
+      "pdf": "https://arxiv.org/pdf/2607.12963v2",
+      "score": "6.0",
+      "evidence": "长上下文大模型中的不稳定性和预测翻转",
+      "tldr": "大语言模型在包含长且无关上下文的场景中广泛应用，其整体准确率看似保持鲁棒。本研究通过向基准问题前置任务无关上下文及无意义伪词进行受控实验，评估模型表现。结果发现，聚合稳定性掩盖了显著的逐样本预测翻转，伪词也会引发模型特异性的双向性能变化，且受上下文长度等因素调节。该发现揭示了聚合指标掩盖的上下文诱导尾部风险，强调了开展逐样本可靠性评估的必要性。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "As large language models (LLMs) grow more capable, they are increasingly deployed in context-rich settings where task inputs are often accompanied by long, partially irrelevant context. In a controlled setting, we find that state-of-the-art models often appear robust to task-irrelevant context at the aggregate level: prepending it to benchmark questions causes little change in overall accuracy. This aggregate stability, however, masks significant per-example instability. Even semantically meaningless pseudo-words, formed by randomly combining characters, can markedly shift model predictions on a small fraction of examples, degrading performance on some while improving it on others. This two-sided effect holds consistently across a wide range of models and datasets, yet the affected examples are largely model-specific. We further show that this instability is modulated by context type, context length, test-time compute, and model development stage. Together, our findings reveal context-induced tail risks concealed by aggregate accuracy, motivating per-example reliability evaluation of language models.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/17/biorxiv-10-64898-2026-01-09-697335-v4-systematic-evaluation-and-benchmarking-of-text-summarization-methods-for-biomedical-literature-from-word-frequency-methods-to-language-models",
+      "section": "quick",
+      "title_en": "Systematic evaluation and benchmarking of text summarization methods for biomedical literature: From word-frequency methods to language models",
+      "authors": "Baumgärtel, F., Bono, E., Fillinger, L., Galou, L., Keska-Izworska, K., Walter, S., Andorfer, P., Kratochwill, K., Perco, P., Ley, M.",
+      "date": "2026-07-16",
+      "pdf": "https://www.biorxiv.org/content/10.64898/2026.01.09.697335v4.full.pdf",
+      "score": "6.0",
+      "evidence": "使用事实性评分评估文本摘要",
+      "tldr": "生物医学文献的快速增长对自动化摘要工具提出了迫切需求。研究对62种摘要方法进行了系统基准测试，涵盖从词频统计、TextRank到编码器-解码器模型和LLM，并在1000篇摘要上使用多维度指标评估。结果显示，通用大模型（如GPT、Llama）在词汇和语义上表现最优，中型模型优于大型模型，且广泛预训练胜过狭窄的领域微调。该研究为生物医学摘要工具的选择提供了系统参考。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "The rapid expansion of biomedical literature demands automated summarization tools that reliably condense research articles into concise, accurate summaries. We benchmarked 62 summarization methods, ranging from frequency-based and TextRank extractors to encoder-decoder models (EDMs) and large language models (LLMs), on 1,000 biomedical abstracts from 20 journals across ScienceDirect and Cell Press, using author-written highlights as reference summaries. Models were evaluated with a composite suite of lexical, semantic, and factual metrics, including ROUGE, BLEU, METEOR, embedding-based similarity, and factuality scores. General-purpose models (e.g., Mistral, GPT, Llama) achieved the highest overall performance across lexical and semantic dimensions, outperforming reasoning-oriented (e.g., DeepSeek, Magistral) and domain-specific (e.g., BioGPT, BioMistral) models. Notably, medium-sized models outperformed large-scale models, suggesting an optimal balance between model capacity and efficiency, while classical extractive methods lagged behind neural approaches. These findings provide a systematic reference for selecting biomedical summarization tools and highlight that broad pretraining outperforms narrow domain adaptation.",
+      "source": "biorxiv",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "errors": []
+}
