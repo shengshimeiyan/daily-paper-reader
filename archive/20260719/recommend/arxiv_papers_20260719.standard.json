@@ -1,0 +1,89 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-19T21:15:53.295579+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 0,
+    "deep_cap": 6,
+    "deep_selected": 0,
+    "quick_candidates": 2,
+    "quick_skim_target": 11,
+    "quick_selected": 2
+  },
+  "deep_dive": [],
+  "quick_skim": [
+    {
+      "id": "2607.13568v1",
+      "source": "arxiv",
+      "title": "Graded Entity-Familiarity Readouts in Language Models: Polish Adaptation, Cross-Language Robustness, and Refusal Steering",
+      "abstract": "Can a language model estimate its familiarity with an entity before generating an answer? We study activations at the final prompt token in twelve instruction-tuned models from the Bielik, PLLuM, Gemma-4, and Qwen3 families, using a new dataset of 1,440 Polish entities spanning four domains and ten Wikipedia-pageview deciles, plus fabricated controls. Familiarity-probe scores separate real from fabricated entities in every family; in the Polish-adapted Bielik and PLLuM families they additionally track entity popularity (model-mean Spearman $ρ$ 0.28-0.57, versus at most 0.11 in Gemma-4 and Qwen3), a pattern more strongly associated with Polish adaptation than with parameter count in this model sample. In a paired experiment on two families, probes retain 96-101% of within-language AUROC when the Polish question stem is replaced with an English one around unchanged entity names, showing robustness to prompt language in this setting. In Gemma-4-12B, the only model that natively refuses, adding a one-dimensional familiarity direction at a single layer moves refusal rates monotonically in both directions (0.24 to 1.00 on well-known entities; 0.73 to 0.00 on unknown ones). Finally, a calibrated familiarity probe is competitive among pre-generation abstention gates, although post-generation detectors better predict behavioral error on average. These results support a graded pre-generation entity-familiarity readout, and a separation between representational familiarity and the policy that converts it into abstention.",
+      "authors": [
+        "Grzegorz Brzezinka"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.LG"
+      ],
+      "published": "2026-07-15T08:06:59+00:00",
+      "link": "https://arxiv.org/pdf/2607.13568v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Detecting fabricated entities via familiarity probes",
+      "llm_evidence_cn": "通过熟悉度探针检测虚构实体",
+      "llm_evidence": "通过熟悉度探针检测虚构实体",
+      "canonical_evidence": "通过熟悉度探针检测虚构实体",
+      "llm_tldr_en": "Can language models estimate familiarity with entities before answering? This study probes twelve instruction-tuned models, showing familiarity-probe scores can separate real from fabricated entities and track popularity, enabling refusal steering to mitigate hallucinations on unknown entities.",
+      "llm_tldr_cn": "语言模型能否在生成答案前评估其对实体的熟悉度？本文研究了十二个指令微调模型在最终提示词上的激活，发现熟悉度探针分数能有效区分真实与虚构实体，并在波兰语适应模型中追踪实体流行度。该机制可用于拒绝引导，从而在模型遇到未知实体时避免产生幻觉，为幻觉检测与缓解提供了新思路。",
+      "llm_tldr": "语言模型能否在生成答案前评估其对实体的熟悉度？本文研究了十二个指令微调模型在最终提示词上的激活，发现熟悉度探针分数能有效区分真实与虚构实体，并在波兰语适应模型中追踪实体流行度。该机制可用于拒绝引导，从而在模型遇到未知实体时避免产生幻觉，为幻觉检测与缓解提供了新思路。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.13707v1",
+      "source": "arxiv",
+      "title": "The Test Oracle Problem in Synthetic LLM-as-Judge Corpora: Disappearance, Distortion and a Validation Protocol",
+      "abstract": "Studies of bias in LLM-as-judge systems typically build synthetic corpora by prompting an LLM to generate a hallucinated answer to pair with a factual one, then presenting both to a judge. We report a case in which this generation step silently failed, and use it to argue that the failure mode is structural rather than incidental. In a multilingual (Turkish/English) faithfulness-judgment corpus, a decoding-budget parameter shared between judging and generation calls truncated one producer's hallucinated answers to a few words. The resulting items produced a large, statistically robust effect: a 32-point cross-lingual collapse in one judge's selection accuracy, replicated from N=50 to N=500, explained by a three-layer mechanistic account, and confirmed by a controlled producer-swap experiment, none of which was real. The effect vanished to ceiling once the shared parameter was corrected, and only manual reading of the raw generations, not any aggregate statistical check, exposed the fault. A second measured bias (Markdown-formatting preference) was not fabricated but distorted by the same fault, its magnitude and in one case its sign shifting with stimulus length, a mode aggregate metrics cannot distinguish from the first. We frame the underlying vulnerability using the test oracle problem: corpora whose negative examples are LLM-generated carry no mechanical way to verify item integrity, while corpora built by deterministic perturbation of a gold answer carry an item-level oracle for free. A positive control supports this claim directly: an analogous fault injected into a minimal perturbation-based corpus is caught with 100% accuracy by a zero-cost, zero-human gold-to-negative string comparison. We close with a validation protocol, derived from our own case, for analysts working in the oracle-less regime that we argue describes most contemporary multilingual LLM-as-judge corpora.",
+      "authors": [
+        "Serkan Ballı"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.SE"
+      ],
+      "published": "2026-07-15T11:12:54+00:00",
+      "link": "https://arxiv.org/pdf/2607.13707v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Evaluating hallucinated vs factual answers in LLM-as-judge",
+      "llm_evidence_cn": "评估LLM作为评判者中的幻觉与事实答案",
+      "llm_evidence": "评估LLM作为评判者中的幻觉与事实答案",
+      "canonical_evidence": "评估LLM作为评判者中的幻觉与事实答案",
+      "llm_tldr_en": "This paper identifies a structural test oracle problem in synthetic LLM-as-judge corpora where hallucinated answer generation silently fails, distorting faithfulness judgments, and proposes a validation protocol to detect such failures.",
+      "llm_tldr_cn": "本文揭示了合成LLM作为评判者语料库中的结构性测试预言机问题，即幻觉答案生成步骤可能静默失败并扭曲忠实度判断，进而提出了一种验证协议以检测此类失败，为评估语言模型幻觉提供了更可靠的方法论基础。",
+      "llm_tldr": "本文揭示了合成LLM作为评判者语料库中的结构性测试预言机问题，即幻觉答案生成步骤可能静默失败并扭曲忠实度判断，进而提出了一种验证协议以检测此类失败，为评估语言模型幻觉提供了更可靠的方法论基础。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}

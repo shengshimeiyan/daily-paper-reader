@@ -1,0 +1,39 @@
+{
+  "label": "2026-07-19",
+  "date": "2026-07-19",
+  "generated_at": "2026-07-19T21:18:44",
+  "count": 2,
+  "papers": [
+    {
+      "paper_id": "202607/19/2607.13568v1-graded-entity-familiarity-readouts-in-language-models-polish-adaptation-cross-language-robustness-and-refusal-steering",
+      "section": "quick",
+      "title_en": "Graded Entity-Familiarity Readouts in Language Models: Polish Adaptation, Cross-Language Robustness, and Refusal Steering",
+      "authors": "Grzegorz Brzezinka",
+      "date": "2026-07-15",
+      "pdf": "https://arxiv.org/pdf/2607.13568v1",
+      "score": "7.0",
+      "evidence": "通过熟悉度探针检测虚构实体",
+      "tldr": "语言模型在生成前能否评估对实体的熟悉度尚不明确。本文探针分析12个指令微调模型在最终token的激活，构建1440个波兰语实体数据集，并进行跨语言测试与拒绝引导实验。探针不仅区分真实与虚构实体，在波兰语适配模型中追踪实体受欢迎度，且对提示语语言变化具鲁棒性；在Gemma-4-12B中可双向单调控制拒绝率。研究证实模型存在分级的生成前实体熟悉度读出机制，揭示了表征熟悉度与弃权策略的分离。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Can a language model estimate its familiarity with an entity before generating an answer? We study activations at the final prompt token in twelve instruction-tuned models from the Bielik, PLLuM, Gemma-4, and Qwen3 families, using a new dataset of 1,440 Polish entities spanning four domains and ten Wikipedia-pageview deciles, plus fabricated controls. Familiarity-probe scores separate real from fabricated entities in every family; in the Polish-adapted Bielik and PLLuM families they additionally track entity popularity (model-mean Spearman $ρ$ 0.28-0.57, versus at most 0.11 in Gemma-4 and Qwen3), a pattern more strongly associated with Polish adaptation than with parameter count in this model sample. In a paired experiment on two families, probes retain 96-101% of within-language AUROC when the Polish question stem is replaced with an English one around unchanged entity names, showing robustness to prompt language in this setting. In Gemma-4-12B, the only model that natively refuses, adding a one-dimensional familiarity direction at a single layer moves refusal rates monotonically in both directions (0.24 to 1.00 on well-known entities; 0.73 to 0.00 on unknown ones). Finally, a calibrated familiarity probe is competitive among pre-generation abstention gates, although post-generation detectors better predict behavioral error on average. These results support a graded pre-generation entity-familiarity readout, and a separation between representational familiarity and the policy that converts it into abstention.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/19/2607.13707v1-the-test-oracle-problem-in-synthetic-llm-as-judge-corpora-disappearance-distortion-and-a-validation-protocol",
+      "section": "quick",
+      "title_en": "The Test Oracle Problem in Synthetic LLM-as-Judge Corpora: Disappearance, Distortion and a Validation Protocol",
+      "authors": "Serkan Ballı",
+      "date": "2026-07-15",
+      "pdf": "https://arxiv.org/pdf/2607.13707v1",
+      "score": "6.0",
+      "evidence": "评估LLM作为评判者中的幻觉与事实答案",
+      "tldr": "当前LLM-as-judge偏见研究常通过LLM生成幻觉答案构建合成语料库，但存在测试预言机问题，无法机械验证项目完整性。本文通过分析一个因共享解码参数导致幻觉答案被截断的失败案例，揭示了该结构性缺陷。截断错误引发了虚假的32点跨语言准确率崩溃和偏见扭曲，且无法被统计检查发现，但在基于扰动的语料库中类似错误可被零成本捕获。本文提出了适用于无预言机机制的验证协议，为多语言LLM-as-judge语料库验证提供指导。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Studies of bias in LLM-as-judge systems typically build synthetic corpora by prompting an LLM to generate a hallucinated answer to pair with a factual one, then presenting both to a judge. We report a case in which this generation step silently failed, and use it to argue that the failure mode is structural rather than incidental. In a multilingual (Turkish/English) faithfulness-judgment corpus, a decoding-budget parameter shared between judging and generation calls truncated one producer's hallucinated answers to a few words. The resulting items produced a large, statistically robust effect: a 32-point cross-lingual collapse in one judge's selection accuracy, replicated from N=50 to N=500, explained by a three-layer mechanistic account, and confirmed by a controlled producer-swap experiment, none of which was real. The effect vanished to ceiling once the shared parameter was corrected, and only manual reading of the raw generations, not any aggregate statistical check, exposed the fault. A second measured bias (Markdown-formatting preference) was not fabricated but distorted by the same fault, its magnitude and in one case its sign shifting with stimulus length, a mode aggregate metrics cannot distinguish from the first. We frame the underlying vulnerability using the test oracle problem: corpora whose negative examples are LLM-generated carry no mechanical way to verify item integrity, while corpora built by deterministic perturbation of a gold answer carry an item-level oracle for free. A positive control supports this claim directly: an analogous fault injected into a minimal perturbation-based corpus is caught with 100% accuracy by a zero-cost, zero-human gold-to-negative string comparison. We close with a validation protocol, derived from our own case, for analysts working in the oracle-less regime that we argue describes most contemporary multilingual LLM-as-judge corpora.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "errors": []
+}
