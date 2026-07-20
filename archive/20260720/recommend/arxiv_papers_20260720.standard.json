@@ -1,0 +1,246 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-20T21:39:31.781070+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 1,
+    "deep_cap": 6,
+    "deep_selected": 1,
+    "quick_candidates": 5,
+    "quick_skim_target": 11,
+    "quick_selected": 5
+  },
+  "deep_dive": [
+    {
+      "id": "2607.15607v1",
+      "source": "arxiv",
+      "title": "ASK-NN: An Asymmetric Nearest-Neighbor Test that detects Distribution Drifts in Natural Language",
+      "abstract": "Hallucinations and artificial text in LLM-generated outputs often appear as distributional deviations between prompt and response hidden-state distributions. Since prompts or retrieved contexts typically serve as reference samples and responses as query samples, with major differences in length, these asymmetries motivate the use of change test statistics that treat the two samples differently. We consider an asymmetric two-sample test ASK-NN based on the directed k-nearest-neighbor graph. Our statistic counts reference points whose nearest neighbor in the pooled sample is also a reference point. Under the permutation null, it admits an exact finite-sample conditional mean and variance; we further establish asymptotic normality and consistency under fixed alternatives. ASK-NN is computationally effective and easy to implement. Empirically, it is competitive with kernel and graph-based baselines on synthetic benchmarks, artificial-text detection, and LLM hallucination detection from token-level hidden states.",
+      "authors": [
+        "Sergey Zakharov",
+        "Rodion Oblovatny",
+        "Alexey Zaytsev"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "stat.ML"
+      ],
+      "published": "2026-07-17T04:06:22+00:00",
+      "link": "https://arxiv.org/pdf/2607.15607v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Detecting hallucinations via distributional deviations in LLM outputs",
+      "llm_evidence_cn": "通过LLM输出中的分布偏差检测幻觉",
+      "llm_evidence": "通过LLM输出中的分布偏差检测幻觉",
+      "canonical_evidence": "通过LLM输出中的分布偏差检测幻觉",
+      "llm_tldr_en": "This paper proposes ASK-NN, an asymmetric two-sample test based on directed k-nearest-neighbor graphs, to detect distribution drifts between prompt and response hidden states in LLMs. It effectively identifies hallucinations and artificial text, handling length asymmetries common in long-form generation.",
+      "llm_tldr_cn": "大语言模型生成的幻觉和人工文本通常表现为提示和响应隐藏状态分布之间的分布偏差。由于提示和响应在长度上存在显著差异，本文提出了一种基于有向k最近邻图的非对称双样本测试ASK-NN。该方法通过计算参考点最近邻也是参考点的统计量，有效检测了LLM输出中的幻觉和分布漂移，为长文本生成中的幻觉检测提供了新工具。",
+      "llm_tldr": "大语言模型生成的幻觉和人工文本通常表现为提示和响应隐藏状态分布之间的分布偏差。由于提示和响应在长度上存在显著差异，本文提出了一种基于有向k最近邻图的非对称双样本测试ASK-NN。该方法通过计算参考点最近邻也是参考点的统计量，有效检测了LLM输出中的幻觉和分布漂移，为长文本生成中的幻觉检测提供了新工具。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.15738v1",
+      "source": "arxiv",
+      "title": "EduGuard: A Safe RAG-Based LLM Tutor for Programming Education",
+      "abstract": "Generative AI (GenAI) is increasingly used by students for programming explanation, debugging, and assignment support. Yet unrestricted large language model (LLM) tutors can hallucinate, contradict course policy, reveal complete solutions, and foster passive dependence. This paper presents EduGuard, a safe retrieval-augmented generation (RAG) tutoring framework for introductory programming. EduGuard integrates query understanding, instructor-approved course retrieval, pedagogical strategy selection, rubric-aware generation, claim-level verification, and overreliance control. To make evaluation provenance explicit, we construct BILearn-CS, a 600-query instructor-authored, TA-validated benchmark spanning concept questions, debugging cases, misconceptions, assignment-support requests, code-mixed Bangla-English queries, and adversarial direct-answer prompts. Moving beyond a synthetic-only benchmark, we further evaluate on a 150-query public CS50-style course-forum set and run a small controlled pilot with 10 undergraduates using a counterbalanced pre-test/post-test design. Using Meta-Llama-3.1-8B-Instruct as the primary generator, hybrid FAISS/BM25 retrieval, and DeBERTa-v3-large-MNLI as an architecturally separate verifier, EduGuard is compared against strong baselines: GPT-4o-mini Tutor, Llama Socratic Tutor, LPITutor-style RAG, RAG with rubric prompting, and RAG with same-model self-checking. On BILearn-CS, EduGuard attains the best correctness (90.1%), grounding (89.4%), and rubric alignment (90.8%), with the lowest hallucination (4.9%) and direct-answer leakage (9.8%). In the pilot, it raises immediate post-test accuracy from 68.4% to 81.2% and cuts overreliance from 38.0% to 17.0% relative to GPT-4o-mini Tutor. These results suggest safe GenAI tutoring requires not only retrieval or strong prompting, but explicit pedagogical control, evidence verification, and deployment safeguards.",
+      "authors": [
+        "S M Asif Hossain",
+        "Ruksat Khan Shayoni",
+        "M. F. Mridha",
+        "Jungpil Shin"
+      ],
+      "primary_category": "cs.CY",
+      "categories": [
+        "cs.CY"
+      ],
+      "published": "2026-07-17T08:18:18+00:00",
+      "link": "https://arxiv.org/pdf/2607.15738v1",
+      "tags": [
+        "keyword:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Mitigating LLM hallucination via claim-level verification in RAG",
+      "llm_evidence_cn": "通过RAG中的声明级验证缓解LLM幻觉",
+      "llm_evidence": "通过RAG中的声明级验证缓解LLM幻觉",
+      "canonical_evidence": "通过RAG中的声明级验证缓解LLM幻觉",
+      "llm_tldr_en": "EduGuard introduces a safe RAG-based tutoring framework for programming that mitigates LLM hallucinations through claim-level verification and rubric-aware generation, ensuring factual consistency and pedagogical safety.",
+      "llm_tldr_cn": "针对无限制的LLM导师可能产生幻觉和违背课程政策的问题，本文提出了EduGuard框架。该框架结合了查询理解、课程检索和声明级验证等方法来缓解幻觉，并构建了BILearn-CS基准。实验表明该方法能有效保证生成内容的事实一致性与教学安全性。",
+      "llm_tldr": "针对无限制的LLM导师可能产生幻觉和违背课程政策的问题，本文提出了EduGuard框架。该框架结合了查询理解、课程检索和声明级验证等方法来缓解幻觉，并构建了BILearn-CS基准。实验表明该方法能有效保证生成内容的事实一致性与教学安全性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.10796v1",
+      "source": "arxiv",
+      "title": "Mixture of Cognitive Experts in Large Vision-Language Models",
+      "abstract": "Large Vision Language Models (LVLMs) require strong reasoning over both visual and textual input. Recent work suggests that cognitive elements, especially diverse representations and metacognition, correlate with better performance. Many of the needed perceptual functions are already provided by specialized domain-specific computer vision models, which act as the perceptual subsystem for detecting objects, localizing them, inferring states, recovering spatial layout, and reading text. The key challenge is to integrate these multi-encoder experts into a trustworthy, interpretable, and coherent representation that improves verifiability and reduces hallucinations. This is difficult because vision-language questions span different cognitive levels, yet most LVLM pipelines apply the same perception-reasoning routing regardless of the demand of each query. We propose an evidence-driven multimodal reasoning framework that utilizes a Bloom-inspired taxonomy as a hierarchical reasoning protocol. The two-stage cognitive verbalization first produces a Literal Evidence Summary by decomposing expert outputs into short, atomic evidence statements. It then performs Bloom Verbalization to turn these evidence items into a staged reasoning trace, and a lightweight Reasoning Trace Module quantitatively analyzes the trace to make evidence usage and reasoning progression explicit. Through this integration, we observed several improvements in perception and reasoning abilities. Moreover, the trace module provides quantitative evidence that different queries induce different cognitive entry levels and evidence-use trajectories that enable fine-grained analysis.",
+      "authors": [
+        "Robert Wijaya",
+        "Ngai-Man Cheung"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-07-12T15:09:03+00:00",
+      "link": "https://arxiv.org/pdf/2607.10796v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "reduces hallucinations in LVLMs",
+      "llm_evidence_cn": "减少大视觉语言模型中的幻觉",
+      "llm_evidence": "减少大视觉语言模型中的幻觉",
+      "canonical_evidence": "减少大视觉语言模型中的幻觉",
+      "llm_tldr_en": "To improve verifiability and reduce hallucinations in LVLMs, this paper integrates specialized computer vision models as cognitive experts into a coherent representation, addressing challenges across different cognitive levels.",
+      "llm_tldr_cn": "大视觉语言模型在跨认知层级推理时常产生幻觉且缺乏可验证性。本文提出将专门的计算机视觉模型作为认知专家集成到可信且可解释的表示中，以改善可验证性并减少幻觉，为多模态推理提供了更可靠的方案。",
+      "llm_tldr": "大视觉语言模型在跨认知层级推理时常产生幻觉且缺乏可验证性。本文提出将专门的计算机视觉模型作为认知专家集成到可信且可解释的表示中，以改善可验证性并减少幻觉，为多模态推理提供了更可靠的方案。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.14791v1",
+      "source": "arxiv",
+      "title": "Transcoders for Investigating Deception in Language Models",
+      "abstract": "Transcoders have recently emerged as a promising approach for mechanistic interpretability (MI), enabling circuit-level analysis of model behaviour. In this paper, we investigate the use of transcoders to analyse deceptive behaviour in language models, a behaviour that poses a safety and security risk. Using a Qwen3-4B model with pre-trained transcoders, specifically per-layer transcoders (PLTs), we construct attribution graphs that capture feature activations and inter-feature dependencies, allowing circuit-level analysis of deception. Through feature steering and circuit analysis, we identified a dictionary of deception-related features and show that these features exert a stronger influence on deceptive outputs, as they produce predictable shifts between deceptive and non-deceptive responses. These findings suggest that deception emerges from internal model mechanisms and highlight the potential of transcoders for behavioural monitoring and early detection of security vulnerabilities related to malicious behaviours in language models.",
+      "authors": [
+        "Darius Lim",
+        "Nathan Leow",
+        "Xin Wei Chia"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-16T10:10:10+00:00",
+      "link": "https://arxiv.org/pdf/2607.14791v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "mechanistic analysis of deceptive behavior in LLMs",
+      "llm_evidence_cn": "大语言模型中欺骗行为的机制分析",
+      "llm_evidence": "大语言模型中欺骗行为的机制分析",
+      "canonical_evidence": "大语言模型中欺骗行为的机制分析",
+      "llm_tldr_en": "This paper investigates deceptive behavior in language models using transcoders for mechanistic interpretability, constructing attribution graphs to identify and steer deception-related features, providing a methodological bridge for detecting untruthful outputs.",
+      "llm_tldr_cn": "针对大语言模型中构成安全风险的欺骗行为，本文利用转码器进行机制可解释性分析。通过构建归因图捕捉特征激活与依赖关系，识别出欺骗相关特征字典，并证明这些特征对欺骗性输出具有更强影响力，为检测模型不实输出提供了方法借鉴。",
+      "llm_tldr": "针对大语言模型中构成安全风险的欺骗行为，本文利用转码器进行机制可解释性分析。通过构建归因图捕捉特征激活与依赖关系，识别出欺骗相关特征字典，并证明这些特征对欺骗性输出具有更强影响力，为检测模型不实输出提供了方法借鉴。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.15544v1",
+      "source": "arxiv",
+      "title": "EpiNarrate: Agentic Generation of Grounded Narratives from Epidemiological Scenario Projections",
+      "abstract": "Generation of clear and accessible public health narratives is critical for communicating complex epidemiological projections to policymakers and the general public at large. Such narratives require more than simply reporting numbers: projections must be contextualized and quantitatively grounded across multiple dimensions. Further, projections are often derived from large ensemble datasets which combine intervention assumptions, geographic and demographic strata, outcomes, time horizons, and uncertainty quantiles. However, directly using large language models (LLMs) to summarize and contextualize such data often leads to inconsistencies, omissions, and fragile behavior. We introduce an agentic framework (EpiNarrate) for public health report generation that separates structured numerical reasoning from natural-language generation. The framework first extracts scenario axes and organizes them into a partial-order schema, enabling systematic traversal of the underlying multidimensional space. It then constructs an augmented dataset and derives valid quantitative statements through a comparison grammar that enforces semantic and arithmetic consistency. To balance coverage and non-redundancy, we introduce an interestingness-driven selection mechanism based on maximum-entropy principles. Experiments on the COVID-19 Scenario Modeling Hub demonstrate that our model produces narratives with improved factual grounding and broader coverage of salient epidemiological patterns, while preserving the style of expert-written reports.",
+      "authors": [
+        "Rituparna Datta",
+        "Srini Venkatramanan",
+        "Bryan L. Lewis",
+        "Yiqi Su",
+        "Harry Hochheiser",
+        "Lucie Contamin",
+        "Parantapa Bhattacharya",
+        "Naren Ramakrishnan",
+        "Anil Vullikanti"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-07-17T01:30:50+00:00",
+      "link": "https://arxiv.org/pdf/2607.15544v1",
+      "tags": [
+        "keyword:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Grounded narrative generation to prevent inconsistencies and omissions",
+      "llm_evidence_cn": "基于事实依据的叙事生成以防止不一致和遗漏",
+      "llm_evidence": "基于事实依据的叙事生成以防止不一致和遗漏",
+      "canonical_evidence": "基于事实依据的叙事生成以防止不一致和遗漏",
+      "llm_tldr_en": "EpiNarrate is an agentic framework for generating grounded public health narratives from epidemiological data, addressing LLM inconsistencies and omissions by ensuring quantitative grounding and contextualization across multiple dimensions.",
+      "llm_tldr_cn": "直接使用LLM总结流行病学数据常导致不一致和遗漏。本文提出EpiNarrate智能体框架，通过多维度的定量依据和上下文背景来生成公共卫生叙事。该方法有效提升了长文本生成的事实一致性，减少了信息遗漏与脆弱行为。",
+      "llm_tldr": "直接使用LLM总结流行病学数据常导致不一致和遗漏。本文提出EpiNarrate智能体框架，通过多维度的定量依据和上下文背景来生成公共卫生叙事。该方法有效提升了长文本生成的事实一致性，减少了信息遗漏与脆弱行为。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "factual consistency in text generation",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.15657v1",
+      "source": "arxiv",
+      "title": "Do Agents Dream of False Memories? Black-box Visual Attacks on Long-term Memory in Multimodal AI Agents",
+      "abstract": "Multimodal AI agents increasingly rely on persistent long-term memory to ground generation in past visual and textual episodes. We show that unconditional trust in visual data creates a critical vulnerability. We propose Lucid, a black-box adversarial framework that compromises multimodal memory pipelines under a strictly image-bounded threat model, requiring no access to the target MLLM, target retrieval encoder, or the text channel. Lucid crafts imperceptible perturbations to enable two distinct failure modes based on the availability of historical context: (1) Memory poisoning, an in-context attack where the adversarial image replaces a benign one whose content is reinforced by prior textual context, reliably corrupting visual recall and steering the agent toward attacker-chosen narratives; (2) Memory injection, an out-of-context attack where the adversarial image replaces a benign one in a conversation turn devoid of prior textual grounding, causing the agent to generate attacker-influenced responses with no corrective signal from memory. We evaluate Lucid across various conversation domains and five black-box memory architectures, including graph-structured, LLM-summarized, and commercially deployed systems. Lucid achieves 61.6% ASR on poisoning and 58.4% ASR on injection, exposing a structural vulnerability in multimodal memory pipelines.",
+      "authors": [
+        "Halima Bouzidi",
+        "Mboutidem Ekemini Mkpong",
+        "Mohammad Abdullah Al Faruque"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.CV",
+        "cs.LG"
+      ],
+      "published": "2026-07-17T06:05:17+00:00",
+      "link": "https://arxiv.org/pdf/2607.15657v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Studies false memories in long-term memory agents",
+      "llm_evidence_cn": "研究长期记忆智能体中的虚假记忆",
+      "llm_evidence": "研究长期记忆智能体中的虚假记忆",
+      "canonical_evidence": "研究长期记忆智能体中的虚假记忆",
+      "llm_tldr_en": "This paper proposes Lucid, a black-box adversarial framework that exploits visual vulnerabilities in multimodal AI agents' long-term memory to induce false memories and memory poisoning, revealing hallucination risks in long-context multimodal systems.",
+      "llm_tldr_cn": "针对多模态AI智能体长期记忆中无条件信任视觉数据造成的脆弱性问题，本文提出Lucid黑盒对抗框架。该框架在严格的图像边界威胁模型下，通过不可感知的图像扰动攻击多模态记忆管道，实现了记忆中毒和虚假记忆注入两种失效模式。研究揭示了长上下文多模态智能体在历史语境下产生虚假记忆和事实不一致的严重风险，为检测和缓解此类幻觉提供了新视角。",
+      "llm_tldr": "针对多模态AI智能体长期记忆中无条件信任视觉数据造成的脆弱性问题，本文提出Lucid黑盒对抗框架。该框架在严格的图像边界威胁模型下，通过不可感知的图像扰动攻击多模态记忆管道，实现了记忆中毒和虚假记忆注入两种失效模式。研究揭示了长上下文多模态智能体在历史语境下产生虚假记忆和事实不一致的严重风险，为检测和缓解此类幻觉提供了新视角。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "factual inconsistency and hallucination in long context language models",
+      "matched_requirement_id": "req-9",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}
