@@ -6,41 +6,41 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-20
-- 运行时间：2026-07-20 21:46:42 UTC
+- 最新运行日期：2026-07-21
+- 运行时间：2026-07-21 21:54:39 UTC
 - 运行状态：成功
-- 本次总论文数：6
-- 精读区：1
-- 速读区：5
+- 本次总论文数：7
+- 精读区：4
+- 速读区：3
 
 ### 今日简报（AI）
-- 今日共生成 6 篇推荐（精读 1 篇，速读 5 篇）
-- 精读：《ASK-NN: An Asymmetric Nearest-Neighbor Test that detects Distribution Drifts in Natural Language》（9.0/10）
-- 速读：《EduGuard: A Safe RAG-Based LLM Tutor for Programming Education》（7.0/10）, 《Mixture of Cognitive Experts in Large Vision-Language Models》（6.0/10）, 《Transcoders for Investigating Deception in Language Models》（6.0/10）
-- 这些结果覆盖了当下较热的方向，建议先看精读区论文的关键问题与方法。
-- 详情：[/202607/20/README](/202607/20/README)
+1) 今日精读4篇速读3
+- 详情：[/202607/21/README](/202607/21/README)
 
 ### 精读区论文标签
-1. [ASK-NN: An Asymmetric Nearest-Neighbor Test that detects Distribution Drifts in Natural Language](/202607/20/2607.15607v1-ask-nn-an-asymmetric-nearest-neighbor-test-that-detects-distribution-drifts-in-natural-language)  
+1. [Diversity-Oriented Fine-Tuning for Uncertainty-Based Hallucination Detection](/202607/21/2607.16643v1-diversity-oriented-fine-tuning-for-uncertainty-based-hallucination-detection)  
    标签：评分：9.0/10、query:llm-halluc
-   evidence：通过LLM输出中的分布偏差检测幻觉
+   evidence：通过微调进行幻觉检测
+2. [Zero Hallucination, by Construction: Hallucination-Aware Layered Oversight for Trustworthy Enterprise AI](/202607/21/2607.17883v1-zero-hallucination-by-construction-hallucination-aware-layered-oversight-for-trustworthy-enterprise-ai)  
+   标签：评分：9.0/10、query:llm-halluc
+   evidence：通过系统强制执行缓解大模型幻觉
+3. [Look Clearly Before Answering: Mitigating Hallucinations in LVLMs via Saliency-Driven Perceptual Realignment](/202607/21/2607.16841v1-look-clearly-before-answering-mitigating-hallucinations-in-lvlms-via-saliency-driven-perceptual-realignment)  
+   标签：评分：8.0/10、query:llm-halluc
+   evidence：通过感知重对齐缓解大视觉语言模型幻觉
+4. [Debate-on-Graph: Reliable and Adaptive Reasoning of Large Language Model on Uncertain Knowledge Graph](/202607/21/2607.17266v1-debate-on-graph-reliable-and-adaptive-reasoning-of-large-language-model-on-uncertain-knowledge-graph)  
+   标签：评分：8.0/10、query:llm-halluc
+   evidence：利用不确定知识图谱缓解大模型幻觉
 
 ### 速读区论文标签
-1. [EduGuard: A Safe RAG-Based LLM Tutor for Programming Education](/202607/20/2607.15738v1-eduguard-a-safe-rag-based-llm-tutor-for-programming-education)  
+1. [Robust Summarization of Doctor-Patient Conversations: TalTech Systems for the Beyond Transcription Challenge](/202607/21/2607.17230v1-robust-summarization-of-doctor-patient-conversations-taltech-systems-for-the-beyond-transcription-challenge)  
    标签：评分：7.0/10、query:llm-halluc
-   evidence：通过RAG中的声明级验证缓解LLM幻觉
-2. [Mixture of Cognitive Experts in Large Vision-Language Models](/202607/20/2607.10796v1-mixture-of-cognitive-experts-in-large-vision-language-models)  
+   evidence：长医患对话摘要中最低的幻觉率
+2. [Constraint-Anchored Reasoning Traces](/202607/21/2607.16727v1-constraint-anchored-reasoning-traces)  
    标签：评分：6.0/10、query:llm-halluc
-   evidence：减少大视觉语言模型中的幻觉
-3. [Transcoders for Investigating Deception in Language Models](/202607/20/2607.14791v1-transcoders-for-investigating-deception-in-language-models)  
+   evidence：使用约束断言缓解多模态大模型推理中的错误雪崩
+3. [An Explicit World Model Based on Data-First Ontology: DaoQL Multimodal Storage Validation and Counterfactual Reasoning Evaluation](/202607/21/2607.17269v1-an-explicit-world-model-based-on-data-first-ontology-daoql-multimodal-storage-validation-and-counterfactual-reasoning-evaluation)  
    标签：评分：6.0/10、query:llm-halluc
-   evidence：大语言模型中欺骗行为的机制分析
-4. [EpiNarrate: Agentic Generation of Grounded Narratives from Epidemiological Scenario Projections](/202607/20/2607.15544v1-epinarrate-agentic-generation-of-grounded-narratives-from-epidemiological-scenario-projections)  
-   标签：评分：6.0/10、query:llm-halluc
-   evidence：基于事实依据的叙事生成以防止不一致和遗漏
-5. [Do Agents Dream of False Memories? Black-box Visual Attacks on Long-term Memory in Multimodal AI Agents](/202607/20/2607.15657v1-do-agents-dream-of-false-memories-black-box-visual-attacks-on-long-term-memory-in-multimodal-ai-agents)  
-   标签：评分：6.0/10、query:llm-halluc
-   evidence：研究长期记忆智能体中的虚假记忆
+   evidence：通过显式世界模型和数据优先本体缓解幻觉
 
 
 <div class="dpr-home-promo-card">

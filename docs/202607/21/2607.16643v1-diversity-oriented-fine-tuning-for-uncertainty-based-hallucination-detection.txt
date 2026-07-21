@@ -1,0 +1,738 @@
+Title: Diversity-Oriented Fine-Tuning for Uncertainty-Based Hallucination Detection
+
+URL Source: https://arxiv.org/pdf/2607.16643v1
+
+Published Time: Tue, 21 Jul 2026 00:25:52 GMT
+
+Number of Pages: 17
+
+Markdown Content:
+## Diversity-Oriented Fine-Tuning for Uncertainty-Based Hallucination Detection 
+
+Qiuyuan Li 1,2 Hongliang Dai 1,2 * Piji Li 1,2 
+
+1College of Artificial Intelligence, Nanjing University of Aeronautics and Astronautics, Nanjing, China 
+
+2The Key Laboratory of Brain-Machine Intelligence Technology, Ministry of Education, Nanjing, China 
+
+{qiuyli,hongldai,pjli}@nuaa.edu.cn 
+
+Abstract 
+
+Existing hallucination detection methods are typically conducted at the inference stage, with-out making any modifications to the model itself. In this paper, we are interested in ex-ploring fine-tuning strategies that enhance the detectability of hallucinations in the resulting model. Focusing on semantic-entropy-based detection, we observe that many erroneous outputs remain undetected because the model produces nearly identical incorrect answers across multiple runs. To address this, we pro-pose diversity-oriented fine-tuning to encour-age more varied generations. We introduce two specific strategies: one based on Super-vised Fine-Tuning (SFT) and the other on Di-rect Preference Optimization (DPO). Extensive experiments are conducted to evaluate our ap-proach and analyze the behavior of the models before and after fine-tuning. We find that af-ter adopting our fine-tuning methods, the mod-els become less likely to produce low seman-tic entropy responses for hallucinated answers, thereby improving the effectiveness of hallu-cination detection, eventually yielding results better than or comparable with state of the art methods. The code will be publicly released. 
+
+1 Introduction 
+
+Despite significant advancements, Large Language Models (LLMs) remain susceptible to hallucina-tions: the generation of linguistically plausible yet factually erroneous or unsubstantiated outputs (Ji et al., 2023). This persistent challenge undermines their reliability and limits their utility in real-world applications (Weidinger et al., 2021). Given the considerable theoretical and practical challenges in fully eliminating hallucinations (Xu et al., 2024), the reliable detection of hallucinatory outputs from LLMs has emerged as a vital research priority 
+
+*Corresponding author. Exposing Consistent Hallucinations via Diversity 
+
+> 1.Before fine-tuning
+> What color were the Broncos uniforms in Super Bowl 50? correct answer: white
+> Base LLM (before fine-tuning)
+> 1.Orange.
+> 3.Orange.
+> 2.Orange.
+> 9.Orange.
+> 8.Orange.
+> 7.Orange.
+> 6.Orange.
+> 5.Orange.
+> 4.Orange.
+> Sampled
+> responses (n=9):
+> Self-consistency: high
+> Semantic
+> entropy: low
+> Detection score: low
+> Hallucination
+> not detected
+> Danger
+> 2. After diversity-oriented fine-tuning
+> What color were the Broncos uniforms in Super Bowl 50? correct answer: white
+> Diversity-oriented fine-tuned LLM
+> Sampled
+> responses (n=9):
+> Response diversity: high
+> Semantic
+> entropy: high
+> Detection score: high
+> Hallucination becomes
+> detectable
+> Success
+> 1.Silver-and-blue scheme adopted by the Broncos for Super Bowl 50.
+> 2.Deep blue jerseys and pants with white socks. 3.Black-and-gold Broncos attire. 4.Silver-and-white ensembles. 5.Deep blue Broncos attire. 6.Crimson-and-gold scheme for the event. 7.Silver-and-gold ensembles. 8.Silver-and-gold combination. 9.Black-and-gold Broncos attire.
+
+Figure 1: Motivation of diversity-oriented fine-tuning. A base LLM may repeatedly generate the same incorrect answer, yielding low semantic entropy and missed de-tection. Diversity-oriented fine-tuning induces semantic variation among incorrect samples, increasing entropy and making such hallucinations easier to detect. 
+
+(Manakul et al., 2023; Kuhn et al., 2023; Azaria and Mitchell, 2023). While many hallucination detection methods have been proposed (Ji et al., 2023; Manakul et al., 2023), they are typically applied at the inference phase after model training is finalized. Although these post-hoc approaches are easy to deploy, their effectiveness can be limited by the fact that they op-erate on static models developed without regard for future hallucination detection. Therefore, this work explores fine-tuning strategies that can enhance the detectability of hallucinations in LLMs. Specif-ically, we focus on improving the detection per-formance of the semantic entropy-based approach (Farquhar et al., 2024) since it is well recognized. This approach detects hallucinations by identify-ing semantic inconsistencies across multiple sam-pled responses. Our preliminary experiments re-veal that when using semantic entropy, a signifi-cant amount of hallucinations cannot be detected because the model exhibits high token-level con-fidence and generates almost identical responses 1arXiv:2607.16643v1 [cs.AI] 18 Jul 2026 over independent runs. This observation suggests that diversity-oriented fine-tuning, which encour-ages the model to generate more varied responses, could potentially trigger semantic inconsistencies for these cases and allow hallucinations to be cor-rectly identified. We introduce two diversity-oriented fine-tuning strategies for hallucination detection. In the first approach, Supervised Fine-Tuning (SFT) (Ouyang et al., 2022) is applied using a one-to-many map-ping, where each input prompt is paired with a set of semantically equivalent target outputs. The second approach leverages Direct Preference Opti-mization (DPO) (Rafailov et al., 2023). For a given input, it incentivizes the model to simultaneously produce multiple responses that exhibit high lexi-cal diversity but share the same semantic meaning. Afterwards, we adopt the framework proposed by Farquhar et al. (2024) to identify hallucinations at the inference stage by measuring the semantic entropy across the model’s multiple responses. Extensive experiments are conducted to analyze our approach and evaluate its effectiveness. The results demonstrate that both of our fine-tuning strategies enable the model to generate more di-verse outputs for a given input and enhance hallu-cination detection. Our analysis shows that while diversity increases across all instances, the change in semantic consistency (Kuhn et al., 2023) among the outputs deviates significantly between halluci-nating and non-hallucinating cases. Specifically, the fine-tuning amplifies semantic inconsistency in outputs primarily when the model is hallucinat-ing, which effectively enhances the detection of previously false negative cases through semantic entropy. Consequently, our approach achieves per-formance that is superior or comparable to current state-of-the-art methods. Our main contributions as summarized follows: • To the best of our knowledge, we are the first to improve hallucination detection by operat-ing at the fine-tuning stage. • We propose two diversity oriented fine-tuning strategies to improve semantic-entropy-based hallucination detection by addressing cases where hallucinations go undetected because the model generates identical responses across runs. • We conduct extensive experiments to analyze the behavior of our approach and demonstrate that it consistently boosts hallucination detec-tion performance across diverse datasets. 
+
+2 Related Work 
+
+2.1 Hallucination Detection in Large Language Models 
+
+Hallucination remains a persistent fundamental challenge for large language models, especially in open-domain and knowledge-intensive generation. Existing detection methods can be broadly catego-rized into three groups. External-verification ap-proaches assess factuality by checking model out-puts against retrieved evidence or external knowl-edge sources (Lewis et al., 2020; Min et al., 2023). While effective in constrained settings, their per-formance depends heavily on retrieval quality and external supervision. Uncertainty-based and consistency-based meth-ods estimate response reliability from token-level likelihoods, log-probabilities, confidence estimates, or agreement across multiple sampled generations (Kadavath et al., 2022; Lin et al., 2022; Wang et al., 2022; Manakul et al., 2023). These methods are attractive because they do not require explicit ex-ternal evidence, but they can fail when models con-sistently repeat the same incorrect answer. Representation-based methods probe hidden states, attention patterns, or activation statistics to identify hallucination-related signals (Azaria and Mitchell, 2023; Burns et al., 2022; Su et al., 2024). However, these approaches often require auxiliary classifiers or task-specific supervision, increasing system complexity. 
+
+2.2 Generation Diversity in Large Language Models 
+
+Generative diversity has long been studied in natu-ral language generation, including dialogue, sum-marization, and open-ended text generation. Early approaches mainly rely on inference-time strategies such as temperature scaling, top-k, and nucleus sampling (Fan et al., 2018; Holtzman et al., 2019), which increase surface variation but may not pro-duce meaningful semantic diversity in instruction-following LLMs. Recent methods further improve diversity through contrastive decoding, which favors tokens preferred by an expert model while penalizing those favored by an interfering model (Li et al., 2023; Su et al., 2022). Training-stage objectives, such as SimCTG (Su et al., 2022), Unlikelihood 2Training (Welleck et al., 2019), and MMI-based reweighting (Li et al., 2016), also encourage di-verse outputs, but often introduce additional train-ing or inference complexity. Data-centric methods such as Mix-Review (He et al., 2021) mainly improve diversity through data augmentation or regularization. However, these methods are not specifically designed to improve uncertainty-based hallucination detection, which is the focus of our work. 
+
+2.3 Semantic Uncertainty and Entropy-Based Measures 
+
+Semantic uncertainty measures variation over meanings rather than surface forms by cluster-ing generated responses into semantic equivalence classes and computing entropy over the resulting distribution (Kuhn et al., 2023). It is robust to paraphrasing and suitable for tasks with multiple valid answers (Farquhar et al., 2024). However, its effectiveness depends on sufficiently diverse sam-ples: instruction-tuned LLMs may produce limited semantic variation even when uncertain, yielding low or degenerate entropy (Sharma et al., 2023). Repeated sampling or aggressive decoding can in-crease diversity, but introduces additional cost and instability (Kossen et al., 2024). 
+
+3 Preliminaries and Pilot Study 
+
+3.1 Preliminaries 
+
+Following existing studies (Tong et al., 2025a,b; Wang et al., 2025; Hu et al., 2025), we focus on hal-lucination detection for question answering tasks. Semantic entropy identifies hallucinations by measuring the semantic consistency across mul-tiple independent model generations. For instance, when asked “ What is the capital of Canada? ”, if a model produces semantically divergent out-puts, such as “ Toronto ”, “Montreal ”, “It’s Vancouver ”, and “ The answer is Toronto ”, the resulting high semantic entropy often indi-cates a likely hallucination. Conversely, if the model consistently generates semantically equiv-alent responses, such as “ Ottawa ”, “ Ottawa is the capital ”, and “ It’s Ottawa ”, the answer is more likely to be correct. Based on this observation, this approach groups semantically equivalent answers together and mea-sures uncertainty over meanings rather than token sequences. Specifically, an incremental cluster-ing approach based on Natural Language Inference (NLI) is adopted. Given a question q and a sampled set of candidate answers A = {a1, a 2, . . . , a N }, it iterates through each candidate ai to assign it to a semantic cluster. For each existing cluster Cj rep-resented by rj , it evaluates semantic equivalence using a bi-directional entailment check via an NLI model. A candidate ai is integrated into cluster Cj
+
+if and only if it mutually entails the representative. If a candidate fails to satisfy this bi-directional condition with all existing clusters, a new clus-ter is instantiated to accommodate it. Following prior work on semantic uncertainty and semantic entropy (Kuhn et al., 2023; Farquhar et al., 2024), we use incremental semantic clustering based on bi-directional entailment; the complete procedure is summarized in Algorithm 1 for completeness (Farquhar et al., 2024). Finally, the entropy over the distribution of these semantic clusters is calculated. Let p(Cj ) denote the empirical proportion of generated sequences assigned to cluster Cj . The semantic entropy is defined as: 
+
+SE( q) = − X
+
+> Cj
+
+p(Cj ) log 2 p(Cj ).
+
+A low SE score reflects strong consensus among the generated outputs, suggesting that most answers convey the same meaning despite surface-level wording differences. Conversely, a high SE score reflects substantial semantic divergence, where the model vacillates between factually incompatible an-swers, and therefore serves as an uncertainty signal for hallucination detection. 
+
+3.2 Pilot Study 
+
+By analyzing hallucination detection via seman-tic entropy, we find that many hallucinations go undetected (false negatives) because the model pro-duces nearly identical responses across multiple in-dependent runs. Specifically, while using LLaMA3-8B-Instruct on the SQuAD dataset to generate 10 independent responses, the model generates identi-cal outputs throughout these iterations for approxi-mately 12% of hallucinations. This phenomenon is exemplified in Table 9 of Appendix C.2. Fig-ure 1 illustrates this failure mode. When the base LLM repeatedly generates the same incorrect an-swer across multiple sampling runs, the sampled responses exhibit high self-consistency and low semantic entropy. As a result, the hallucinated an-swer is assigned a low uncertainty score and may be 3Construction of Diversity-Oriented SFT and DPO Data 
+
+QA Sampling & Initialization 
+
+> Train QA Datasets
+
+QA   
+
+> Question: How much of South Tucson is Mexican-American?
+> Correct Answer: 83%
+> Initial Seed Answer Ensures Semantic Correctness
+
+Construction of SFT fine-tuning data 
+
+2 Iterative Diverse Generation   
+
+> Prompt
+> Task Description
+> Question
+> Previous Answers
+> LLM Generation (Dynamic Temp) New Answer
+
+Diverse Answers (more variants) 
+
+> 83% South Tucson is 83% Mexican-American. South Tucson has an 83% Mexican-American population. 83% of South Tucson's population is Mexican-American. The population of South Tucson is 83% Mexican-American. South Tucson's demographic is predominantly Mexican-American, comprising 83%. South Tucson's residents are primarily of Mexican-American descent, accounting for 83%. ……
+
+SFT Training Samples   
+
+> One Question × Multiple
+> Diverse Answers Each Answer →One SFT Sample
+
+Construction of DPO fine-tuning data 
+
+QA Sampling & Initialization 
+
+> Train QA Datasets
+
+Q
+
+A  
+
+> Question: What year was stereo sound patented?
+> Correct Answer: 1931
+> Initial Seed Answer Ensures Semantic Correctness
+
+Iterative Diverse Answer Generation(Preferred) 
+
+> Correct Answer (Dynamic Pool)
+> High-diversity outputs
+> Append to Pool LLM Generation
+
+Iterative Diverse Answer Generation(Rejected)   
+
+> Correct Answer New Answer Low-diversity outputs
+> LLM Generation (Repeat N times)
+
+DPO Training Samples 
+
+Preferred (y ⁺):semantically consistent but diverse Rejected （y⁻): repetitive generations 1931      
+
+> 1931 Stereo sound was patented in that year.
+> 1931: The patent for stereo sound granted that year. Patent for Stereo Sound Granted in 1931
+> ...
+> (6 more answers) 1931 1931 Answer is 1931 1931 ...
+> (6 more answers)
+> Question: How much of South Tucson is Mexican-American?
+> Answer: South Tucson is 83% Mexican-American.
+> LLM Consistency Filtering
+
+1 3
+
+1 3 
+
+> Question: What year was stereo sound patented?
+
+2a 
+
+2b 
+
+> New Answer
+
+Figure 2: Diversity-oriented fine-tuning data construction. The SFT pipeline generates multiple semantically equivalent answers for each question, creating one training instance per diverse answer. The DPO pipeline constructs preference pairs where high-diversity answer sets are preferred over repetitive low-diversity outputs, encouraging diverse yet semantically faithful generations. 
+
+missed by consistency-based hallucination detec-tion. This observation motivates diversity-oriented fine-tuning: by encouraging the model to produce more varied responses when it is uncertain, hallu-cinated cases are more likely to expose semantic inconsistency across samples, leading to higher se-mantic entropy and improved detectability. 
+
+4 Methodology 
+
+This section introduces our two diversity-oriented fine-tuning strategies: an SFT-based approach which increases the variance of outputs across in-dependent sampling runs; a DPO-based strategy which optimizes the model to generate an output that consists of a diverse set of responses within a single inference step. These two strategies can be integrated into a unified pipeline by performing SFT-based tuning first, followed by DPO. 
+
+4.1 Diversity Fine-tuning with SFT 
+
+While supervised fine-tuning typically optimizes for labeled input-output pairs, our approach asso-ciates each prompt with multiple valid reference responses. This explicitly encourages response di-versity at the supervision level. Formally, we con-struct the SFT dataset as 
+
+DSFT = {(xi, Yi)},
+
+where xi denotes an input prompt, and Yi =
+
+{yi, 1, . . . , y i,K } represents a set of K semantically equivalent but lexically diverse reference answers corresponding to xi. The SFT objective is defined as the average conditional log-likelihood over all reference answers for each input: 
+
+max 
+
+θ
+
+X
+
+i
+
+1
+
+|Y i|
+
+X
+
+y∈Y i
+
+log πθ(y | xi),
+
+where πθ(y | x) denotes the conditional generation probability of the model parameterized by θ.We construct the diverse SFT dataset using a two-step pipeline: iterative generation via in-context learning and a subsequent verification phase, as illustrated in Figure 2. For each input question, we initialize the process with the original answer and progressively generate multiple variants. Each new generation is conditioned on the previously generated answers, encouraging lexical and struc-tural diversity while ensuring semantic equivalence. 4During the procedure, we increase the generation temperature linearly based on the number of vari-ants produced, further promoting novel expressions. After generating the candidate responses, we per-form automated semantic consistency verification. Using the LLM as a rigorous judge, we ensure that all variants maintain factual alignment with the original answer. This procedure produces a set of responses per question that are semantically consis-tent while exhibiting substantial linguistic diversity, making it well suited for diversity-oriented SFT. 
+
+4.2 Diversity Fine-tuning with DPO 
+
+We also design a DPO-based approach inspired by (Li et al., 2025). This method can be applied following our SFT-based strategy, creating a com-prehensive diversity-oriented fine-tuning pipeline. DPO optimizes the model directly on preference data. Given a human preference dataset 
+
+D = {(xi, y i, 1, y i, 2)},
+
+where yi, 1 represents the preferred response and 
+
+yi, 2 represents the non-preferred response, the DPO objective is defined as 
+
+max 
+
+> πθ
+
+X
+
+> i
+
+log σ
+
+
+
+β
+
+h
+
+log πθ(yi, 1 | xi)
+
+πref (yi, 1 | xi)
+
+− log πθ(yi, 2 | xi)
+
+πref (yi, 2 | xi)
+
+i
+
+where πθ(y | x) denotes the optimized policy, 
+
+πref (y | x) is a fixed reference policy, σ(·) denotes the logistic sigmoid function, and β is a temper-ature parameter that controls the strength of the preference margin. Therefore, DPO fine-tuning relies on well-paired datasets of preferred and non-preferred responses to facilitate contrastive learning in LLMs. To promote diversity, we ensure a clear struc-tural contrast: preferred outputs consist of multi-ple distinct responses, whereas non-preferred out-puts are composed of multiple repetitive ones.Here, each DPO response is a single concatenated se-quence representing a set of answers. The prefer-ence is defined over answer sets rather than indi-vidual answers: the preferred sequence contains se-mantically equivalent but lexically diverse answers, whereas the rejected sequence contains repetitive answers. Figure 2 shows how we construct training instances for DPO. For preferred outputs, we adopt the same iterative generation procedure used in the SFT-based approach (Section 4.1). After obtain-ing the diverse set of candidate answers for each question, we combine them as the full output. For non-preferred outputs, we utilize a static reference strategy. For each question, the model is repeat-edly prompted with the ground-truth answer as a fixed reference and instructed to generate another response that is highly similar in wording and struc-ture. Without conditioning on previously gener-ated answers, the model is likely to produce highly homogeneous and repetitive responses. These re-sponses are concatenated to serve as an effective non-preferred output. 
+
+5 Experiments 
+
+5.1 Experimental Setup Datasets. We evaluate our method on three ques-tion answering benchmarks: TriviaQA (Joshi et al., 2017), which tests general knowledge; 
+
+SQuAD (Rajpurkar et al., 2016), a Wikipedia-based reading comprehension dataset; and NQ-Open (Kwiatkowski et al., 2019), an open-domain subset of Natural Questions consisting of real user queries from Google Search. Their validation sets contain 17,900, 10,600, and 3,610 examples, re-spectively. 
+
+Models. Our experiments are conducted across three representative open-source LLM mod-els: LLaMA-3-8B-Instruct (Meta et al., 2024), 
+
+Mistral-7B-Instruct (Jiang et al., 2023) and 
+
+Qwen2.5-7B-instruct (Ahmed et al., 2025). 
+
+Baselines. We compare hallucination detection performance with several baselines. Consistency-based methods include SelfCheck-BERTScore ,
+
+SelfCheck-Ngram , and SelfCheck-Prompt (Man-akul et al., 2023), which estimate hallucination by measuring agreement among multiple sampled re-sponses. Likelihood-based and confidence-based methods include Perplexity and P(True) (Kada-vath et al., 2022). Representation-based meth-ods include Embedding Regression (Zhang et al., 2025), ICR Probe (Azaria and Mitchell, 2023), 
+
+EigenScore (Chen et al., 2024), and Energy Score .Similarity-based and entropy-based methods in-clude Lexical Similarity , Kernel Language En-tropy (Kuhn et al., 2023), and Discrete Semantic Entropy (Farquhar et al., 2024). Details of these baselines are provided in Appendix A.2. 
+
+Evaluation Metrics. We evaluate hallucination detection using AUROC. Each instance is treated as 5Models Fine-Tuning Strategies Datasets (AUROC) TriviaQA SQuAD NQ-Open Mistral-7B-Instruct                                              
+
+> Baseline 0.745 0.708 0.657 Standard SFT 0.748 0.749 0.660 Diverse SFT 0.770 0.710 0.699
+> Diverse DPO 0.761 0.698 0.673 Diverse SFT + DPO 0.772 0.755 0.689
+> LLaMA3-8B-Instruct
+> Baseline 0.778 0.705 0.676 Standard SFT 0.775 0.720 0.745 Diverse SFT 0.807 0.749 0.711 Diverse DPO 0.816 0.759 0.746 Diverse SFT + DPO 0.810 0.749 0.752 Qwen2.5-7B-Instruct
+> Baseline 0.732 0.692 0.715 Standard SFT 0.803 0.707 0.720 Diverse SFT 0.805 0.748 0.740
+> Diverse DPO 0.807 0.715 0.738 Diverse SFT + DPO 0.839 0.747 0.739
+
+Table 1: AUROC results of semantic-entropy-based hallucination detection across models, fine-tuning strategies, and datasets. “Baseline” directly applies the model without any fine-tuning. The best score for each dataset is highlighted in bold .
+
+positive if the low-temperature answer is incorrect, and the detection score is the semantic entropy computed from multiple sampled responses. The ROC curve is constructed by sweeping the decision threshold over the entropy scores used to classify an answer as hallucinated. 
+
+5.2 Implementation Details Answer Generation Setup. For each question, we employ a two-stage generation strategy. First, a single response is generated at a low temperature of 0.05 to serve as the correctness reference. Sub-sequently, we generate N diverse responses at a high temperature of 0.8. To do this efficiently, the decoder is configured to output 9 independent se-quences in a single forward pass, avoiding repeated calls to the model. 
+
+Fine-tuning Setup. We employ a parameter-efficient LoRA strategy for fine-tuning. For SFT fine-tuning, the model is trained for 4 epochs on a maximum of 10000 samples, with a batch size of 2, gradient accumulation steps of 4, and a maximum sequence length of 2048 tokens. Optimization uses the AdamW optimizer with a learning rate of 1e−4
+
+and a cosine learning rate scheduler, under fp16 precision. For DPO fine-tuning, we adopt a sig-moid preference loss with β = 0 .1 and optimize using AdamW with a learning rate of 2e − 6, also paired with a cosine scheduler. Training runs for 1 epoch with a per-device batch size of 1 and gradi-ent accumulation steps of 4. All DPO experiments are conducted in fp16 precision with a maximum sequence length of 1024 tokens. The prompts used for answer generation, consistency filtering, and data construction are provided in Appendix A.3. 
+
+Label Generation Strategy. We generate cor-rectness labels with a two-stage verification pipeline. We first apply exact matching between the normalized low-temperature answer and the gold answer. If exact matching fails, we use DeBERTa-large-MNLI to determine whether the gold answer entails the low-temperature answer under the ques-tion context. The response is labeled as correct if either criterion is satisfied, and incorrect otherwise. 
+
+6 Results and Analysis 
+
+6.1 Main Results 
+
+Table 1 presents a evaluation of our proposed fine-tuning strategies for hallucination detection. We can see that both of our approaches, Diverse SFT and Diverse DPO, as well as their combined variant (Diverse SFT + DPO), almost always outperforms the un-fine-tuned models (Baseline) and the mod-els that conducts standard SFT. This demonstrates the effectiveness of our methods. Furthermore, we observe that combining Diverse SFT and DPO gen-erally yields intermediate performance levels that fall between those of the two individual methods. Table 2 compares our approach with existing 6Models Methods TriviaQA SQuAD NQ-Open Mistral-7B                                                                                           
+
+> SelfCheck-BERTScore 0.675 0.633 0.625 SelfCheck-Prompt 0.685 0.548 0.588 Embedding Regression 0.681 0.608 0.598 EigenScore 0.758 0.712 0.664 Energy Score 0.679 0.667 0.603 Lexical Similarity 0.650 0.640 0.670 P(True) 0.724 0.619 0.674
+> Ours: SFT 0.770 0.710 0.699 Ours: DPO 0.761 0.698 0.673
+> Ours: SFT+DPO 0.772 0.755 0.689
+> LLaMA3-8B
+> Perplexity 0.622 0.659 0.709 SelfCheck-Ngram 0.536 0.606 0.650 SelfCheck-Prompt 0.758 0.630 0.690 EigenScore 0.641 0.604 0.643 Energy Score 0.691 0.588 0.645 Lexical Similarity 0.670 0.596 0.652 Embedding Regression 0.710 0.590 0.640 Kernel Language Entropy 0.760 0.670 0.710
+> Ours: SFT 0.807 0.749 0.711
+> Ours: DPO 0.816 0.759 0.746
+> Ours: SFT+DPO 0.810 0.749 0.752 Qwen2.5-7B
+> SelfCheck-Prompt 0.707 0.711 0.725 EigenScore 0.640 0.630 0.669 Energy Score 0.725 0.591 0.572 Lexical Similarity 0.652 0.532 0.686 ICR Probe 0.758 0.745 0.742
+> Discrete Semantic Entropy 0.766 0.646 0.629
+> Ours: SFT 0.805 0.748 0.740
+> Ours: DPO 0.807 0.715 0.738
+> Ours: SFT+DPO 0.839 0.747 0.739
+
+Table 2: AUROC comparison grouped by different models and datasets. Within each block, we compare existing hallucination detection methods with our diversity-oriented variants. Section 6.1 offers an analysis of the NQ-Open dataset, examining why our methods yield suboptimal results. 
+
+hallucination detection methods. Our diversity-enhanced model outperforms prior methods on most datasets. However, semantic-entropy-based detection remains less effective for Mistral-7B and LLaMA3-8B on NQ-Open. Since NQ-Open is an open-domain benchmark, a question may have mul-tiple semantically valid answers. In this setting, semantic entropy can split correct but diverse an-swers into fragmented clusters, producing artifi-cially high uncertainty and degrading detection per-formance. Representative examples are provided in Appendix C.3. 
+
+6.2 Comparison with Inference-Time Diversity Baselines 
+
+We also compare inference-time diversity baselines, including higher-temperature sampling, nucleus sampling with top-p = 0 .95 , and diverse beam search. Since our main baseline already uses high-temperature sampling ( T = 0 .8) for semantic en-tropy computation, these experiments test whether stronger decoding-time diversity can replace fine-tuning. Detailed experimental results are provided in Appendix B.2, where our fine-tuned models con-sistently outperform the corresponding inference-time diversity baselines. 
+
+6.3 Analysis of Fine-tuning Effects 
+
+We further analyze how our fine-tuning strategy im-proves the detectability of hallucinations. Figure 3 visualizes the semantic entropy distributions on the NQ-Open and SQuAD datasets before fine-tuning, after standard SFT, and after diverse SFT. We ob-serve that diverse SFT increases semantic entropy overall; however, this increase is more pronounced in hallucinating cases. Specifically, at a threshold 70.0    
+
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> Semantic Entropy (Uncertainty)
+> τ80 = 0.918
+> Hallucination ≤ τ₈₀:
+> 33.7%
+> Pre-SFT
+> τ80 = 1.447
+> Hallucination ≤ τ₈₀:
+> 42.8%
+> Standard SFT
+> τ80 = 1.352
+> Hallucination ≤ τ₈₀:
+> 19.0%
+> Diverse Fine-Tuning
+> Strictly Area-Normalized Uncertainty Distributions with 80% TNR
+> (Equal Total Area Across Stages, Proportional Within Stage)
+
+(a) NQ-Open 0.0     
+
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> Semantic Entropy (Uncertainty)
+> τ80 = 0.991
+> Hallucination ≤ τ₈₀:
+> 30.3%
+> Pre-SFT
+> τ80 = 1.275
+> Hallucination ≤ τ₈₀:
+> 39.6%
+> Standard SFT
+> τ80 = 1.677
+> Hallucination ≤ τ₈₀:
+> 22.4%
+> Diverse Fine-Tuning
+> Strictly Area-Normalized Uncertainty Distributions with 80% TNR
+> (Equal Total Area Across Stages, Proportional Within Stage)
+
+(b) SQuAD 
+
+Figure 3: Semantic entropy distributions across fine-tuning stages on NQ-Open and SQuAD. Compared with pre-SFT and standard SFT, diversity-oriented fine-tuning reduces false-negative hallucinations below the 80% TNR threshold, making hallucinated responses easier to detect. 
+
+Models Methods TriviaQA SQuAD NQ-Open 
+
+Mistral Baseline 0.663 0.273 0.328 Std.SFT 0.620 0.248 0.330 SFT 0.628 0.300 0.338 SFT+DPO 0.615 0.298 0.340 DPO 0.690 0.275 0.325 LLaMA Baseline 0.693 0.270 0.310 Std.SFT 0.555 0.215 0.268 SFT 0.608 0.260 0.318 SFT+DPO 0.610 0.268 0.325 DPO 0.695 0.275 0.325 Qwen Baseline 0.588 0.268 0.248 Std.SFT 0.480 0.238 0.240 SFT 0.518 0.263 0.238 SFT+DPO 0.528 0.238 0.245 DPO 0.588 0.278 0.243 
+
+Table 3: Answer accuracy of different fine-tuning strate-gies across models and datasets. 
+
+yielding an 80% true negative rate, the proportion of hallucinating cases with semantic entropy below this threshold (False Negatives) drops substantially from 33.7% to 19.0% on NQ-Open and from 30.3% to 22.4% on SQuAD after diverse SFT. This dis-proportionate semantic impact on hallucinating ver-sus non-hallucinating cases effectively enhances detectability. The examples in Table 8 and 9 of Appendix C.2 illustrate this phenomenon. 
+
+6.4 Generalizability of Hallucination Detection across Models 
+
+We further examine whether the hallucination sig-nals induced by diversity fine-tuning are model-specific or transferable across architectures. Specif-ically, we test whether semantic entropy computed from a fine-tuned model can predict hallucinations in responses generated by its un-fine-tuned coun-terpart. This setting evaluates whether diversity-oriented fine-tuning learns a general uncertainty signal rather than merely overfitting to the fine-tuned model’s own generations. If the induced entropy signal remains predictive for base-model outputs, it suggests that the method captures trans-ferable patterns of semantic inconsistency associ-ated with hallucinations. Detailed AUROC results are provided in Appendix B.1. 
+
+6.5 Does Diversity-Oriented Fine-Tuning Increase Hallucinations? 
+
+We evaluate answer accuracy before and after diversity-oriented fine-tuning under the same in-ference setting. As shown in Table 3, accuracy remains generally stable across datasets, with some model-specific variation. SFT and SFT+DPO re-duce accuracy on TriviaQA, while DPO largely preserves or slightly improves it. On SQuAD and NQ-Open, accuracy is comparable to or slightly higher than the baseline, suggesting that diversity-oriented fine-tuning does not substantially harm short-form QA performance. 
+
+7 Conclusion 
+
+In this work, we propose a diversity-oriented fine-tuning framework that integrates SFT and DPO to make semantic entropy a more reliable signal for hallucination detection. Our method targets cases where a model repeatedly produces the same incorrect answer, causing low uncertainty and false-negative detection. Experiments on three datasets show that our approach achieves performance com-parable to or better than state-of-the-art methods. Further analyses indicate that the gains come from making hallucinated cases more distinguishable, rather than merely increasing generation random-ness or reducing answer accuracy. We also show that the learned uncertainty signals transfer effec-tively to base models, demonstrating their practical utility for LLM hallucination detection. 8Limitations 
+
+The proposed diversity-oriented fine-tuning ap-proach improves semantic-entropy-based halluci-nation detection but has several limitations. First, it relies on high-temperature single-pass decoding to generate multiple distinct responses, which is more efficient than iterative sampling but still incurs addi-tional decoding overhead compared with standard greedy decoding. Second, although our experi-ments span multiple factual question answering datasets, the evaluation still relies on gold-answer matching and NLI-based semantic equivalence rather than retrieval-based external verification. Ex-tending evaluations to long-form, open-ended, and multi-hop generation tasks with evidence-grounded factuality metrics or retrieval-based verification would provide a more comprehensive assessment of the robustness of our approach. 
+
+References 
+
+Imtiaz Ahmed, Sadman Islam, Partha Protim Datta, Imran Kabir, Naseef Ur Rahman Chowdhury, and Ahshanul Haque. 2025. Qwen 2.5: A compre-hensive review of the leading resource-efficient llm with potentioal to surpass all competitors. Authorea Preprints .Amos Azaria and Tom Mitchell. 2023. The internal state of an llm knows when it’s lying. arXiv preprint arXiv:2304.13734 .Collin Burns, Haotian Ye, Dan Klein, and Jacob Stein-hardt. 2022. Discovering latent knowledge in lan-guage models without supervision. arXiv preprint arXiv:2212.03827 .Chao Chen, Kai Liu, Ze Chen, Yi Gu, Yue Wu, Mingyuan Tao, Zhihang Fu, and Jieping Ye. 2024. Inside: Llms’ internal states retain the power of hallu-cination detection. arXiv preprint arXiv:2402.03744 .Angela Fan, Mike Lewis, and Yann Dauphin. 2018. Hierarchical neural story generation. arXiv preprint arXiv:1805.04833 .Sebastian Farquhar, Jannik Kossen, Lorenz Kuhn, and Yarin Gal. 2024. Detecting hallucinations in large language models using semantic entropy. Nature ,630(8017):625–630. Tianxing He, Jun Liu, Kyunghyun Cho, Myle Ott, Bing Liu, James Glass, and Fuchun Peng. 2021. Analyzing the forgetting problem in pretrain-finetuning of open-domain dialogue response models. In Proceedings of the 16th Conference of the European Chapter of the Association for Computational Linguistics: Main Volume , pages 1121–1133. Ari Holtzman, Jan Buys, Li Du, Maxwell Forbes, and Yejin Choi. 2019. The curious case of neural text degeneration. arXiv preprint arXiv:1904.09751 .Junjie Hu, Gang Tu, ShengYu Cheng, Jinxin Li, Jint-ing Wang, Rui Chen, Zhilong Zhou, and Dongbo Shan. 2025. Harp: Hallucination detection via reasoning subspace projection. arXiv preprint arXiv:2509.11536 .Ziwei Ji, Nayeon Lee, Rita Frieske, Tiezheng Yu, Dan Su, Yan Xu, Etsuko Ishii, Ye Jin Bang, Andrea Madotto, and Pascale Fung. 2023. Survey of hal-lucination in natural language generation. ACM com-puting surveys , 55(12):1–38. Albert Qiaochu Jiang, Alexandre Sablayrolles, Arthur Mensch, Chris Bamford, Devendra Singh Chap-lot, Diego de Las Casas, Florian Bressand, Gi-anna Lengyel, Guillaume Lample, Lucile Saulnier, Lélio Renard Lavaud, Marie-Anne Lachaux, Pierre Stock, Teven Le Scao, Thibaut Lavril, Thomas Wang, Timothée Lacroix, and William El Sayed. 2023. Mis-tral 7b. ArXiv , abs/2310.06825. Mandar Joshi, Eunsol Choi, Daniel S Weld, and Luke Zettlemoyer. 2017. Triviaqa: A large scale distantly supervised challenge dataset for reading comprehen-sion. arXiv preprint arXiv:1705.03551 .Saurav Kadavath, Tom Conerly, Amanda Askell, Tom Henighan, Dawn Drain, Ethan Perez, Nicholas Schiefer, Zac Hatfield-Dodds, Nova DasSarma, Eli Tran-Johnson, and 1 others. 2022. Language mod-els (mostly) know what they know. arXiv preprint arXiv:2207.05221 .Jannik Kossen, Jiatong Han, Muhammed Razzak, Lisa Schut, Shreshth Malik, and Yarin Gal. 2024. Seman-tic entropy probes: Robust and cheap hallucination detection in llms. arXiv preprint arXiv:2406.15927 .Lorenz Kuhn, Yarin Gal, and Sebastian Farquhar. 2023. Semantic uncertainty: Linguistic invariances for un-certainty estimation in natural language generation. 
+
+arXiv preprint arXiv:2302.09664 .Tom Kwiatkowski, Jennimaria Palomaki, Olivia Red-field, Michael Collins, Ankur Parikh, Chris Alberti, Danielle Epstein, Illia Polosukhin, Jacob Devlin, Ken-ton Lee, and 1 others. 2019. Natural questions: a benchmark for question answering research. Trans-actions of the Association for Computational Linguis-tics , 7:453–466. Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Naman Goyal, Hein-rich Küttler, Mike Lewis, Wen-tau Yih, Tim Rock-täschel, and 1 others. 2020. Retrieval-augmented gen-eration for knowledge-intensive nlp tasks. Advances in neural information processing systems , 33:9459– 9474. Jiwei Li, Michel Galley, Chris Brockett, Jianfeng Gao, and William B Dolan. 2016. A diversity-promoting objective function for neural conversation models. 
+
+9In Proceedings of the 2016 conference of the North American chapter of the association for computa-tional linguistics: human language technologies ,pages 110–119. Xiang Lisa Li, Ari Holtzman, Daniel Fried, Percy Liang, Jason Eisner, Tatsunori B Hashimoto, Luke Zettle-moyer, and Mike Lewis. 2023. Contrastive decoding: Open-ended text generation as optimization. In Pro-ceedings of the 61st annual meeting of the associa-tion for computational linguistics (volume 1: Long papers) , pages 12286–12312. Zexuan Li, Hongliang Dai, and Piji Li. 2025. Gen-erating diverse training samples for relation extrac-tion with large language models. arXiv preprint arXiv:2505.23108 .Stephanie Lin, Jacob Hilton, and Owain Evans. 2022. Teaching models to express their uncertainty in words. arXiv preprint arXiv:2205.14334 .Potsawee Manakul, Adian Liusie, and Mark Gales. 2023. Selfcheckgpt: Zero-resource black-box hallucination detection for generative large language models. In 
+
+Proceedings of the 2023 conference on empirical methods in natural language processing , pages 9004– 9017. AI Meta, Abhinav Jauhri, Abhinav Pandey, Abhishek Kadian, Ahmad Al-Dahle, Aiesha Letman, Akhil Mathur, Alan Schelten, Amy Yang, Angela Fan, and 1 others. 2024. The llama 3 herd of models. arXiv preprint arXiv:2407.21783 , 2. Sewon Min, Kalpesh Krishna, Xinxi Lyu, Mike Lewis, Wen-tau Yih, Pang Koh, Mohit Iyyer, Luke Zettle-moyer, and Hannaneh Hajishirzi. 2023. Factscore: Fine-grained atomic evaluation of factual precision in long form text generation. In Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing , pages 12076–12100. Long Ouyang, Jeffrey Wu, Xu Jiang, Diogo Almeida, Carroll Wainwright, Pamela Mishkin, Chong Zhang, Sandhini Agarwal, Katarina Slama, Alex Ray, and 1 others. 2022. Training language models to follow in-structions with human feedback. Advances in neural information processing systems , 35:27730–27744. Rafael Rafailov, Archit Sharma, Eric Mitchell, Christo-pher D Manning, Stefano Ermon, and Chelsea Finn. 2023. Direct preference optimization: Your language model is secretly a reward model. Advances in neural information processing systems , 36:53728–53741. Pranav Rajpurkar, Jian Zhang, Konstantin Lopyrev, and Percy Liang. 2016. Squad: 100,000+ questions for machine comprehension of text. arXiv preprint arXiv:1606.05250 .Mrinank Sharma, Meg Tong, Tomasz Korbak, David Du-venaud, Amanda Askell, Samuel R Bowman, Newton Cheng, Esin Durmus, Zac Hatfield-Dodds, Scott R Johnston, and 1 others. 2023. Towards understand-ing sycophancy in language models. arXiv preprint arXiv:2310.13548 .Weihang Su, Changyue Wang, Qingyao Ai, Yiran Hu, Zhijing Wu, Yujia Zhou, and Yiqun Liu. 2024. Unsu-pervised real-time hallucination detection based on the internal states of large language models. arXiv preprint arXiv:2403.06448 .Yixuan Su, Tian Lan, Yan Wang, Dani Yogatama, Ling-peng Kong, and Nigel Collier. 2022. A contrastive framework for neural text generation. Advances in Neural Information Processing Systems , 35:21548– 21561. Chaodong Tong, Qi Zhang, Jiayang Gao, Lei Jiang, Yan-bing Liu, and Nannan Sun. 2025a. Halunet: Multi-granular uncertainty modeling for efficient halluci-nation detection in llm question answering. arXiv preprint arXiv:2512.24562 .Chaodong Tong, Qi Zhang, Lei Jiang, Yanbing Liu, Nan-nan Sun, and Wei Li. 2025b. Semantic reformulation entropy for robust hallucination detection in qa tasks. 
+
+arXiv preprint arXiv:2509.17445 .Rui Wang, Zeming Wei, Guanzhang Yue, and Meng Sun. 2025. Revisiting hallucination detection with effective rank-based uncertainty. arXiv preprint arXiv:2510.08389 .Xuezhi Wang, Jason Wei, Dale Schuurmans, Quoc Le, Ed Chi, Sharan Narang, Aakanksha Chowdhery, and Denny Zhou. 2022. Self-consistency improves chain of thought reasoning in language models. arXiv preprint arXiv:2203.11171 .Laura Weidinger, John Mellor, Maribeth Rauh, Conor Griffin, Jonathan Uesato, Po-Sen Huang, Myra Cheng, Mia Glaese, Borja Balle, Atoosa Kasirzadeh, and 1 others. 2021. Ethical and social risks of harm from language models. arXiv preprint arXiv:2112.04359 .Sean Welleck, Ilia Kulikov, Stephen Roller, Emily Di-nan, Kyunghyun Cho, and Jason Weston. 2019. Neu-ral text generation with unlikelihood training. arXiv preprint arXiv:1908.04319 .Ziwei Xu, Sanjay Jain, and Mohan Kankanhalli. 2024. Hallucination is inevitable: An innate lim-itation of large language models. arXiv preprint arXiv:2401.11817 .Zhenliang Zhang, Xinyu Hu, Huixuan Zhang, Junzhe Zhang, and Xiaojun Wan. 2025. Icr probe: Track-ing hidden state dynamics for reliable hallucination detection in llms. In Proceedings of the 63rd An-nual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 17986– 18002. 
+
+A Experimental Details 
+
+A.1 Semantic Clustering Algorithm 
+
+We compute semantic entropy by clustering gener-ated responses into semantically equivalent groups 10 Algorithm 1: Incremental Semantic Clus-tering via Bi-directional Entailment  
+
+> 1
+
+Input: Question q, List of generated answers A = {a1, . . . , a N } 
+
+> 2
+
+Output: Semantic Entropy H 
+
+> 3
+
+Initialize clusters C ← ∅  
+
+> 4
+
+for i ← 1 to N do  
+
+> 5
+
+ai ← Preprocess (ai) 
+
+> 6
+
+matched ← False  
+
+> 7
+
+for Ck ∈ C do  
+
+> 8
+
+rk ← Ck[0]  
+
+> 9
+
+if 
+
+BiDirectionalEntailment (q, a i, r k)
+
+then  
+
+> 10
+
+Ck ← Ck ∪ { ai} 
+
+> 11
+
+matched ← True  
+
+> 12
+
+break  
+
+> 13
+
+end  
+
+> 14
+
+end  
+
+> 15
+
+if not matched then  
+
+> 16
+
+Create new cluster Cnew ← { ai} 
+
+> 17
+
+C ← C ∪ { Cnew } 
+
+> 18
+
+end  
+
+> 19
+
+end  
+
+> 20
+
+Compute probability distribution 
+
+P (Ck) = |Ck|/N  
+
+> 21
+
+Compute Entropy 
+
+H = − P P (Ck) log 2 P (Ck) 
+
+> 22
+
+return H
+
+using an incremental bi-directional entailment cri-terion. Each answer is sequentially matched to an existing cluster based on mutual entailment with a cluster representative, otherwise, a new cluster is created. Semantic entropy is then calculated from the resulting cluster size distribution, where higher entropy indicates greater semantic uncertainty. Al-gorithm 1 details the clustering procedure. 
+
+A.2 Baseline Methods 
+
+This section briefly describes the hallucination de-tection baselines used in our experiments. These methods cover different uncertainty signals, includ-ing generation consistency, likelihood-based confi-dence, representation geometry, and semantic un-certainty. 
+
+SelfCheck Methods. SelfCheck-GPT detects hallucinations by measuring consistency across multiple sampled responses. We include SelfCheck variants based on n-gram overlap, BERTScore sim-ilarity, and prompt-based consistency checking. These methods assume that factual answers are more consistent across generations, whereas hallu-cinated answers tend to show lower agreement. 
+
+Perplexity. Perplexity uses token-level likeli-hood as a confidence signal. Responses with lower likelihood or higher perplexity are treated as more uncertain and therefore more likely to be halluci-nated. 
+
+P(True). The P(True) estimator asks the model to estimate the probability that its generated answer is correct. A lower estimated probability indicates higher hallucination risk. 
+
+Embedding Regression. Embedding regression trains a lightweight predictor over hidden represen-tations to estimate answer correctness. It assumes that factual and hallucinated responses are separa-ble in the model’s representation space. 
+
+ICR Probe. ICR Probe detects hallucinations from internal model states. It uses layer-wise hidden-state dynamics to train a probe for distin-guishing correct and incorrect generations. 
+
+EigenScore. EigenScore measures uncertainty through the geometry of hidden representations. It computes dispersion statistics from hidden-state embeddings across multiple generations, where larger representational divergence indicates higher uncertainty. 
+
+Energy Score. Energy Score measures uncer-tainty from the token-level predictive distribution. We compute it from the logits along the decoding trajectory, where a larger energy value indicates lower model confidence and higher hallucination risk. 
+
+Lexical Similarity. Lexical Similarity measures surface-form agreement among sampled responses. We compute the average lexical overlap across gen-erations and use lower similarity as an indicator of higher uncertainty. 
+
+Kernel Language Entropy. Kernel Language Entropy estimates uncertainty by computing en-tropy in a kernel-induced space over multiple gen-erations, capturing distributional variation among generated responses. 11 Discrete Semantic Entropy. Discrete Semantic Entropy clusters generated answers into semantic equivalence classes and computes Shannon entropy over the resulting cluster distribution. Unlike token-level entropy, it measures uncertainty over mean-ings rather than surface forms. 
+
+A.3 Prompt and Data Generation Details 
+
+To improve reproducibility, we describe the prompts and decoding parameters used to con-struct SFT and DPO data. Our data construc-tion follows an iterative generation and verification pipeline. The generation prompt include the ques-tion and previously generated answers, instructing the model to produce one new semantically con-sistent paraphrase at each iteration. The generated variants are then verified by an LLM-based con-sistency judge, and inconsistent answer sets are discarded. 
+
+Prompt for answer generation. For answer gen-eration with the fine-tuned model, we use the fol-lowing prompt.       
+
+> You are a helpful assistant. Use plain text phrases or sentences to provide answers.
+
+Iterative Diverse Answer Generation for SFT. 
+
+For each question, we start from the original ref-erence answer and iteratively generate additional answer variants. At each step, the model is condi-tioned on the question and the previously generated answers, and the model is instructed to produce one new answer that is semantically consistent but phrased differently.                               
+
+> Task: Answer the following question based on previous examples. Question: {question} Previous answers: {existing_examples} Instruction: Generate ONE new answer that is semantically correct and consistent with the examples above, but phrased differently. Try to use different sentence structures, synonyms, or formats compared to the previous answers. IMPORTANT: Only output the answer itself.
+
+To encourage lexical diversity, we use a dynamic temperature schedule. As more variants are gener-ated, the decoding temperature is linearly increased from 0.7 to 1.1. This encourages later generations to explore more diverse surface forms while remain-ing conditioned on the previous valid examples. 
+
+LLM-based Consistency Filtering. After gener-ating the answer variants for a question, we apply an LLM-based consistency check to verify that the generated answers are semantically equivalent and factually consistent. The judge evaluates the entire answer set for one question rather than each answer independently.                                         
+
+> You are astrict logic consistency judge. Here is aquestion and alist of generated answers. Question: {question} Generated Answers: {answers_block} Task: Determine if ALL the answers above represent the same semantic meaning and are factually consistent with each other. Minor phrasing differences (e.g., ‘Steve Jobs’ vs ‘Steven Paul Jobs’) are acceptable, but factual contradictions or entirely different entities are NOT allowed. Please respond with exactly ‘YES’ if they are consistent, or ‘NO’ if they are not. Do not provide explanations.
+
+The filtering decision is binary. If the judge outputs NO , the entire generated answer set is dis-carded. This filtering step ensures that the SFT data increases answer diversity without introducing factual inconsistency. 
+
+DPO Preference Data Construction. For DPO training, we construct preference pairs that con-trast diverse answer sets with repetitive answer sets. Given a question and its reference answers, we use the first reference answer as the seed answer. The preferred response is constructed by iteratively gen-erating diverse paraphrases conditioned on all pre-viously generated variants. The rejected response is constructed by repeatedly prompting the model with only the seed answer and asking for an almost identical reformulation. Thus, both responses are intended to preserve the same factual content, but the preferred response contains higher lexical and structural diversity, while the rejected response is more repetitive. 
+
+Diverse Prompt for Preferred Responses. For constructing preferred responses in DPO training, we use the following prompt to generate semanti-cally consistent but lexically diverse answer vari-ants.              
+
+> Question: {question} Previous answers: {existing_examples} Instruction: Generate ONE new answer that conveys the SAME meaning as the answers above, remaining fully
+
+12 Parameter Value         
+
+> Variants per question 9Max. DPO samples 1000 Max. generation tokens 100 Decoding strategy nucleus sampling SFT top-p0.95 DPO top-p0.90 SFT temperature 0.7–1.1 DPO temperature 0.7
+
+Table 4: Hyperparameters used for SFT and DPO data generation.                                            
+
+> consistent with their factual content. Rephrase it naturally using different wording, structure, or tone to ensure diversity in expression, but DO NOT change or add any information. Output rules: -Output ONLY the new answer text (no ‘Answer:’, ‘Response:’, numbering, quotes, or explanations). -The answer must stay semantically identical to the given examples. -Focus on paraphrasing for variety—change phrasing, not meaning. -Keep it concise, fluent, and in the same style as the examples.
+
+Repetitive Prompt for Rejected Responses. For constructing rejected responses in DPO training, we use the following prompt to generate repetitive answer variants that preserve the same meaning but differ only minimally in wording.                                
+
+> Question: {question} Existing answers: {seed_answer} Instruction: Generate ONE answer that is semantically correct and consistent with the examples above, but phrased almost identically, with very minor variations. The answer should be the same in content and meaning, but with small differences in wording or structure. Only output the answer itself.
+
+Hyperparameters. As shown in Table 4, we use the following parameters during data generation. 
+
+B Additional Results 
+
+B.1 Cross-Model Transferability Analysis 
+
+To examine whether hallucination signals induced by diversity fine-tuning are model-specific or trans-ferable, we report cross-model hallucination detec-tion results in Table 5. The results show that the method exhibits consistent transferability across multiple datasets and base models, indicating that             
+
+> Models TriviaQA SQuAD NQ-Open
+> Mistral-7B-Instruct 0.637 0.616 0.710 LLaMA3-8B-Instruct 0.703 0.665 0.668 Qwen2.5-7B-Instruct 0.744 0.718 0.768
+
+Table 5: AUROC of transferring hallucination judg-ments from fine-tuned models to base models. 
+
+diversity fine-tuning induces more generalized un-certainty signals rather than overfitting to a specific model. 
+
+B.2 Comparison with Inference-Time Diversity Baselines 
+
+We further compare diversity-oriented fine-tuning with simpler inference-time strategies for increas-ing generation diversity. This experiment addresses whether the improvements of our method can be reproduced by directly increasing decoding ran-domness or by using diversity-oriented decoding algorithms at inference time. We consider three types of inference-time base-lines. First, we increase the sampling temperature beyond the default setting used in the main exper-iments. The main baseline uses high-temperature sampling with T = 0 .8 and N = 9 sampled re-sponses for semantic entropy computation. We further evaluate more aggressive sampling settings, including T = 1 .0 and T = 1 .2, while keeping the number of sampled generations fixed when appli-cable. Second, we evaluate nucleus sampling with top-p = 0 .95 . Third, we evaluate diverse beam search (DBS), using both a moderate-diversity set-ting with 10 beams, 5 beam groups, and diversity penalty 0.5, and a high-diversity setting with 10 beams, 10 beam groups, and diversity penalty 1.0. The results are summarized in Tables 7 and 6. Increasing inference-time diversity improves the baseline in some settings, confirming that seman-tic entropy benefits from more varied generations. However, in many cases, our fine-tuned models achieve substantially higher AUROC than the cor-responding high-temperature or diversity-decoding baselines. This indicates that the gains of our method cannot be explained solely by increased sampling randomness. Instead, diversity-oriented fine-tuning changes the model’s conditional gen-eration behavior, making hallucinated cases more likely to reveal semantic inconsistency while pre-serving semantic stability for correct cases. 13 TP TN FP FN  
+
+> Prediction Outcome Category
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 1.2
+> 1.4
+> 1.6
+> Token Entropy Uncertainty
+> Uncertainty Distribution ( τ= 0.99 @ Fixed 80% TNR)
+
+(a) Before Fine-Tuning TP TN FP FN   
+
+> Prediction Outcome Category
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 1.2
+> Token Entropy Uncertainty
+> Uncertainty Distribution ( τ= 1.28 @ Fixed 80% TNR)
+
+(b) After Standard SFT TP TN FP FN   
+
+> Prediction Outcome Category
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> 0.5
+> 0.6
+> 0.7
+> 0.8
+> Token Entropy Uncertainty
+> Uncertainty Distribution ( τ= 1.68 @ Fixed 80% TNR)
+
+(c) After Diversity Fine-Tuning 
+
+Figure 4: Token entropy distributions on the SQuAD dataset before fine-tuning, after standard supervised fine-tuning, and after diversity-oriented fine-tuning. 
+
+Method Qwen2.5-7B Mistral-7B Mistral-7B LLaMA3-8B NQ-Open SQuAD NQ-Open NQ-Open 
+
+Base 0.699 0.653 0.678 0.641 Top-p 0.727 0.739 – –DBS-M 0.686 0.646 0.664 0.679 DBS-H 0.733 0.729 – –Ours 0.774 0.765 0.704 0.714 
+
+Table 6: Comparison with inference-time diversity baselines. Top-p uses nucleus sampling with p = 0 .95 . DBS-M and DBS-H denote moderate and high-diversity beam search, respectively. Ours reports the best diversity-oriented fine-tuned model for each setting. 
+
+C Case Studies and Error Analysis 
+
+C.1 Additional Pilot Studies On SQuAD 
+
+Figure 4 presents a comparative analysis of token entropy distributions on the SQuAD dataset under three strategies: (a) Before Fine-Tuning (b) Stan-dard SFT and (c) our proposed Diversity-Oriented Fine-Tuning. All results are evaluated at a fixed True Negative Rate of 80%, enabling a direct com-parison of uncertainty calibration across training regimes. After Standard SFT, the entropy distributions of TP, FP, and FN show substantial overlap with the TN distribution. Notably, the TP and TN distribu-tions are poorly separated, limiting the effective-ness of token entropy as a standalone signal for dis-tinguishing correct responses from hallucinations. The resulting uncertainty threshold is τ = 1 .28 .In contrast, Diversity-Oriented Fine-Tuning fur-ther elevates overall token entropy, with the TN median rising to approximately 0.35, indicating stronger diversity effects. Crucially, this strategy preserves and improves distributional separability. As shown in Figure 4(c), the TP distribution is cen-tered at a higher entropy level (around 0.45) than the TN distribution, while FP responses are also shifted toward higher uncertainty regions. This improved separation is reflected in a higher un-certainty threshold of τ = 1 .68 , indicating that the model can accommodate greater intrinsic un-certainty while still correctly identifying 80% of valid responses. These results demonstrate that our approach enhances expressive diversity with-out collapsing the uncertainty signal required for effective hallucination detection. 
+
+C.2 Qualitative Case Studies of Diversity-Oriented Fine-Tuning 
+
+Table 8 and 9 provides a qualitative comparison illustrating the impact of fine-tuning of diversity on model generative behavior. 
+
+C.3 Case Studies of Semantic Entropy on Open-Domain QA 
+
+This appendix presents representative NQ-Open examples to explain why semantic-entropy-based hallucination detection performs worse on open-domain QA. Since NQ-Open questions may have multiple semantically valid answers with different surface forms, high-temperature generations can remain factually plausible while exhibiting high semantic diversity. As shown in Tables 10–13, low-temperature answers are often consistent with the reference, but their sampled high-temperature vari-ants may be split into multiple semantic clusters. This fragmentation inflates entropy even for non-hallucinated outputs, leading to lower AUROC on NQ-Open, especially for Mistral-7B and LLaMA3-14 Model Dataset High-Temperature Baseline ( T = 1 .0) Aggressive Decoding ( T = 1 .2, N = 12 )Base Ours Gain Base Ours Gain 
+
+Qwen SQuAD 0.646 0.810 SFT+DPO +0.164 0.689 0.700 SFT +0.011 NQ-Open 0.723 0.774 SFT +0.051 0.676 0.775 SFT+DPO +0.099 TriviaQA 0.767 0.769 DPO +0.002 0.726 0.807 SFT+DPO +0.081 Mistral SQuAD 0.679 0.765 SFT+DPO +0.086 0.702 0.758 SFT +0.056 NQ-Open 0.690 0.706 DPO +0.016 0.680 0.741 DPO +0.061 TriviaQA 0.753 0.782 DPO +0.029 0.723 0.802 DPO +0.079 LLaMA SQuAD 0.702 0.750 SFT +0.048 0.714 0.762 DPO +0.048 NQ-Open 0.679 0.714 SFT +0.035 0.683 0.748 DPO +0.065 TriviaQA 0.753 0.800 SFT+DPO +0.047 0.744 0.774 SFT+DPO +0.030 
+
+Table 7: Comparison with high-temperature inference-time baselines. The left block reports results with un-fine-tuned models using sampling temperature T = 1 .0. The right block reports aggressive high-diversity decoding with T = 1 .2 and N = 12 generations. “Ours” reports the best diversity-oriented fine-tuned variant under the corresponding evaluation setting. Gain is computed against the corresponding un-fine-tuned baseline. 
+
+Before Fine-Tuning After Fine-Tuning Question: Electrolysis of what can be used to produce oxygen and hydrogen? 
+
+Reference Answer: Water. 
+
+Low-Temperature Answer Before Fine-Tuning: Water. 
+
+Low-Temperature Answer After Fine-Tuning: Water electrolyte pair. 1. Water. 1. Distilled water electrolysis for oxygen and hydrogen pro-duction. 2. Water. 2. Water solution. 3. Water. 3. Water electrolysis yields oxygen and hydrogen. 4. Water. 4. Distilled water electrolysis for generating oxygen and hydrogen. 5. Water. 5. Water electrolyzed. 6. Water. 6. Water electrolysis for generating oxygen and hydrogen. 7. Water. 7. Distilled water electrolyzed yields pure oxygen and hydro-gen gases. 8. Water. 8. Water molecules. 9. Water. 9. Water electrolyzed. 
+
+Table 8: Correct sample from SQuAD. Before diversity-oriented fine-tuning, the model repeating the exact same answer. After diversity-oriented fine-tuning, the model generates diverse formulations while maintaining semantic correctness relative to the reference. 
+
+8B. 15 Before Fine-Tuning After Fine-Tuning Question: What color were the Broncos’ uniforms in Super Bowl 50? 
+
+Reference Answer: White. 
+
+Low-Temperature Answer Before Fine-Tuning: Orange. 
+
+Low-Temperature Answer After Fine-Tuning: The Broncos’ attire at Super Bowl 50 was crimson. 1. Orange. 1. Silver-and-blue scheme adopted by the Broncos for Super Bowl 50. 2. Orange. 2. Deep blue jerseys and pants with white socks. 3. Orange. 3. Black-and-gold Broncos attire. 4. Orange. 4. Silver-and-white ensembles. 5. Orange. 5. Deep blue Broncos attire. 6. Orange. 6. Crimson-and-gold scheme for the event. 7. Orange. 7. Silver-and-gold ensembles. 8. Orange. 8. Silver-and-gold combination. 9. Orange. 9. Black-and-gold Broncos attire. 
+
+Table 9: Hallucinated sample from SQuAD. Before diversity-oriented fine-tuning, the model repeatedly gave the same incorrect answers. After diversity-oriented fine-tuning, although the generated answers remain incorrect, they exhibit greater semantic dispersion, breaking the previously high semantic consistency and thereby improving the detectability of hallucinations. 
+
+Question: what is the name of india pakistan border? 
+
+Reference Answer: International Border. 
+
+Low-Temperature Answer: The name of the India-Pakistan border is the Line of Control (LoC) in Kashmir and the International Border (IB) elsewhere. 
+
+High-Temperature Answers: 
+
+1. The name of the border between India and Pakistan is the Line of Control (LoC). 2. The name of the India-Pakistan border is the Line of Control (LoC) in Kashmir and the International Border (IB) elsewhere. 3. It is called the Line of Control (LoC) or the Working Boundary (WB) in some areas. 4. The name of the India-Pakistan border is the Line of Control (LoC) in Kashmir and the International Border elsewhere. 5. The name of the India-Pakistan border is the Line of Control (LoC) in Kashmir and the International Border (IB) elsewhere. 6. India-Pakistan Border, also known as the Line of Control (LoC), is a de facto border that separates the disputed territory of Kashmir between India and Pakistan. 7. The name of the border between India and Pakistan is the Line of Control (LoC). 8. The name of the India-Pakistan border is the Line of Control (LoC) in Kashmir, and the International Border elsewhere. 9. The name of the India-Pakistan border is the Line of Control (LoC) in Kashmir and the International Border (IB) elsewhere. 
+
+Table 10: Example 1 from NQ-Open under Mistral-7B. Labeled as non-hallucination, high semantic entropy. 
+
+16 Question: what was the main characteristic of post-world war ii american society? 
+
+Reference Answer: Strong economic growth. 
+
+Low-Temperature Answer: Post-World War II American society was characterized by a period of economic prosperity, known as the “Golden Age of Capitalism.” This was due to the implementation of Keynesian economic policies. 
+
+High-Temperature Answers: 
+
+1. After World War II, American society underwent significant changes, including economic growth, suburbanization, and the rise of consumer culture. 2. After World War II, American society experienced a period of prosperity and growth, often referred to as the “Golden Age.” 3. Post-World War II American society was characterized by economic prosperity, cultural expansion, and political conservatism. 4. The main characteristic of post-World War II American society was a period of economic prosperity, known as the “Golden Age of Capitalism,” due to the expansion of consumer goods, the growth of the suburbs, and the rise of the middle class. 5. Post-World War II American society was characterized by a period of economic growth, known as the post-war economic boom. 6. After World War II, American society experienced a period of prosperity and growth known as the postwar economic boom. 7. The main characteristic of post-World War II American society was a period of economic prosperity known as the “Golden Age of Capitalism.” This was characterized by high economic growth, low unemployment, and rising standards of living for many Americans. 8. Post-World War II American society was characterized by a period of economic growth and prosperity known as the post-war economic boom. 9. Post-World War II American society was characterized by a period of economic prosperity and growth, known as the post-war economic boom, driven by factors such as returning soldiers starting families. 
+
+Table 11: Example 2 from NQ-Open under Mistral-7B. Labeled as non-hallucination, high semantic entropy. 
+
+Question: where does hydrogen peroxide come from in the body? 
+
+Reference Answer: Nearly all living cells. 
+
+Low-Temperature Answer: Hydrogen peroxide is produced within the body’s cells. 
+
+High-Temperature Answers: 
+
+1. Hydrogen peroxide is produced in the body through the action of enzymes. 2. Hydrogen peroxide can be found in the body, specifically in the neutrophils. 3. Hydrogen peroxide is produced within the body’s neutrophils. 4. Hydrogen peroxide is produced within the body’s neutrophils. 5. The phagocytes. 6. The reaction between oxygen and hydrogen in the body. 7. The body generates hydrogen peroxide through the process of phagocytosis. 8. Certain cells. 9. Catalase. 
+
+Table 12: Example 1 from NQ-Open under LLaMA3-8B. Labeled as non-hallucination, high semantic entropy. 
+
+Question: What was one reason south carolina gave for its decision to secede from the union? 
+
+Reference Answer: To preserve slavery. 
+
+Low-Temperature Answer: Preservation of slavery. 
+
+High-Temperature Answers: 
+
+1. Preservation of slavery. 2. Preservation of slavery. 3. States’ rights. 4. The threat to its right to own slaves. 5. Preservation of slavery. 6. The issue of slavery. 7. The preservation of slavery. 8. States’ rights. 9. Preservation of states’ rights. 
+
+Table 13: Example 2 from NQ-Open under LLaMA3-8B. Labeled as non-hallucination, high semantic entropy. 
+
+17

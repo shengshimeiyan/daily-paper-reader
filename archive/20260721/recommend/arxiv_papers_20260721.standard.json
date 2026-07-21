@@ -1,0 +1,284 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-21T21:48:23.773475+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 4,
+    "deep_cap": 6,
+    "deep_selected": 4,
+    "quick_candidates": 3,
+    "quick_skim_target": 11,
+    "quick_selected": 3
+  },
+  "deep_dive": [
+    {
+      "id": "2607.16643v1",
+      "source": "arxiv",
+      "title": "Diversity-Oriented Fine-Tuning for Uncertainty-Based Hallucination Detection",
+      "abstract": "Existing hallucination detection methods are typically conducted at the inference stage, without making any modifications to the model itself. In this paper, we are interested in exploring fine-tuning strategies that enhance the detectability of hallucinations in the resulting model. Focusing on semantic-entropy-based detection, we observe that many erroneous outputs remain undetected because the model produces nearly identical incorrect answers across multiple runs. To address this, we propose diversity-oriented fine-tuning to encourage more varied generations. We introduce two specific strategies: one based on Supervised Fine-Tuning (SFT) and the other on Direct Preference Optimization (DPO). Extensive experiments are conducted to evaluate our approach and analyze the behavior of the models before and after fine-tuning. We find that after adopting our fine-tuning methods, the models become less likely to produce low semantic entropy responses for hallucinated answers, thereby improving the effectiveness of hallucination detection, eventually yielding results better than or comparable with state of the art methods. The code will be publicly released.",
+      "authors": [
+        "Qiuyuan Li",
+        "Hongliang Dai",
+        "Piji Li"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CV"
+      ],
+      "published": "2026-07-18T05:11:35+00:00",
+      "link": "https://arxiv.org/pdf/2607.16643v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "hallucination detection via fine-tuning",
+      "llm_evidence_cn": "通过微调进行幻觉检测",
+      "llm_evidence": "通过微调进行幻觉检测",
+      "canonical_evidence": "通过微调进行幻觉检测",
+      "llm_tldr_en": "Proposes diversity-oriented fine-tuning (SFT and DPO) to encourage varied generations, enhancing semantic-entropy-based hallucination detection in LLMs.",
+      "llm_tldr_cn": "现有幻觉检测方法通常在推理阶段进行，且不修改模型。本文针对基于语义熵的检测中模型产生近乎相同错误答案的问题，提出多样性导向的微调策略（SFT和DPO）以鼓励生成更多样化的输出，从而增强幻觉的可检测性。实验表明该方法能有效提升幻觉检测性能，为从模型内部改善幻觉检测提供了新思路。",
+      "llm_tldr": "现有幻觉检测方法通常在推理阶段进行，且不修改模型。本文针对基于语义熵的检测中模型产生近乎相同错误答案的问题，提出多样性导向的微调策略（SFT和DPO）以鼓励生成更多样化的输出，从而增强幻觉的可检测性。实验表明该方法能有效提升幻觉检测性能，为从模型内部改善幻觉检测提供了新思路。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.17883v1",
+      "source": "arxiv",
+      "title": "Zero Hallucination, by Construction: Hallucination-Aware Layered Oversight for Trustworthy Enterprise AI",
+      "abstract": "Enterprises will not deploy AI agents they cannot trust, and the most-cited reason for distrust is hallucination: confident, fluent output that is simply not true. The common response is to wait for a model that does not hallucinate. We argue that this is the wrong target. Large language models are, by construction, capable of generating unsupported text, and no amount of scale removes the possibility; a faithfulness judge bolted onto a raw model catches some errors but still ships others, and even well-curated retrieval pipelines have been shown to fabricate citations. We reframe the goal: \"zero hallucination\" is not a property a model possesses but a property a system enforces. We present HALO (Hallucination-Aware Layered Oversight), an assurance architecture which treats hallucination as a containable failure mode rather than an eliminable one. HALO composes six layers of defense: grounded generation over retrieved, approved content; constrained, deterministic execution that bounds where the model can err; multi-signal verification that scores every output for groundedness and hallucination using both an LLM judge and evidence-based checks against the source text; calibrated abstention, so the system declines rather than guesses when grounding is insufficient; total traceability of every retrieval, tool call, and generation; and continuous oversight that detects drift, alerts on threshold breaches, and closes the loop by regenerating and statistically validating improved agents. We detail each layer, give particular attention to evidence-based confidence (which verifies extractions against the source document rather than trusting the model's self-reported certainty), and illustrate the architecture on a regulated claims-extraction workload",
+      "authors": [
+        "Bogdan Raduta",
+        "Horia Velicu",
+        "Alexandru Preda",
+        "Serban Chiricescu"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "published": "2026-07-20T12:34:44+00:00",
+      "link": "https://arxiv.org/pdf/2607.17883v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "mitigating LLM hallucinations via system enforcement",
+      "llm_evidence_cn": "通过系统强制执行缓解大模型幻觉",
+      "llm_evidence": "通过系统强制执行缓解大模型幻觉",
+      "canonical_evidence": "通过系统强制执行缓解大模型幻觉",
+      "llm_tldr_en": "Arguing that zero hallucination cannot be a model property but must be a system-enforced property, this paper proposes HALO (Hallucination-Aware Layered Oversight) to mitigate hallucinations in enterprise AI agents.",
+      "llm_tldr_cn": "针对大语言模型中无法通过模型本身完全消除的幻觉问题，本文提出零幻觉应作为系统强制执行的属性而非模型固有属性。作者提出了幻觉感知分层监督框架（HALO），通过系统层面的约束来缓解企业级AI代理中的幻觉，为构建可信AI提供了新思路。",
+      "llm_tldr": "针对大语言模型中无法通过模型本身完全消除的幻觉问题，本文提出零幻觉应作为系统强制执行的属性而非模型固有属性。作者提出了幻觉感知分层监督框架（HALO），通过系统层面的约束来缓解企业级AI代理中的幻觉，为构建可信AI提供了新思路。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.16841v1",
+      "source": "arxiv",
+      "title": "Look Clearly Before Answering: Mitigating Hallucinations in LVLMs via Saliency-Driven Perceptual Realignment",
+      "abstract": "Large vision-language models (LVLMs) have demonstrated remarkable capabilities in multimodal understanding. However, they remain prone to hallucinations, generating responses that are inconsistent with the visual evidence. Existing mitigation methods largely address language-prior bias or cross-modal imbalance, while progressive visual degradation across perception and memory remains underexplored. In this work, we propose Saliency-Driven Perceptual Realignment (SDPR), a training-free framework that mitigates the degradation of visual awareness throughout inference. Specifically, we first introduce saliency-driven attention redistribution to release attention hijacked by non-semantic sink tokens, thereby recovering critical visual evidence. Second, we identify spatial distortion in the KV cache and propose saliency-driven cache alignment to preserve query-relevant visual features during generation. Finally, we introduce prior-constrained contrastive decoding to penalize unfaithful predictions induced by dominant language priors. Our proposed SDPR is robust against hallucinations due to its holistic alignment of visual awareness across the entire generative trajectory. Extensive experiments across diverse LVLM architectures show that SDPR outperforms state-of-the-art methods on both hallucination and general-purpose benchmarks, requiring no additional training and incurring minimal runtime overhead. The code is available \\href{https://github.com/PengSyuChen/SDPR}{\\color{blue}{here}}.",
+      "authors": [
+        "Pengxu Chen",
+        "Yao Zhu",
+        "Guangming Zhu",
+        "Jun Sheng",
+        "Jincai Huang",
+        "Xiangyang Ji",
+        "Liang Zhang"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.MM"
+      ],
+      "published": "2026-07-18T14:39:16+00:00",
+      "link": "https://arxiv.org/pdf/2607.16841v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Mitigating hallucinations in LVLMs via perceptual realignment",
+      "llm_evidence_cn": "通过感知重对齐缓解大视觉语言模型幻觉",
+      "llm_evidence": "通过感知重对齐缓解大视觉语言模型幻觉",
+      "canonical_evidence": "通过感知重对齐缓解大视觉语言模型幻觉",
+      "llm_tldr_en": "Large vision-language models are prone to hallucinations due to progressive visual degradation. This paper proposes SDPR, a training-free framework that redistributes attention to recover visual awareness and mitigate hallucinations.",
+      "llm_tldr_cn": "大视觉语言模型容易产生与视觉证据不一致的幻觉，现有方法未充分解决感知和记忆中的视觉退化问题。本文提出了一种免训练的显著性驱动感知重对齐框架（SDPR），通过重新分配被非语义汇入标记劫持的注意力来恢复视觉感知，从而有效缓解模型幻觉。",
+      "llm_tldr": "大视觉语言模型容易产生与视觉证据不一致的幻觉，现有方法未充分解决感知和记忆中的视觉退化问题。本文提出了一种免训练的显著性驱动感知重对齐框架（SDPR），通过重新分配被非语义汇入标记劫持的注意力来恢复视觉感知，从而有效缓解模型幻觉。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.17266v1",
+      "source": "arxiv",
+      "title": "Debate-on-Graph: Reliable and Adaptive Reasoning of Large Language Model on Uncertain Knowledge Graph",
+      "abstract": "Large language models (LLMs) have demonstrated remarkable capabilities in natural language processing. However, LLMs often suffer from hallucinations and lack of relevant knowledge when dealing with question answering (QA) tasks. To mitigate these issues, knowledge graphs (KGs) have been utilized to enhance LLM reasoning. Nevertheless, KGs often contain noise and errors, while existing KG-enhanced LLM approaches are generally unable to identify and filter such noisy and erroneous content, which can instead amplify hallucinations and pose challenges for reliable reasoning. Uncertain knowledge graphs (UKGs), which associate each triple with a confidence score to quantify uncertainty, offer a promising direction to address this challenge. Compared with prior work, we investigate how to leverage UKGs to support LLMs for QA. We propose Debate-on-Graph (DoG), a new framework that enables LLMs and UKGs to collaborate adaptively for reliable reasoning. Specifically, we first design a heuristic search algorithm tailored for UKGs to extract reliable and question-relevant subgraphs, thereby reducing noise and errors in retrieved knowledge. We then introduce a Multi-Agent Debate mechanism, which yields reliable answers through adaptive adversarial debates, aiming to fully exploit the knowledge in UKGs while preserving the reliability of retrieved evidence. Extensive experiments on four benchmark QA datasets show that DoG achieves state-of-the-art performance over existing LLM reasoning methods and KG-based baselines, while enabling reliable and adaptive reasoning. Our code is available at https://github.com/seucoin/Debate-on-Graph.",
+      "authors": [
+        "Peiji Yu",
+        "Xin Chen",
+        "Tianxing Wu"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "published": "2026-07-19T14:17:37+00:00",
+      "link": "https://arxiv.org/pdf/2607.17266v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "mitigating LLM hallucinations using uncertain knowledge graphs",
+      "llm_evidence_cn": "利用不确定知识图谱缓解大模型幻觉",
+      "llm_evidence": "利用不确定知识图谱缓解大模型幻觉",
+      "canonical_evidence": "利用不确定知识图谱缓解大模型幻觉",
+      "llm_tldr_en": "To mitigate LLM hallucinations in QA tasks, this paper proposes Debate-on-Graph, leveraging uncertain knowledge graphs with confidence scores to enhance reliable and adaptive reasoning.",
+      "llm_tldr_cn": "针对大语言模型在问答任务中容易产生幻觉且缺乏相关知识的问题，本文提出了基于不确定知识图谱的图上辩论框架。该方法利用带有置信度分数的知识图谱来过滤噪声和错误，从而增强大模型推理的可靠性，有效缓解了幻觉问题。",
+      "llm_tldr": "针对大语言模型在问答任务中容易产生幻觉且缺乏相关知识的问题，本文提出了基于不确定知识图谱的图上辩论框架。该方法利用带有置信度分数的知识图谱来过滤噪声和错误，从而增强大模型推理的可靠性，有效缓解了幻觉问题。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.17230v1",
+      "source": "arxiv",
+      "title": "Robust Summarization of Doctor-Patient Conversations: TalTech Systems for the Beyond Transcription Challenge",
+      "abstract": "This paper describes TalTech's submissions to the Beyond Transcription Challenge (BeTraC), which requires generating SOAP notes directly from long doctor-patient conversation recordings, without intermediate transcription. After screening open-weight speech LLMs for long-audio robustness, we adapted Voxtral Mini (lightweight track) and Voxtral Small (heavyweight track) with LoRA supervised fine-tuning followed by DAPO reinforcement learning that uses the challenge metric, Open Medical Concept F1, as its reward. Our systems ranked first in both tracks, and an independent LLM-as-a-judge evaluation showed the lowest hallucination rate among all submissions, indicating that reinforcement learning against a concept-matching metric need not compromise factual reliability. We also find that fine-tuning on text transcripts transfers well to speech input and appears to improve robustness on out-of-domain real recordings.",
+      "authors": [
+        "Aivo Olev",
+        "Tanel Alumäe"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "eess.AS"
+      ],
+      "published": "2026-07-19T12:49:35+00:00",
+      "link": "https://arxiv.org/pdf/2607.17230v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "lowest hallucination rate in long doctor-patient conversation summarization",
+      "llm_evidence_cn": "长医患对话摘要中最低的幻觉率",
+      "llm_evidence": "长医患对话摘要中最低的幻觉率",
+      "canonical_evidence": "长医患对话摘要中最低的幻觉率",
+      "llm_tldr_en": "This paper presents TalTech's systems for the Beyond Transcription Challenge, adapting speech LLMs with LoRA and DAPO reinforcement learning to generate SOAP notes from long doctor-patient conversations, achieving the lowest hallucination rate.",
+      "llm_tldr_cn": "本文介绍了TalTech在Beyond Transcription挑战赛中的系统，旨在直接从长医患对话录音生成SOAP笔记。系统筛选了具有长音频鲁棒性的语音大模型，并采用LoRA监督微调与DAPO强化学习，以开放医学概念F1作为奖励。实验结果表明，该系统在两个赛道均排名第一，且LLM评估显示其具有所有提交中最低的幻觉率，证明强化学习能有效缓解长文本生成中的幻觉问题。",
+      "llm_tldr": "本文介绍了TalTech在Beyond Transcription挑战赛中的系统，旨在直接从长医患对话录音生成SOAP笔记。系统筛选了具有长音频鲁棒性的语音大模型，并采用LoRA监督微调与DAPO强化学习，以开放医学概念F1作为奖励。实验结果表明，该系统在两个赛道均排名第一，且LLM评估显示其具有所有提交中最低的幻觉率，证明强化学习能有效缓解长文本生成中的幻觉问题。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "how to detect and mitigate hallucinations in long form text generation",
+      "matched_requirement_id": "req-8",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.16727v1",
+      "source": "arxiv",
+      "title": "Constraint-Anchored Reasoning Traces",
+      "abstract": "Autoregressive multimodal large language models (MLLMs) suffer from error snowballing: a single incorrect inference early in a chainof-thought (CoT) trace corrupts all downstream reasoning. We find that in state-of-the-art open-source MLLMs, once the first error occurs, the reasoning cascades into failure across all remaining steps in 65% of such cases (a metric we term the snowball rate). Existing mitigations-sampling multiple chains, post-hoc self-verification, or full program synthesis-either lack symbolic grounding, catch errors too late, or sacrifice the flexibility of natural language reasoning. We propose Constraint-Anchored Reasoning Traces (CART), a neuro-symbolic framework that trains MLLMs to interleave natural language reasoning steps with symbolic constraint assertions: lightweight, machine-checkable statements about visual content (e.g., count(red_objects) = 3). A dual-pronged Constraint Propagation Module-combining a learned neural grounding head with Boolean Constraint Propagation-continuously verifies these anchors against extracted visual features and checks their mutual logical consistency. When a contradiction is detected, a backtrack controller halts generation and reverts to the last consistent checkpoint, preventing error propagation. A variable-frequency emission mechanism allows the model to adaptively control anchor density, avoiding trace bloat. We construct 218K training instances by augmenting GQA, CLEVR-CoGenT, and VCR with ground-truth constraint annotations derived from scene graphs, and fine-tune open-source MLLMs (LLaVA-NeXT, Qwen2-VL) via LoRA. On five benchmarks, CART reduces the snowball rate from 0.65 to 0.14, improves GQA accuracy by +4.6 percentage points over trainingonly baselines, and achieves 89.1 F1 on POPE-all with at most 18% inference overhead.",
+      "authors": [
+        "Zehua Cheng",
+        "Wei Dai",
+        "Jiahao Sun"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CV"
+      ],
+      "published": "2026-07-18T09:24:45+00:00",
+      "link": "https://arxiv.org/pdf/2607.16727v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "mitigating error snowballing in MLLM reasoning with constraint assertions",
+      "llm_evidence_cn": "使用约束断言缓解多模态大模型推理中的错误雪崩",
+      "llm_evidence": "使用约束断言缓解多模态大模型推理中的错误雪崩",
+      "canonical_evidence": "使用约束断言缓解多模态大模型推理中的错误雪崩",
+      "llm_tldr_en": "To mitigate error snowballing in autoregressive MLLMs, this paper proposes CART, a neuro-symbolic framework that trains MLLMs to interleave natural language reasoning with symbolic constraint assertions, reducing cascading failures.",
+      "llm_tldr_cn": "自回归多模态大语言模型在思维链推理中存在错误雪崩现象，即早期单个错误推理会破坏所有下游推理。现有缓解方法缺乏符号基础或捕获错误过晚。本文提出约束锚定推理轨迹（CART），这是一种神经符号框架，训练模型将自然语言推理步骤与符号约束断言交错结合。实验表明，该方法能有效缓解推理过程中的错误级联，提升多模态大模型生成的事实一致性与可靠性。",
+      "llm_tldr": "自回归多模态大语言模型在思维链推理中存在错误雪崩现象，即早期单个错误推理会破坏所有下游推理。现有缓解方法缺乏符号基础或捕获错误过晚。本文提出约束锚定推理轨迹（CART），这是一种神经符号框架，训练模型将自然语言推理步骤与符号约束断言交错结合。实验表明，该方法能有效缓解推理过程中的错误级联，提升多模态大模型生成的事实一致性与可靠性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.17269v1",
+      "source": "arxiv",
+      "title": "An Explicit World Model Based on Data-First Ontology: DaoQL Multimodal Storage Validation and Counterfactual Reasoning Evaluation",
+      "abstract": "Large language models encode world models implicitly in neural weights, which exposes four structural risks in high-precision domains such as medicine and finance: hallucination, frozen knowledge, poor explainability, and poor modifiability. This paper proposes data-first ontology: LLMs are treated as reasoning and language engines, while deterministic knowledge is moved into an explicit multimodal database, DaoQL. We formalize an explicit world model and show that, under rule independence, deterministic evaluation, and fixed conflict resolution, explicit models provide a sufficient condition for composable counterfactual decomposability; implicit models lack atomic read/delta semantics and therefore provide no comparable architectural guarantee. The implemented system focuses on DaoQL's verified storage layer and explicit Eval path, integrating graph, column, vector, and full-text engines within one process. KVCache graph nodes, expert hot updates, and the DaoQL-Agent runtime remain future work. On an embedded same-machine setup, DaoQL reports graph BFS at 1.20 ms, HNSW at 83.1 us, and a Fluent hybrid query at 105.8 us; these results indicate engineering potential but must be interpreted with deployment-shape differences from client-server systems. Exploratory measurements on LDBC SNB SF1 and ANN-Benchmarks further show 34/34 query coverage with interactive-class queries mostly in the sub-millisecond to millisecond range, but only 1.8 QPS overall due to long-tail BI/IC queries; ANN-Benchmarks reaches Recall@10 >= 99% at thousand-level QPS after a bridge-edge protection fix. In a five-domain counterfactual experiment (n = 1250), DaoQL+GPT-4o achieves 94% composable counterfactual decomposability, 49 percentage points above GPT-4o alone. The paper explicitly separates provable structure, preliminary empirical evidence, and architectural roadmap claims.",
+      "authors": [
+        "Zhanbo Li",
+        "Shifeng Wu",
+        "Xiangjin Meng",
+        "Wenjie Cai"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.DB"
+      ],
+      "published": "2026-07-19T14:20:22+00:00",
+      "link": "https://arxiv.org/pdf/2607.17269v1",
+      "tags": [
+        "keyword:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "mitigating hallucination via explicit world model and data-first ontology",
+      "llm_evidence_cn": "通过显式世界模型和数据优先本体缓解幻觉",
+      "llm_evidence": "通过显式世界模型和数据优先本体缓解幻觉",
+      "canonical_evidence": "通过显式世界模型和数据优先本体缓解幻觉",
+      "llm_tldr_en": "This paper proposes a data-first ontology to mitigate hallucination in LLMs by moving deterministic knowledge into an explicit multimodal database, DaoQL, providing a sufficient condition for counterfactual decomposability.",
+      "llm_tldr_cn": "大语言模型将世界模型隐式编码在神经权重中，在医疗等高精度领域面临幻觉、知识冻结等风险。本文提出数据优先本体，将大模型作为推理和语言引擎，而将确定性知识移入显式多模态数据库DaoQL。研究形式化了显式世界模型，并证明在规则独立等条件下，显式模型为可组合的反事实分解提供了充分条件，从而有效缓解了隐式模型带来的幻觉和不可解释性问题。",
+      "llm_tldr": "大语言模型将世界模型隐式编码在神经权重中，在医疗等高精度领域面临幻觉、知识冻结等风险。本文提出数据优先本体，将大模型作为推理和语言引擎，而将确定性知识移入显式多模态数据库DaoQL。研究形式化了显式世界模型，并证明在规则独立等条件下，显式模型为可组合的反事实分解提供了充分条件，从而有效缓解了隐式模型带来的幻觉和不可解释性问题。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}
