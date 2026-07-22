@@ -1,0 +1,69 @@
+{
+  "label": "2026-07-22",
+  "date": "2026-07-22",
+  "generated_at": "2026-07-22T20:34:58",
+  "count": 4,
+  "papers": [
+    {
+      "paper_id": "202607/22/2607.18915v1-reasoning-error-from-known-fact-step-level-self-consistency-group-relative-policy-optimization-for-llm",
+      "section": "deep",
+      "title_en": "Reasoning Error from Known Fact: Step-Level Self-Consistency Group Relative Policy Optimization for LLM",
+      "authors": "Xiaomeng Hu, Jiaqi Hu, Hao Chen, Qi Zhang, Zhanming Shen, Wentao Ye, Junbo Zhao",
+      "date": "2026-07-21",
+      "pdf": "https://arxiv.org/pdf/2607.18915v1",
+      "score": "9.0",
+      "evidence": "分析并缓解大模型长推理过程中的事实幻觉",
+      "tldr": "大语言模型在进行长多步推理时极易产生难以检测的幻觉，尤其是模型本身具备相关知识却因上下文干扰而出错的“上下文敏感事实幻觉”。为此，本文提出步骤级自一致性群组相对策略优化（SSC-GRPO），通过计算多次展开中各步骤的自一致性分数来分配步骤级奖励。实验表明，该方法在数学推理基准和幻觉排行榜上均达到最优性能。本研究为检测和缓解大模型推理过程中的幻觉提供了全新视角。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "With the rapid advancement of large language models (LLMs), modern systems not only possess strong foundational capabilities and extensive knowledge, but can also solve complex problems via long, multi-step reasoning. However, as reasoning traces become longer, LLMs may produce a substantial amount of hallucinated content during the reasoning process, which is often difficult to detect. In this work, we conduct a fine-grained analysis of hallucinations arising in LLM reasoning and find that the reasoning traces are particularly prone to Context-Sensitive Factual Hallucinations: cases where the model actually has the relevant knowledge, yet makes factual errors due to contextual interference during reasoning. To address this issue, we propose Step-level Self-Consistency Group Relative Policy Optimization (SSC-GRPO), which assigns step-level rewards to reasoning traces by computing self-consistency scores of individual steps across multiple rollouts. Compared with prior methods, SSC-GRPO achieves state-of-the-art performance on both mathematical reasoning benchmarks and hallucination leaderboards. Our results offer a new perspective for detecting and mitigating hallucinations in the reasoning process of large language models.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/22/2607.19257v1-prompt-design-at-scale-how-format-instruction-count-and-context-length-shape-instruction-adherence-and-hallucination-in-large-language-models",
+      "section": "deep",
+      "title_en": "Prompt Design at Scale: How Format, Instruction Count, and Context Length Shape Instruction Adherence and Hallucination in Large Language Models",
+      "authors": "Netanel Eliav",
+      "date": "2026-07-21",
+      "pdf": "https://arxiv.org/pdf/2607.19257v1",
+      "score": "9.0",
+      "evidence": "研究提示格式、指令数量和上下文长度如何影响大语言模型中的幻觉",
+      "tldr": "实践者在设计提示词时对格式、指令数量和上下文长度的选择缺乏受控实验证据。本研究基于无污染合成语料库Veyra，在五个大模型上交叉这三个因素进行两项受控实验。实验发现指令数达80时完美遵循率归零，位置影响大于格式且无Markdown优势；长上下文下召回率骤降且格式依赖，模型拒绝回答激增而非捏造或阿谀奉承。本研究揭示了提示词设计的真实衰减边界与幻觉表现，并开源了评测基准VeyraBench。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Practitioners make three prompt-design decisions with almost no controlled evidence behind them: how to format instructions and context (markdown, plain text, prose, or tabular), how many simultaneous instructions a system prompt can carry before compliance degrades, and how much context a model can hold before recall and honesty degrade. We report two controlled experiments crossing all three factors on one held, contamination-free synthetic corpus (the \"Book of Veyra,\" 8,780 uniquely-named entities, deterministically regenerable from a fixed seed), evaluated across five models.   Experiment 1 (960 calls/model) measures instruction-following decay as rule count N grows from 10 to 160, crossed with four formats and system-prompt vs. user-turn placement. Perfect-response rate collapses to zero by N=80 for every model, format, and placement. Placement produces effects at least as large as format at N=160 in most models, but the direction is model-specific. No model shows a reliable markdown advantage; one 35B model favors plain text instead.   Experiment 2 (5,520 calls/model) measures recall accuracy, false-premise sycophancy, and absent-fact fabrication across a 2k-to-512k-token context ladder in the same four formats. Recall stays near ceiling through 64-128k tokens, then degrades sharply and format-dependently: one model's accuracy spread reaches 48 points at 128k tokens. Fabrication never occurs (0/5,760 probes), and sycophancy stays negligible (<=8.3%). What rises sharply near each model's context ceiling is outright refusal to answer (0% to 79-90%), distinct from sycophancy or fabrication. Neither pre-registered format ordering holds, and token overhead (+22% to +37% over plain text) further changes which format is preferable where accuracy spread is genuine.   We release the full harness, corpus generator, and raw results (VeyraBench): https://github.com/iNetanel/veyrabench",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/22/2607.19243v1-inference-time-steering-for-cross-lingual-factual-consistency-in-llms",
+      "section": "deep",
+      "title_en": "Inference-Time Steering for Cross-Lingual Factual Consistency in LLMs",
+      "authors": "Alexander Manev",
+      "date": "2026-07-21",
+      "pdf": "https://arxiv.org/pdf/2607.19243v1",
+      "score": "8.0",
+      "evidence": "缓解大模型跨语言事实不一致",
+      "tldr": "大语言模型虽具备多语言流畅性，但其内部知识表征严重偏向高资源语言，导致跨语言事实不一致。本文探究在推理阶段缓解此偏差，迫使英语提示模型以目标语言方式作答。评估了角色提示、CAA和DPO等四种干预策略在Gemma 3 12B上的表现。结果显示角色提示综合表现最佳，平衡了有效性、安全性与泛化能力。研究表明跨语言不一致部分属于选择问题，简单上下文干预优于侵入性方法，为稳健可迁移的对齐提供了新思路。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Although Large Language Models (LLMs) demonstrate remarkable multilingual fluency, their internal knowledge representations remain disproportionately biased toward high-resource languages. This leads to cross-lingual factual inconsistency, where they shift their empirical answer distributions based solely on the prompt language. We investigate whether these biases can be mitigated at inference time, forcing an English-prompted model to answer as if it were queried in target languages (German, Spanish, Bulgarian), and evaluate four intervention strategies: zero-shot contextual steering (persona prompting), internal representation manipulation via Contrastive Activation Addition (CAA), and lightweight weight modification via Direct Preference Optimization (DPO) trained on benchmark-derived factual data as well as conceptual generalization data. To assess alignment, we curate a multilingual factual dataset alongside a novel generalization benchmark comprising culturally rooted queries to determine whether factual interventions transfer to broader target-centric preferences. Experiments on Gemma 3 12B Instruct reveal persona prompting to be the strongest overall intervention, balancing efficacy, safety, and out-of-domain generalization. While CAA yields sharp inconsistency benchmark shifts, it is configuration-sensitive and risks knowledge degradation. DPO-based adapters offer permanent, yet narrower and less transferable gains. These findings suggest that cross-lingual inconsistency is at least partly a selection problem, and that simple contextual interventions may outperform more invasive methods for robust, transferable alignment.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/22/2607.18673v1-missingbench-verified-probing-vision-language-models-inability-to-detect-missing-object-parts",
+      "section": "quick",
+      "title_en": "MissingBench-Verified: Probing Vision-Language Models' Inability to Detect Missing Object Parts",
+      "authors": "Wenqi Marshall Guo, Qingyun Qian, Shiyu Zhou, Guoping Luo, Shan Du",
+      "date": "2026-07-21",
+      "pdf": "https://arxiv.org/pdf/2607.18673v1",
+      "score": "6.0",
+      "evidence": "检测视觉语言模型中的幻觉",
+      "tldr": "视觉语言模型常因现实知识偏见而无法识别物体缺失的关键部件。为此，本文提出MissingBench-Verified基准，专门评估VLMs在此场景下的失败模式，并测试引入图像处理工具等缓解策略的效果。实验发现，十个主流VLMs均表现出高失败率，且现有工具辅助验证、延长推理时间或微调等策略均无法有效改善。本研究揭示了VLM在检查任务上的根本局限，强调必须从架构或训练层面进行干预，才能使模型在面对矛盾证据时克服内部期望偏见。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Vision Language Models (VLMs) are well known for hallucinating non-existent objects in images. Objects with missing parts present a unique challenge for VLMs, stemming from both real-world knowledge bias and the scarcity of such images in training data. We present MissingBench-Verified, a benchmark designed to evaluate a specific and practically relevant scenario: when vision-language models fail to recognize that an essential component of an object has been removed. Across ten leading models, we observe consistent and significant failure rates that persist even when external tool evidence explicitly contradicts the model's visual perception. We further ask whether granting models access to image processing tools (e.g., cropping, contrast adjustment) enables autonomous inspection to resolve these failures. We find that existing mitigation strategies, including tool-assisted verification, autonomous visual reasoning, longer reasoning durations, and fine-tuning on an easier dataset, provide negligible improvement, indicating that this failure mode cannot be addressed through current prompting or post-hoc correction techniques. Our findings highlight a fundamental limitation of current VLM for inspection and monitoring tasks and underscore the need for architectural or training-level interventions that enable models to override internal expectations when confronted with contradictory evidence.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "errors": []
+}

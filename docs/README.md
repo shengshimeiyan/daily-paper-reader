@@ -6,41 +6,34 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-21
-- 运行时间：2026-07-21 21:54:39 UTC
+- 最新运行日期：2026-07-22
+- 运行时间：2026-07-22 20:33:51 UTC
 - 运行状态：成功
-- 本次总论文数：7
-- 精读区：4
-- 速读区：3
+- 本次总论文数：4
+- 精读区：3
+- 速读区：1
 
 ### 今日简报（AI）
-1) 今日精读4篇速读3
-- 详情：[/202607/21/README](/202607/21/README)
+1) 今日精读2篇9分LLM重磅论文，深挖推理纠错与提示词防幻觉机制，速读1篇视觉模型盲区探测。
+2) 最值得关注：大模型推理可通过“逐步自一致性策略”纠正已知事实引发的错误，而提示词的格式、指令数与上下文长度是控制指令遵循与幻觉的关键杠杆。
+3) 日常使用大模型时，建议精简指令数量并优化格式结构以压低幻觉率，处理图像任务时则需警惕模型可能遗漏关键细节。
+- 详情：[/202607/22/README](/202607/22/README)
 
 ### 精读区论文标签
-1. [Diversity-Oriented Fine-Tuning for Uncertainty-Based Hallucination Detection](/202607/21/2607.16643v1-diversity-oriented-fine-tuning-for-uncertainty-based-hallucination-detection)  
+1. [Reasoning Error from Known Fact: Step-Level Self-Consistency Group Relative Policy Optimization for LLM](/202607/22/2607.18915v1-reasoning-error-from-known-fact-step-level-self-consistency-group-relative-policy-optimization-for-llm)  
    标签：评分：9.0/10、query:llm-halluc
-   evidence：通过微调进行幻觉检测
-2. [Zero Hallucination, by Construction: Hallucination-Aware Layered Oversight for Trustworthy Enterprise AI](/202607/21/2607.17883v1-zero-hallucination-by-construction-hallucination-aware-layered-oversight-for-trustworthy-enterprise-ai)  
+   evidence：分析并缓解大模型长推理过程中的事实幻觉
+2. [Prompt Design at Scale: How Format, Instruction Count, and Context Length Shape Instruction Adherence and Hallucination in Large Language Models](/202607/22/2607.19257v1-prompt-design-at-scale-how-format-instruction-count-and-context-length-shape-instruction-adherence-and-hallucination-in-large-language-models)  
    标签：评分：9.0/10、query:llm-halluc
-   evidence：通过系统强制执行缓解大模型幻觉
-3. [Look Clearly Before Answering: Mitigating Hallucinations in LVLMs via Saliency-Driven Perceptual Realignment](/202607/21/2607.16841v1-look-clearly-before-answering-mitigating-hallucinations-in-lvlms-via-saliency-driven-perceptual-realignment)  
+   evidence：研究提示格式、指令数量和上下文长度如何影响大语言模型中的幻觉
+3. [Inference-Time Steering for Cross-Lingual Factual Consistency in LLMs](/202607/22/2607.19243v1-inference-time-steering-for-cross-lingual-factual-consistency-in-llms)  
    标签：评分：8.0/10、query:llm-halluc
-   evidence：通过感知重对齐缓解大视觉语言模型幻觉
-4. [Debate-on-Graph: Reliable and Adaptive Reasoning of Large Language Model on Uncertain Knowledge Graph](/202607/21/2607.17266v1-debate-on-graph-reliable-and-adaptive-reasoning-of-large-language-model-on-uncertain-knowledge-graph)  
-   标签：评分：8.0/10、query:llm-halluc
-   evidence：利用不确定知识图谱缓解大模型幻觉
+   evidence：缓解大模型跨语言事实不一致
 
 ### 速读区论文标签
-1. [Robust Summarization of Doctor-Patient Conversations: TalTech Systems for the Beyond Transcription Challenge](/202607/21/2607.17230v1-robust-summarization-of-doctor-patient-conversations-taltech-systems-for-the-beyond-transcription-challenge)  
-   标签：评分：7.0/10、query:llm-halluc
-   evidence：长医患对话摘要中最低的幻觉率
-2. [Constraint-Anchored Reasoning Traces](/202607/21/2607.16727v1-constraint-anchored-reasoning-traces)  
+1. [MissingBench-Verified: Probing Vision-Language Models' Inability to Detect Missing Object Parts](/202607/22/2607.18673v1-missingbench-verified-probing-vision-language-models-inability-to-detect-missing-object-parts)  
    标签：评分：6.0/10、query:llm-halluc
-   evidence：使用约束断言缓解多模态大模型推理中的错误雪崩
-3. [An Explicit World Model Based on Data-First Ontology: DaoQL Multimodal Storage Validation and Counterfactual Reasoning Evaluation](/202607/21/2607.17269v1-an-explicit-world-model-based-on-data-first-ontology-daoql-multimodal-storage-validation-and-counterfactual-reasoning-evaluation)  
-   标签：评分：6.0/10、query:llm-halluc
-   evidence：通过显式世界模型和数据优先本体缓解幻觉
+   evidence：检测视觉语言模型中的幻觉
 
 
 <div class="dpr-home-promo-card">

@@ -1,0 +1,464 @@
+Title: Prompt Design at Scale: How Format, Instruction Count, and Context Length Shape Instruction Adherence and Hallucination in Large Language Models
+
+URL Source: https://arxiv.org/pdf/2607.19257v1
+
+Published Time: Wed, 22 Jul 2026 01:16:19 GMT
+
+Number of Pages: 21
+
+Markdown Content:
+Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+# Prompt Design at Scale: 
+
+# How Format, Instruction Count, and Context Length Shape Instruction Adherence and Hallucination in Large Language Models 
+
+Netanel Eliav Machine Human Intelligence Lab (MHIL) 
+
+netanel@mhil.org inetanel@me.com https://mhil.org 
+
+July 2026 
+
+Preprint — submitted to arXiv cs.AI, cs.CL This paper has not undergone peer review. 
+
+Abstract 
+
+Practitioners make three prompt-design decisions with almost no controlled evidence behind any of them: how to format instructions and injected context (markdown, plain text, prose, or tabular), how many simultaneous instructions a system prompt can carry before compliance degrades, and how much context a model can hold before recall and honesty degrade. We report two controlled experiments crossing all three factors on one held, contamination-free synthetic corpus (the “Book of Veyra,” 8,780 uniquely-named en-tities, deterministically regenerable from a fixed seed), evaluated across five models span-ning two capability tiers and three model families (Claude Sonnet 5, Claude Haiku, Gemini Flash, and two Qwen open-weight sizes). Experiment 1 (960 calls/model) measures instruction-following decay as rule count N
+
+grows from 10 to 160, crossed with four rendering formats and system-prompt vs. user-turn placement. Perfect-response rate collapses to zero by N = 80 for every model, every format, and both placements, a floor effect essentially independent of format. Placement produces effects at least as large as format at N = 160 in four of five models, but the direction is model-specific (it helps two models, hurts two, and has no effect for one). No model shows a reliable markdown advantage, and one 35B open-weight model reliably favors plain text instead. Experiment 2 (5,520 calls/model at full context) measures recall accuracy, false-premise sycophancy, and absent-fact fabrication across a 2k-to-512k-token context ladder in the same four formats. Recall stays near ceiling through roughly 64–128k tokens, then de-grades sharply and format-dependently: one model’s accuracy spread across formats reaches 48 percentage points at 128k tokens, and the two models tested to 512k show format-accuracy spreads that scale with proximity to each model’s own effective context ceiling rather than with absolute token count. Fabrication never occurs (0/5,760 absent-fact probes across all models, rungs, and formats), and sycophancy stays negligible ( ≤ 8.3%) through-out. What actually rises sharply near each model’s own ceiling is outright refusal to answer (0% to 79–90%), a distinct failure mode from either sycophancy or fabrication. Neither of two pre-registered format orderings holds: the same format is the best performer for one model/rung and the worst for another. Accounting for format’s measured token overhead (+22% to +37% over plain text) further changes which format is preferable in the cases with genuine accuracy spread to adjust. 
+
+1arXiv:2607.19257v1 [cs.CL] 21 Jul 2026 We release the full harness, corpus generator, and raw results (VeyraBench) for exact, byte-identical reproduction. 1
+
+Keywords: large language models; prompt engineering; prompt formatting; markdown; in-struction following; long-context; hallucination; sycophancy; context window; benchmark; synthetic corpus; reproducibility. 
+
+arXiv categories: cs.AI (primary); cs.CL (cross-listed) 
+
+# Contents 
+
+1 Introduction 3
+
+1.1 Contributions . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 31.2 Paper Structure . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 4
+
+2 Related Work 5
+
+2.1 Prompt Format Sensitivity . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 52.2 Instruction-Count Scaling . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 52.3 Long-Context Retrieval and Sycophancy . . . . . . . . . . . . . . . . . . . . . . . . 52.4 Structured versus Unstructured Context . . . . . . . . . . . . . . . . . . . . . . . . 62.5 Synthetic, Contamination-Free Hallucination Benchmarks . . . . . . . . . . . . . 62.6 Positioning Summary . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 6
+
+3 The Book of Veyra 6
+
+3.1 Construction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 63.2 Four Renderings . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 83.3 Context Ladder and Token Overhead . . . . . . . . . . . . . . . . . . . . . . . . . . 83.4 Probes . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+
+4 Experiment 1: Instruction-Following Decay 9
+
+4.1 Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 94.2 The Decay Floor . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 94.3 Format Has No Reliable Winner . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10 4.4 Placement Rivals Format . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11 4.5 A Model-Specific Format Collapse . . . . . . . . . . . . . . . . . . . . . . . . . . . 11 
+
+5 Experiment 2: Hallucination Across the Context Ladder 12 
+
+5.1 Design . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12 5.2 Recall Accuracy: Flat, Then Format-Dependent . . . . . . . . . . . . . . . . . . . . 12 5.3 Neither Pre-Registered Format Ordering Holds . . . . . . . . . . . . . . . . . . . . 13 5.4 Fabrication and Sycophancy: Two Confirmed Nulls . . . . . . . . . . . . . . . . . 13 5.5 What Actually Rises: Refusal, Not Sycophancy . . . . . . . . . . . . . . . . . . . . 14 5.6 Why Cross-Rung Comparisons Require the Anchor Set . . . . . . . . . . . . . . . 15 
+
+6 Structure-versus-Syntax Decomposition 15 7 Cost-Adjusted Accuracy 16 8 Practical Guidance 18 9 Limitations 18 10 Future Work 19 11 Conclusion 20 
+
+> 1https://github.com/iNetanel/veyrabench
+
+2Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+# 1 Introduction 
+
+Consider two routine moments in how practitioners build LLM-backed systems in 2026. First, an engineer writing a system prompt accumulates thirty, then eighty, then a hundred and sixty simultaneous formatting rules, tone constraints, and safety instructions, and assumes the model will keep pace as long as each rule is phrased clearly. Second, a retrieval-augmented pipeline feeds a growing document store, two thousand tokens today and five hundred thou-sand tomorrow, into a single context window, rendered however the ingestion script happens to format it, and the team trusts the model to find, remember, and honestly report what is actu-ally there. Both moments involve a decision about format : markdown headers and bullets, flat plain text, flowing prose, or a table. But both are at least as much a decision about scale : how much is being asked of the model at once, and how much it is being asked to hold in mind. Practitioners argue constantly about the first question. The second is usually assumed away. This paper treats that as a mistake and argues that format cannot be evaluated in isolation from scale. A markdown bullet list and a plain-text sentence may behave identically at ten instructions and diverge sharply at a hundred. A table and a paragraph may return identical answers at two thousand tokens of context and diverge sharply at five hundred thousand. Ex-isting controlled work studies format sensitivity while holding scale roughly fixed (Sclar et al., 2024; He et al., 2024), or studies scale (growing instruction counts, growing context length) largely without varying format (Zhou et al., 2023; Jaroslawicz et al., 2025; Liu et al., 2023; Hong et al., 2025). No publicly available study, to our knowledge, crosses format against both scale axes, instruction count and context length, on one held, controlled corpus. This paper does. We report two experiments that share a single design principle. We render the same under-lying content in four formats (markdown, plain text, prose, and a markdown table) and push each format along its own natural scale axis until it breaks. 
+
+Experiment 1 (instructions). A system prompt or user turn carries N ∈ { 10, 20, 40, 80, 120, 160 }
+
+simultaneous, programmatically verifiable rules (word-count ranges, required and forbidden words, exact opening/closing text, paragraph counts), rendered in each of the four formats, with the rule block placed either in the system prompt or the user turn. We measure the result-ing instruction-following decay curve , how compliance falls as N grows, separately by format, by placement, and by model. 
+
+Experiment 2 (context). A deterministic, contamination-free 512,000-token synthetic cor-pus (the Book of Veyra: 8,780 uniquely named fictional entities with interlocking, overlapping attributes, generated with no LLM involvement from a fixed seed) is rendered in the same four formats and sliced into a context ladder from 2,000 to 512,000 tokens. At each rung we probe re-call accuracy, sycophantic agreement with false premises, and fabrication of facts never stated, separately by format and by context length. Both experiments run against five models spanning two capability tiers within one provider (Claude Sonnet 5, Claude Haiku) and one additional provider/architecture point (Gemini Flash), plus a within-family open-weight size comparison (Qwen 27B, Qwen 35B). Table 1 reports the exact model identifier queried for each. Section 2 positions this design against the closest prior work on format sensitivity, instruction-count scaling, structured-vs-unstructured context, long-context sycophancy, and synthetic hallucination benchmarks. Several of these works independently anticipate pieces of what we find, and we engage with them directly rather than eliding the overlap. 
+
+1.1 Contributions 
+
+This paper makes the following contributions: 1. A joint decay-and-placement analysis of instruction-following. We compare adherence-vs-N decay curves across four formats and two prompt placements (system vs. user turn) 3Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+Table 1: Models evaluated: display name used in this paper vs. the exact identifier queried 
+
+Display name Model identifier Host Context ceiling used *
+
+Claude Sonnet 5 claude-sonnet-5 Anthropic API 1,000,000 tokens Claude Haiku claude-haiku-4-5 Anthropic API 200,000 tokens Gemini Flash gemini-3.5-flash Google (OpenAI-compatible endpoint) 1,000,000 tokens Qwen 27B qwen_27b Self-hosted (Ollama) 220,000 tokens Qwen 35B qwen_35b Self-hosted (Ollama) 180,000 tokens 
+
+> *The configured ceiling used to decide which context-ladder rungs a model is evaluated at in Experiment 2 (Section 5), after applying a measured real-token-to-estimate multiplier per model (1.1–1.6 ×, provider-dependent) as a safety margin against the model’s advertised window; it is not necessarily each vendor’s own stated maximum. Both Qwen models are served with extended-thinking/reasoning generation disabled at the API level for both experiments. All models are sampled at their own provider default temperature (no temperature override), with 3 repeats per question in Experiment 2 and 20 trials per cell in Experiment 1.
+
+on one instruction pool. Threshold, or “knee,” decay in instruction count has been indepen-dently documented at larger scale by concurrent work (Jaroslawicz et al., 2025; Harada et al., 2025). Our contribution is narrower and more specific: we cross that decay curve against format and against placement, neither of which prior work varies. We find placement pro-duces effects comparable to or larger than format, in a direction that is itself model-specific. 2. A four-format, four-model, six-rung factorial for long-context hallucination. Recall error, sycophancy, and fabrication are measured jointly across a 2k–512k-token ladder in four for-mats on a single contamination-free corpus. We are not aware of a prior study that crosses format with context length for all three failure modes simultaneously. 3. A structure-vs-syntax decomposition. By holding content byte-identical across a list-structured markdown format, a table format, an unstructured plain format, and unstructured prose, we separate whether any structure helps from whether tabular structure specifically helps. Recent work independently shows tables outperform unstructured text on other corpora (Oh et al., 2024; Liu et al., 2025). Our contribution is a tighter four-way decomposition on one held corpus that additionally crosses this question with context length, which that work does not. 4. Token-overhead-adjusted accuracy. Using real subword token counts, we show format’s accuracy advantages do not always survive its cost. In the clearest test cases, converting to accuracy-per-token either reverses an apparent ranking or reinforces an already-cheaper format’s win. 5. VeyraBench: the full benchmark harness, the Book of Veyra corpus generator, and all raw model outputs, released for byte-identical reproduction from a fixed seed. The corpus itself follows an active line of work on synthetic, leakage-resistant benchmark construction (Bang et al., 2025; Li et al., 2024). Our specific contribution is a single corpus rendered in four parallel, content-identical formats, purpose-built to isolate format effects rather than to test recall alone. 
+
+1.2 Paper Structure 
+
+Section 2 reviews related work on format sensitivity, instruction-count scaling, structured con-text, long-context sycophancy, and synthetic benchmarks, and positions our contributions against it directly. Section 3 describes the Book of Veyra corpus and its four renderings. Sec-tions 4 and 5 present Experiment 1 and Experiment 2. Section 6 presents the structure-vs-syntax decomposition. Section 7 presents the cost-adjusted accuracy analysis. Section 8 distills 4Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+practical guidance. Section 9 states limitations. Section 10 outlines future work. Section 11 concludes. 
+
+# 2 Related Work 
+
+Our design sits at the intersection of five literatures that have, until now, developed largely in-dependently: prompt format sensitivity, instruction-count scaling, structured-versus-unstructured context, long-context sycophancy, and synthetic contamination-free benchmarks. Each is re-viewed in turn, with an explicit statement of how our design differs. 
+
+2.1 Prompt Format Sensitivity 
+
+Sclar et al. (2024) show that semantically equivalent prompts differing only in superficial for-matting (spacing, separators, casing) produce accuracy swings of up to 76 points on some models, establishing that format is not a cosmetic concern. He et al. (2024) directly compare plain text, markdown, JSON, and YAML system-prompt formatting on GPT-3.5 and GPT-4 and find no universally best format, with format sensitivity decreasing but not disappearing at higher capability. Both studies hold task complexity roughly fixed while varying format. Neither varies instruction count or context length alongside format, which is the axis this pa-per adds. 
+
+2.2 Instruction-Count Scaling 
+
+A separate literature studies how compliance degrades as the number of simultaneous in-structions grows, without varying prompt format. Zhou et al. (2023) introduce a verifiable-instruction methodology (IFEval) that this paper’s Experiment 1 rule design borrows. Jaroslaw-icz et al. (2025) scale instruction density from 10 to 500 keyword-inclusion rules across 20 mod-els and 7 providers, and identify a “threshold decay” pattern, stable performance followed by a sharper decline past a knee, for the strongest models in their pool. Harada et al. (2025) fit a closed-form relationship between prompt-level accuracy and per-instruction accuracy on up to ten simultaneous instructions across five model families. Both studies independently es-tablish decay-with-instruction-count as a robust, now multiply-replicated phenomenon, but neither varies prompt format as a factor. Our Experiment 1 measures the same underlying decay phenomenon but crosses it against format and against system-vs-user-turn placement, on a narrower instruction-count range (10–160) than Jaroslawicz et al. (2025)’s work but with both of those additional factors present. 
+
+2.3 Long-Context Retrieval and Sycophancy 
+
+Liu et al. (2023) document a U-shaped retrieval-accuracy curve by information position across six model families, and Hong et al. (2025) extend degradation measurement to 18 production models across a 10,000–500,000-token range, finding no model retrieves reliably across its full advertised window. Neither study varies the format of the injected context. On sycophancy specifically, recent work manipulates conversational or memory context rather than document format. Jain et al. (2026) show agreement with a user’s prior stated views rises with accumu-lated conversational and memory context across 38 real users. Prasad (2026), in a large non-peer-reviewed trial set (80,433 trials, 6 models), finds that raw conversational-context length has an architecture-dependent effect on sycophancy, reliably present only below roughly 20– 24B active parameters. The composition of that context (agreement- vs. correction-leaning filler) is a substantially larger effect than its length. Our Experiment 2 measures sycophancy, and separately outright fabrication and simple recall error, as a joint function of single-document context length and format, which neither line of prior work does. 5Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+2.4 Structured versus Unstructured Context 
+
+Whether structuring injected data as a table specifically, rather than any structured form, im-proves factual accuracy has begun to receive direct attention. Oh et al. (2024) compare natural text, structured text, JSON, knowledge graphs, and tables for factual-data interaction tasks and report tables yield roughly a 40% relative accuracy gain over natural text along with the best token efficiency of the formats tested. Liu et al. (2025) independently find a format-preference hierarchy (tables, then knowledge graphs, then infoboxes, then unstructured text) governs how models weight heterogeneous evidence, largely independent of the evidence’s content. Both findings anticipate part of what we test, and we engage with them directly: our four-arm design (list-structured markdown, table, unstructured plain text, and unstructured prose, held content-identical) is built specifically to separate whether structure per se helps from whether tabular structure is the active ingredient, on one corpus crossed with a context-length ladder, which neither cited study does. 
+
+2.5 Synthetic, Contamination-Free Hallucination Benchmarks 
+
+Purpose-built synthetic corpora that eliminate pretraining-data leakage are an active and now well-populated design pattern. Li et al. (2024) embed synthetic, fictional needles in real-document haystacks up to one million tokens. Gao et al. (2025) build an explicitly fictional magical-world corpus for a unified retrieval-augmented-generation evaluation. Bang et al. (2025) propose dynamic, leakage-resistant test-set generation specifically for extrinsic hallu-cination measurement. Yang et al. (2025) construct coherent synthetic biographies, explicitly critiquing standard needle-in-a-haystack designs for placing an inserted needle incoherently within its surrounding haystack. The Book of Veyra follows this general pattern rather than inventing it. What distinguishes it within this literature is that it is rendered in four parallel, content-identical formats specifically to isolate format effects, and is deterministically regener-able byte-for-byte from a fixed seed, released alongside this paper as VeyraBench. 
+
+2.6 Positioning Summary 
+
+Table 2 summarizes how our five contributions (Section 1.1) relate to the closest prior work identified above. In every case, the general phenomenon we measure has some precedent. What we add is a specific joint design, format crossed with one or both scale axes, on one held corpus, that the cited work does not provide. 
+
+# 3 The Book of Veyra 
+
+Experiment 2 (Section 5) requires a corpus with three properties simultaneously: it must be large enough to fill a context window up to 512,000 tokens; it must be provably free of pre-training contamination, so that a model’s answer reflects what it actually retrieved from the supplied context rather than parametric memorization; and it must be renderable in multiple formats while holding every fact, name, and number byte-identical across renderings, so that any measured difference is attributable to format alone. We built the Book of Veyra to satisfy all three. 
+
+3.1 Construction 
+
+The Book of Veyra is a fully synthetic fictional universe: 8,780 uniquely named entities across three categories (solar systems, guilds, and creatures), each with a fixed schema of attributes (a system has a star name, a discoverer, a founding year, a diameter; a guild has a founding year, a headquarters, a membership count; and so on). Every entity and every attribute value 6Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+Table 2: Positioning against the closest prior work, by contribution    
+
+> Contribution Closest prior work What differs here
+> Decay
+
+× format × placement (Exp. 1) Jaroslawicz et al. (2025), Harada et al. (2025) Neither varies format or prompt place-ment; both establish the base decay phe-nomenon at larger     
+
+> Nor across more models Format
+
+× context length × 3 failure modes (Exp. 2) Liu et al. (2023), Hong et al. (2025), Jain et al. (2026), Prasad (2026) None vary injected-content format; sycophancy work varies conversational context/history composition, not document format Structure-vs-syntax decomposition Oh et al. (2024), Liu et al. (2025) Both show tables beat unstructured text on other corpora; nei-ther runs a four-way list/table/plain/prose contrast crossed with context length Token-overhead-adjusted accuracy Oh et al. (2024) (token efficiency reported as a secondary finding) Combines cost-adjustment with this paper’s own decay and hallucination results, not reported in isolation VeyraBench corpus release Li et al. (2024), Bang et al. (2025) Both build synthetic, contamination-free corpora; neither ren-ders one corpus in four parallel formats to isolate format effects 
+
+is generated by a deterministic template-and-random-table process, seeded with a fixed seed (42) and involving no language model at any stage of generation. Entity names are constructed by combining syllable fragments from closed, hand-curated tables, and numeric attributes are drawn from fixed ranges, both entirely offline. Because generation is deterministic and seed-controlled, the entire corpus, and every downstream artifact derived from it, including the case files consumed by the evaluation harness, regenerates byte-identically from the seed alone, which we verified directly (repeated generation runs produce identical MD5 checksums for every output file). 
+
+Contamination-freedom. Every entity name is a novel combination that does not corre-spond to any real place, organization, or creature, and by construction cannot appear in any model’s pretraining corpus. This is a stronger guarantee than de-duplication against known benchmarks: it is a positive construction argument, not a negative filtering one. 
+
+Uniqueness and chance baseline. Every entity name is globally unique within the cor-pus, so any question referencing an entity by name has exactly one correct referent. There is no ambiguity for a probe question to accidentally exploit. Attribute values are deliberately allowed to overlap across different entities (many systems share a discoverer name, and many 7Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+guilds share a founding-year range), which creates genuine interference pressure for a model trying to recall the right value for the right entity. However, the specific facts we score are restricted to attribute values that cannot be plausibly guessed without having actually read the passage: unique entity names, person names drawn from a large enough table that any single name has roughly a 1-in-1,000 chance of matching by guess, and numeric values drawn from ranges spanning hundreds of possible values. This combination, interference-inducing overlap in the corpus at large but only unguessable facts in the scored probe set, drives the chance-level baseline for our recall probes to approximately zero, which we confirmed directly rather than assumed. 
+
+3.2 Four Renderings 
+
+The identical underlying facts are rendered into four surface formats, differing only in presen-tation: • Markdown: each entity is a subsection ( ## System Flasb ) with attributes as bold key–value bullets. • Plain: the same attribute lines, with all markdown markup mechanically stripped, giving identical content and identical line breaks but no headers or bold. • Prose: the same facts rewritten as flowing narrative sentences, with no line breaks within an entity’s description. • Table: the same attributes as a markdown key–value table ( | Attribute | Value | ). Content is held fixed across all four renderings: the same facts, the same units, and the same wording of values, so that only the presentation format varies. This is what licenses attributing any measured difference in Experiment 2 to format rather than to a confound in what was actually said. 
+
+3.3 Context Ladder and Token Overhead 
+
+The corpus is sliced into six rungs by target token count (2k, 16k, 64k, 128k, 256k, and 512k), with each rung containing a nested prefix of the full 8,780-entity corpus. Table 3 reports the exact entity count and measured token count per rung and format, using the o200k_base byte-pair-encoding tokenizer (a standardized, cross-provider proxy rather than a provider-specific tokenizer) applied directly to the generated text. Table 3: Book of Veyra: entities and measured token count by rung and format                                      
+
+> Rung Entities Plain Markdown Prose Table
+> 2k 34 1,453 1,828 1,782 1,987 16k 274 11,664 14,679 14,247 15,958 64k 1,097 46,795 58,863 57,130 63,983 128k 2,194 93,587 117,722 114,256 127,961 256k 4,388 187,240 235,509 228,546 255,987 512k 8,779 374,446 471,016 457,079 511,985
+> Token counts measured directly via the o200k_base tokenizer on the generated text (not estimated). “Rung” labels are nominal targets, while entity counts and exact token counts are the ground truth used throughout the paper.
+
+Across every rung, the overhead ratio relative to plain text is stable: markdown costs 1.258 × plain, prose costs 1.221 × plain, and table costs 1.367 × plain. Table is therefore both the format most likely to benefit from explicit structure (Section 5.3) and the format with the largest token-cost penalty to weigh against any such benefit (Section 7). 8Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+3.4 Probes 
+
+At each rung, three probe types are posed, each at three needle depths (10%, 50%, and 90% of the way through that rung’s slice), 20 questions per probe type per rung: • Recall (e.g. “What is the name of the star in the Flasb system?”): tests whether the model can retrieve a specific, unguessable fact from the supplied context. • False-premise (e.g. “The star of Flasb is 500 thousand kilometers wide. Is that right?”, true value 412): tests whether the model corrects a stated falsehood, sycophantically agrees with it, or does neither. • Absent (asks a fact never stated for that entity): tests whether the model fabricates an an-swer or correctly reports that the information is not present. Each model is sampled at its own default temperature, with three repeats per question at ev-ery rung (main-set questions plus a fixed 20-question anchor set , drawn once from the 2k rung and re-asked unchanged at every larger rung specifically to support valid cross-rung compar-ison; see Section 5’s methodology note). Models whose documented context window cannot fit a given rung, after accounting for a measured real-token-to-estimate ratio per model, are skipped at that rung rather than truncated. 
+
+# 4 Experiment 1: Instruction-Following Decay 
+
+4.1 Design 
+
+A system prompt (or, in a separate arm, the user turn) carries a block of N ∈ { 10, 20, 40, 80, 120, 160 }
+
+simultaneous, programmatically verifiable rules, and the model is asked to write a short essay on a benign topic. Five rules are fixed and present at every N: an exact word-count range, an exact required closing sentence, an exact required first word, a prohibition on exclamation marks, and an exact required paragraph count. The remaining N − 5 rules are drawn from a pool of forbid /include word constraints. Every rule is checked programmatically against the response (regex or word-boundary matching; no LLM-as-judge scoring). The rule block is rendered in the same four formats as Section 3 and placed in either the system prompt or the user turn, with 20 trials per (model, N, format, placement) cell: 960 calls per model, 4,800 scored trials in total across all five models. 2
+
+4.2 The Decay Floor 
+
+Figure 1 plots perfect-response rate against N, one panel per model, one line per format, pooled across both placements. Table 4 reports the same values numerically.            
+
+> 2Because the five fixed rules are present at every Nwhile the padding rules vary, the average rule’s difficulty is not constant across N: at N=10, half the rules are the harder fixed-structural kind, while at N=160 they are only 3% of the rule set. We report perfect-response rate (all rules satisfied) as the primary metric for this reason. It is not sensitive to this compositional shift the way a pooled mean-adherence score would be, and we additionally verified the qualitative floor-by-N=80 finding below holds when restricting to the fixed-structural subset alone.
+
+9Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 10 40 80 120 160                    
+
+> N (rule count)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Perfect-response rate
+> Sonnet 5
+> 10 40 80 120 160
+> N (rule count)
+> Claude Haiku
+> 10 40 80 120 160
+> N (rule count)
+> Gemini Flash
+> 10 40 80 120 160
+> N (rule count)
+> Qwen 27B
+> 10 40 80 120 160
+> N (rule count)
+> Qwen 35B
+> markdown plain prose table
+
+Figure 1: Perfect-response rate vs. instruction count N, by format (color) and model (panel), pooled across system and user-turn placement. All five models converge to a perfect-response rate of zero by N = 80, regardless of format. Table 4: Perfect-response rate by model and N (pooled across format and placement) 
+
+Model N=10 N=20 N=40 N=80 N=120 N=160 Claude Haiku 0.850 0.594 0.119 0.000 0.000 0.000 Gemini Flash 0.919 0.825 0.312 0.019 0.000 0.000 Qwen 27B 0.588 0.350 0.094 0.006 0.000 0.000 Qwen 35B 0.725 0.450 0.100 0.000 0.000 0.000 Sonnet 5 0.938 0.750 0.238 0.000 0.000 0.000 
+
+Every model, every format, and both placements are effectively at zero perfect-response rate by 
+
+N = 80 and remain there through N = 160: a hard floor rather than a gradual asymptote. This replicates the base decay-with-instruction-count phenomenon independently documented by Jaroslawicz et al. (2025) and Harada et al. (2025) (Section 2). What is new here is that the floor is reached regardless of format , across all four formats tested. 
+
+4.3 Format Has No Reliable Winner 
+
+Table 5 reports the markdown-minus-plain adherence delta at each N, computed on a per-instruction-check basis (not a per-trial basis) and pooled across both placements. Table 5: Markdown-minus-plain adherence delta by model and N
+
+Model N=10 N=20 N=40 N=80 N=120 N=160 Sign 
+
+Claude Haiku +0.008 −0.003 +0.003 +0.013 +0.018 +0.021 5/6 positive, small Gemini Flash +0.015 −0.011 −0.007 +0.051 −0.017 −0.008 3/6 positive, sign-flips Qwen 27B +0.023 −0.005 +0.016 −0.006 −0.010 −0.007 3/6 positive Qwen 35B +0.003 −0.003 −0.014 −0.024 −0.024 −0.048 5/6 negative Sonnet 5 +0.003 +0.005 +0.008 −0.012 +0.003 +0.012 5/6 positive, small 
+
+No model shows a consistent, meaningful markdown advantage: four of five models show small deltas ( ≤ 2.1 percentage points in the direction that recurs most often) that are not re-liably signed across N. The one exception runs opposite the conventional wisdom: Qwen 35B favors plain text at five of six N-levels, with the gap widening to 4.8 percentage points at 
+
+N = 160. This is the single cleanest directional format signal anywhere in Experiment 1, and it disfavors markdown. 10 Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+4.4 Placement Rivals Format 
+
+Beyond format, we test whether placing the identical rule block in the system prompt versus the user turn (ahead of the essay task, with the system prompt left empty) affects compliance. Figure 2 and the underlying 95% Wilson confidence intervals show this placement effect is real, and larger in magnitude than the format effect in four of five models. Sonnet 5    
+
+> Claude Haiku
+> Gemini Flash
+> Qwen 27B
+> Qwen 35B
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Pooled adherence at N=160
+> n.s. *
+> *
+> **
+> System-prompt placement User-turn placement
+
+Figure 2: Pooled adherence at N = 160, system-prompt vs. user-turn placement, with 95% Wilson confidence intervals. “n.s.” marks the one model (Sonnet 5) whose intervals overlap. Every other model shows a statistically distinguishable placement effect. The effect has no universal direction: user-turn placement helps two models (Claude Haiku, 
+
++6.6pp, and Qwen 35B, +5.1pp), hurts two (Gemini Flash, −8.7pp, and Qwen 27B, −1.8pp), and is statistically indistinguishable from zero for the fifth (Sonnet 5). Logistic decay fits cor-roborate this at the level of the knee itself. Claude Haiku’s estimated knee shifts from N ≈ 98 (system) to N ≈ 104 (user), consistent with user placement being modestly more forgiving for that model, while Gemini Flash’s knee shifts the opposite direction, from N ≈ 82 (system) to 
+
+N ≈ 46 (user), consistent with user placement being actively harmful for that model. There is no single “system prompts work better” or “user turns work better” rule. The design choice matters, but its sign is model-specific, mirroring the same theme that recurs in Experiment 2 (Section 5). 
+
+4.5 A Model-Specific Format Collapse 
+
+One further finding does not fit a small, evenly-distributed format effect: Gemini Flash’s prose and table formats collapse sharply, and specifically for that model, at N ≥ 40. Table 6 reports the prose-minus-plain and table-minus-plain adherence deltas at N = 40 and N = 80 for every model. Table 6: Prose/table-minus-plain adherence delta at N = 40 and N = 80 
+
+N = 40 N = 80 
+
+Model prose −plain table −plain prose −plain table −plain Claude Haiku +0.9pp +0.8pp −0.3pp +0.6pp 
+
+Gemini Flash −18.1pp −13.7pp −10.7pp −15.0pp 
+
+Qwen 27B +0.8pp −0.1pp +1.1pp +0.0pp Qwen 35B +0.8pp −1.7pp −0.3pp −2.5pp Sonnet 5 −0.1pp −0.1pp −0.3pp −0.5pp 
+
+11 Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+Every model except Gemini Flash keeps prose and table within about 2.5 percentage points of plain at these N-levels, ordinary format noise. Gemini Flash alone shows a large, model-specific collapse. Manual inspection of the affected transcripts found the visible response field frequently contains no essay text at all in these cases, but a tail fragment of what appears to be an internal rule-verification pass: a hidden-reasoning-leakage failure mode, not a scoring artifact. 3 This is a genuine format-by-model interaction that a pooled “markdown vs. plain, small and inconsistent” summary would miss entirely, and a caution against assuming format effects are homogeneous across models even when, on average, they are small. 
+
+# 5 Experiment 2: Hallucination Across the Context Ladder 
+
+5.1 Design 
+
+Experiment 2 poses the recall, false-premise, and absent-fact probes described in Section 3 against the Book of Veyra at each context rung, in each of the four formats, three repeats per question at each model’s default sampling temperature. Two long-context models (Sonnet 5, Gemini Flash) reach all six rungs up to 512k tokens. The remaining three (Claude Haiku, Qwen 27B, Qwen 35B) are evaluated up to 128k, the largest rung that fits their documented context window after accounting for a measured real-token-to-estimate ratio per model. This yields 5,520 calls per full-context model and a proportionally smaller count for the three shorter-context models, for 30,480 scored responses in total across all five models, main-set and anchor-set questions combined. 
+
+5.2 Recall Accuracy: Flat, Then Format-Dependent 
+
+At 2k, 16k, and 64k tokens, every model and every format sit at or within one or two questions of ceiling (0.98–1.00 recall accuracy), and no format discriminates in this range. Real separation first appears at 128k and grows from there. Table 7 reports recall accuracy for the nine (model, rung) cells with genuine, non-ceiling-tied spread. Table 7: Recall accuracy by format, illustrative non-ceiling cells 
+
+Model @ rung Markdown Plain Prose Table Spread 
+
+Claude Haiku @ 128k 0.817 0.383 0.867 0.867 48.4pp Sonnet 5 @ 256k 0.950 0.850 0.967 0.933 11.7pp Sonnet 5 @ 512k 0.667 0.867 0.667 0.817 20.0pp Gemini Flash @ 256k 0.900 0.950 0.900 0.950 5.0pp Gemini Flash @ 512k 1.000 0.933 0.967 0.950 6.7pp  
+
+> n
+
+= 60 questions per cell (20 questions × 3 repeats). Bold marks the best performer in each row. “Spread” is best-minus-worst format within that row. 
+
+> 3We built an automated duplicate-content detector (flagging any response containing a substantial, exactly-repeated sentence) to catch this and a structurally different Qwen failure mode (a degenerate short-clause repeti-tion loop that never reaches the essay’s required closing sentence). Of 72 flagged responses across all models, 43 (all Qwen) contained a fully recoverable, rule-compliant essay obscured by leaked planning text or a verbatim du-plicate re-generation. For these we extract and re-score the recovered essay using the same two structural anchors every case shares (required first word, required closing sentence). The remaining 29, Gemini Flash’s collapse cases among them, reach no valid closing sentence at all and are scored as failures, which we treat as accurate rather than as a defect to be corrected. This adds at most a few tenths of a percentage point to any cell’s adherence and changes no qualitative conclusion in this section.
+
+12 Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 10k 100k        
+
+> Context length (tokens)
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Recall accuracy
+> Sonnet 5
+> 10k 100k
+> Context length (tokens)
+> Gemini Flash
+> 10k 100k
+> Context length (tokens)
+> Claude Haiku
+> 10k 100k
+> Context length (tokens)
+> Qwen 27B
+> 10k 100k
+> Context length (tokens)
+> Qwen 35B
+> markdown plain prose table
+
+Figure 3: Recall accuracy vs. context length, by format (color) and model (panel). The two long-context models (Sonnet 5, Gemini Flash) are tested through 512k tokens, and the remaining three are shown to their own context ceiling. Claude Haiku’s 128k/plain cell is the single largest format spread anywhere in the dataset: plain collapses to 38.3% recall accuracy while the other three formats sit at 82–87%, a 48.4-percentage-point gap driven by one format alone. At the two rungs tested for both long-context models, the format-accuracy spread does not scale with raw token count in the way a naive extrapolation would predict: Sonnet 5’s spread nearly doubles from 256k (11.7pp) to 512k (20.0pp), while Gemini Flash’s spread stays comparatively flat (5.0pp to 6.7pp) across the same nominal token range, despite both models sharing the same documented 1,000,000-token ceiling. Spread magnitude tracks proximity to a model’s own effective ceiling , not absolute token count: Sonnet 5 appears to hit a harder practical wall at 512k than Gemini Flash does. 
+
+5.3 Neither Pre-Registered Format Ordering Holds 
+
+Two orderings were pre-registered as plausible outcomes: that markdown, table, and plain would all beat prose roughly equally (structure per se matters, regardless of specific form), or that table specifically would separate from markdown and plain (tabular structure specifically is the active ingredient). Table 7 supports neither. Prose is the best or tied-best performer in three of the five illustrative cells (Sonnet 5 @ 256k, Claude Haiku @ 128k tied with table, Gem-ini Flash @ 512k second-best), the format predicted to perform worst under both hypotheses. Plain is simultaneously the worst performer at one cell (Claude Haiku @ 128k) and the sin-gle best performer at another (Sonnet 5 @ 512k). The robust generalization is not “structure helps” or “tables help,” but that no format is uniformly good or bad : the same format is the best performer for one model/rung and the worst for another, a pattern we return to in Section 7’s cost-adjusted analysis. Two mechanisms help explain why the ranking flips rather than staying fixed. First, at Sonnet 5’s most extreme rung, the correct-vs-incorrect split is confounded with a rising refusal rate (Section 5.5 below): of Sonnet 5’s incorrect markdown/512k recall responses, three in four are a literal “insufficient information” non-answer rather than a wrong guess, meaning plain and table’s apparent recall advantage at 512k is partly a lower propensity to refuse rather than a pure comprehension advantage. Second, Gemini Flash’s own ranking flips between adjacent rungs (plain/table on top at 256k; markdown on top, plain near bottom, at 512k) in a way that survives our anchor-set cross-check (Section 5.6 below) and is therefore a genuine rung-dependent effect for that model, not a composition artifact. 
+
+5.4 Fabrication and Sycophancy: Two Confirmed Nulls 
+
+Two of Experiment 2’s three probe types produce a clean, complete null result. Across all 5,760 main-set absent-fact probe responses, spanning every model, every reachable rung, and every format, the fabrication rate is exactly zero: no model, in any condition tested, invents 13 Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 10k 100k 
+
+> Context length (tokens)
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Refusal rate (false-premise probe)  Sonnet 5
+> Claude Haiku
+> Gemini Flash
+> Qwen 27B
+> Qwen 35B
+
+Figure 4: Refusal rate on the false-premise probe vs. context length, one line per model. All five models rise sharply as they approach their own context ceiling. a specific answer to a question whose fact was never stated. 4 Direct sycophantic agreement with a stated false premise is likewise negligible throughout: the single highest observed rate in any (model, format, rung) cell is 8.3% (5 of 60 responses, Qwen 35B at 128k/markdown), and the large majority of cells are at or under 3%. We manually reviewed every sycophantic response in the entire dataset (19 rows, the full population, not a sample) and confirmed each is an unambiguous, clean agreement with the false premise’s stated (incorrect) value. 
+
+5.5 What Actually Rises: Refusal, Not Sycophancy 
+
+If sycophancy and fabrication both stay flat, what happens to false-premise handling as context grows? Table 8 and Figure 4 answer directly: outright refusal to answer. Table 8: Refusal rate on the false-premise probe, by model and rung 
+
+Model 2k 16k 64k 128k 256k 512k 
+
+Claude Haiku 0.000 0.142 0.704 0.896 — —Gemini Flash 0.004 0.000 0.004 0.042 0.350 0.250 Qwen 27B 0.008 0.000 0.125 0.362 — —Qwen 35B 0.038 0.096 0.088 0.154 — —Sonnet 5 0.154 0.058 0.317 0.217 0.579 0.788 
+
+Every model shows the same qualitative climb toward its own ceiling: Claude Haiku rises from 0% to 89.6% refusal between 2k and its 128k ceiling, and Sonnet 5 climbs to 78.8% by 512k. Sycophancy, over the identical climb, stays flat and near-zero (Section 5.4). The cor-rect characterization of long-context false-premise handling under pressure is therefore nei-ther “sycophancy rises” (it does not) nor simply “correction rate declines” taken at face value, since part of that apparent decline is refusal rather than failure to correct: models increasingly decline to answer at all rather than either correctly rejecting the false premise or being fooled  
+
+> 4The absent probe’s scoring necessarily defines “correct” as declining to answer, since there is no true value to state, so this null cannot, on its own, distinguish a model that correctly verified the fact’s absence from one that reflexively declines to answer everything at this rung. Section 5.5’s refusal-rate finding indicates the latter mechanism is genuinely present at extreme context lengths for at least one model, which qualifies but does not overturn the fabrication null itself: the response is absent either way.
+
+14 Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+by it. Which format triggers the most refusal is itself model-dependent rather than following a single rule. For Gemini Flash and Sonnet 5 at their longest rungs, markdown and prose trigger 
+
+more refusal than plain and table, while for Claude Haiku and Qwen 27B at shorter rungs the direction reverses, echoing Section 5.3’s “no universal format winner” theme once again. 
+
+5.6 Why Cross-Rung Comparisons Require the Anchor Set 
+
+A methodological caveat is necessary before any cross-rung comparison in this section is taken at face value. Each rung’s main-set questions are drawn from that rung’s own slice of the cor-pus, so successive rungs draw on non-overlapping sets of entities, and a rung-to-rung swing in the main-set numbers can reflect one unusually easy or hard question rather than a gen-uine effect of context length, particularly at our sample size of 20 questions per probe type per rung. We therefore also pose a fixed 20-question anchor set , drawn once from the 2k rung and re-asked completely unchanged at every larger rung, which provides the one genuinely apples-to-apples cross-rung comparison in the design. We verified this caveat is not merely theoretical: Gemini Flash’s main-set markdown recall shows an apparent 256k-to-512k im-provement (0.900 → 1.000), but the corresponding anchor-set cells show both rungs already near ceiling with no such swing, confirming the main-set movement is a question-composition artifact rather than a real effect. A symmetric case appears in the false-premise correction rate. 
+
+Any cross-rung claim in this paper is checked against its anchor-set counterpart before be-ing reported as a finding. The ranking-flip claims in Section 5.3 and the refusal climb in this section both survive that check. 
+
+# 6 Structure-versus-Syntax Decomposition 
+
+Section 2 identified two plausible, pre-registered orderings for how format should affect recall accuracy: that any structure (markdown, prose with clear paragraph breaks, or a table) should beat unstructured plain text roughly equally, because structure per se aids retrieval, or that tabular structure specifically should separate from markdown and plain, because a table is the closest surface form to the key-value lookup the recall task actually requires. Recent work on tables versus other formats for factual data interaction motivates the second hypothesis directly (Oh et al., 2024; Liu et al., 2025). Our four-arm design, holding content byte-identical across markdown, plain, prose, and table, is built specifically to test both orderings against one corpus. Figure 5 plots recall accuracy across all four formats for the five (model, rung) cells identi-fied in Section 5.3 as having genuine, non-ceiling-tied spread (the same nine-minus-four cells reported numerically in Table 7, restricted here to the five with all four formats populated at that rung). 15 Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 Claude Haiku    
+
+> @128k
+> Sonnet 5
+> @256k
+> Sonnet 5
+> @512k
+> Gemini Flash
+> @256k
+> Gemini Flash
+> @512k
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Recall accuracy
+> markdown plain prose table
+
+Figure 5: Recall accuracy by format across the five illustrative (model, rung) cells with genuine spread. Error bars are 95% Wilson confidence intervals. No format wins consistently across cells, and the ranking reverses direction between adjacent rungs for the same model (Gemini Flash, 256k vs. 512k). Neither pre-registered ordering survives this test. The “any structure helps” hypothesis pre-dicts markdown, prose, and table should cluster above plain at every cell; instead plain is the single best performer at Sonnet 5 @ 512k and ties for best at three of the other four cells. The “table specifically helps” hypothesis predicts table should separate from markdown and plain; instead table is the worst or tied-worst performer at Sonnet 5 @ 512k and Gemini Flash @ 256k, cells where the hypothesis predicts the opposite. Prose, the format both hypotheses predict should perform worst, is instead the best or tied-best performer at three of the five cells. The consistent generalization across Figure 5 is not a ranking but the absence of one: the same format is the best performer for one model or rung and the worst for another, with no format immune to reversal. Section 5.5 identifies a concrete mechanism behind at least one of these reversals. At Sonnet 5’s 512k rung, three in four of the model’s incorrect markdown recall responses are an outright refusal rather than a wrong guess, so plain and table’s appar-ent advantage there is partly a lower propensity to refuse under context pressure rather than a pure comprehension advantage. This does not fully explain Gemini Flash’s own 256k-to-512k reversal, which Section 5.6 confirms is a genuine, anchor-set-verified, rung-dependent effect for that model rather than a shared mechanism. The two prior findings this section is posi-tioned against (Oh et al., 2024; Liu et al., 2025) are not contradicted so much as bounded: both are measured at fixed, moderate context lengths, and our result suggests any format advan-tage they observe there need not survive as context length grows toward a given model’s own effective ceiling. 
+
+# 7 Cost-Adjusted Accuracy 
+
+Table 3 in Section 3 established that format is not free: markdown costs 1.258 × plain text in tokens, prose costs 1.221 ×, and table costs 1.367 ×, stable across every rung. An accuracy advantage measured per response is not the same claim as an accuracy advantage measured per token paid, and a format that wins on raw accuracy can still lose once its overhead is priced in. We divide each format’s raw recall accuracy by its token cost relative to plain text, at the two cells where the raw-accuracy spread is large enough for the comparison to be informative rather than noise. 16 Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+Table 9: Raw accuracy versus accuracy adjusted for relative token cost, two illustrative cells 
+
+Markdown Plain Prose Table 
+
+Claude Haiku @ 128k 
+
+Raw accuracy 0.817 0.383 0.867 0.867 Relative token cost 1.258 1.000 1.221 1.367 Accuracy / relative cost 0.649 0.383 0.710 0.634 
+
+Sonnet 5 @ 512k 
+
+Raw accuracy 0.667 0.867 0.667 0.817 Relative token cost 1.258 1.000 1.221 1.367 Accuracy / relative cost 0.530 0.867 0.546 0.597 markdown  
+
+> plain
+> prose
+> table
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Accuracy
+> Claude Haiku @ 128k
+> markdown
+> plain
+> prose
+> table
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> Sonnet 5 @ 512k
+> Raw accuracy Accuracy / relative token cost
+
+Figure 6: Raw accuracy versus accuracy adjusted for relative token cost, by format, at the two cells with genuine raw-accuracy spread. Grey bars are raw accuracy; colored bars are accuracy divided by each format’s token cost relative to plain text. The two cells illustrate different ways cost-adjustment matters. At Claude Haiku @ 128k, ta-ble and prose are tied on raw accuracy (0.867 each), a tie that overhead breaks: prose costs less than table (1.221 × vs. 1.367 × plain), so accuracy-per-cost separates them (0.710 vs. 0.634), and prose becomes the clear winner once cost is priced in, not merely a tied one. At Son-net 5 @ 512k, plain does not need overhead-adjustment to win. It already has the highest raw accuracy of any format at that cell (0.867, against 0.530–0.597 for the others), and its lower to-ken cost widens rather than creates that advantage. This case reflects the same refusal-driven mechanism identified in Section 6: the format that wins under extreme context pressure for this model is also the cheapest one, and the win is independent of the cost-adjustment rather than an artifact of it. Outside these two cells, most (model, rung, format) combinations sit at or near ceiling on recall accuracy, where every format scores close to 1.0 and plain’s apparent cost advantage is a tiebreak between statistically indistinguishable accuracies rather than a demonstrated ef-ficiency gain. The two cases in Table 9 should therefore be read as what happens when a genuine accuracy spread exists, not as evidence that plain text is generally the most efficient format. The practical implication is narrower and more specific to when it applies: where for-mats already differ meaningfully in accuracy, token cost is large enough (a 22–37% overhead range) to change which format is preferable, and that check is worth making explicitly rather than assuming the most accurate format is also the best value. 17 Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+# 8 Practical Guidance 
+
+The seven sections above run to specific numbers because the underlying question, how format interacts with scale, does not have a single portable answer. Some of what we find generalizes well enough to act on directly; some generalizes only as a warning to test rather than assume. We separate the two below. 1. Do not default to markdown, and do not default to any other format, without testing your own model. Across both experiments and five models, no format wins consistently (Sections 4, 6). One model (Qwen 35B) reliably favors plain text over markdown at high instruction counts (Section 4.3); another (Claude Haiku) collapses to 38.3% recall specifically under plain text at 128k tokens (Section 5.2). A format choice that is safe for one model in production is not safely portable to another without re-testing, even within the same rendering scheme. 2. Prompt placement is a free lever most teams are not testing. Moving an identical instruc-tion block between the system prompt and the user turn changed adherence by as much as 8.7 percentage points at N = 160, an effect size comparable to or larger than the format ef-fect for four of five models (Section 4.4). The direction is model-specific and not predictable in advance, so this is a recommendation to test both placements empirically for a given model and task, not a recommendation for either placement specifically. 3. Treat roughly 40 simultaneous instructions as a redesign point, not a tuning point. Every model in our sample sits on a steep decline by N = 40 and is effectively at a perfect-response floor by N = 80, regardless of format (Section 4.2). Past that range, rephrasing or reorganiz-ing the same instruction set is unlikely to help; splitting it across turns, tools, or a validation pass is a more reliable response than continuing to add formatting polish to a single dense prompt. 4. Near a model’s advertised context ceiling, budget for refusal, not hallucination. Fabri-cation of unstated facts never occurred in 5,760 tested cases (Section 5.4), and sycophancy stayed under 8.3% throughout (Section 5.4). What actually rises sharply, up to 89.6% in one model, is outright refusal to answer (Section 5.5). A system that monitors only for wrong or agreeable answers near the top of a model’s context window will miss the failure mode that is actually common there: the model declining to answer at all. 5. Check cost-adjusted accuracy only where a real accuracy gap already exists. At most (model, rung) combinations, formats sit within noise of each other on raw accuracy, and choosing the cheapest format there is a tiebreak, not an efficiency gain (Section 7). Where a genuine gap exists, token overhead (22–37% over plain text) is large enough to reverse which format is actually the better value, so the check is worth making explicitly in exactly those cases rather than applying a blanket cheapest-format policy. 
+
+# 9 Limitations 
+
+Several scope boundaries apply to every claim above. The corpus is a single fictional domain (interlocking entities, attributes, and relationships); we have not tested whether the format and scale interactions found here hold for other content types such as source code, legal text, or numerical business data, where structure may carry different information than it does in prose-like factual description. The five evaluated models span three families and two capability tiers within our budget, not an exhaustive or randomly sampled slice of the model landscape; the qualitative shape of our findings (a hard instruction-count floor exists, no format wins universally, refusal rather than sycophancy rises near a context ceiling) is the more portable 18 Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+claim, while specific thresholds such as N = 80 or 89.6% refusal are properties of the particular models we tested and should not be assumed to transfer verbatim to other models or future model versions. Sample sizes are modest at the tails of both experiments, 20 trials per (model, N, format, placement) cell in Experiment 1 and 60 questions per (model, rung, format) cell in Exper-iment 2, which is why we report Wilson confidence intervals wherever a claim rests on a comparison rather than a pooled aggregate, and why Experiment 2’s anchor-set cross-check (Section 5.6) exists specifically to catch cross-rung swings driven by question composition rather than a genuine effect. Token counts are measured with one standardized tokenizer (o200k_base ) rather than each provider’s own internal tokenizer, which may not match exact billed or context-window token counts per provider, though we expect the relative overhead ratios between formats to be stable under most reasonable tokenizers. Finally, both experi-ments use programmatically verifiable rules and facts by design, since this is what permits exact, reproducible scoring without an LLM-as-judge; real-world instructions and knowledge are often softer and less crisply checkable, and we have not tested whether the same decay and format patterns hold for instructions that cannot be verified by exact string or word-boundary matching. 
+
+# 10 Future Work 
+
+The clearest next step is testing whether the instruction-count floor in Section 4 is a property of single-prompt density rather than of total task complexity: splitting the same rule set across multiple turns, a validation pass, or a tool call, and checking whether adherence recovers past 
+
+N = 80, would directly test the redesign recommendation in Section 8. A second natural extension is broadening the format axis beyond the four renderings tested here to include machine-oriented formats such as JSON and YAML, which prior work treats as a separate for-mat class (He et al., 2024), crossed with both scale axes as in this design rather than tested at fixed scale as in prior work. A third is testing whether the direction of the placement ef-fect (Section 4.4) or the presence of a format-specific collapse (Section 4.5) correlates with any measurable model property, such as parameter count, training regime, or provider, across a larger and more systematically sampled model pool, which our five-model budget cannot re-solve on its own. Finally, Gemini Flash’s prose and table collapse (Section 4.5) is documented behaviorally but not diagnosed at the token or attention level; understanding its root cause would clarify whether it is a narrow artifact of that model’s reasoning-trace handling or an early instance of a failure mode that generalizes to other models under different conditions. A fifth direction follows directly from the refusal finding in Section 5.5. Fabrication was completely absent in our data (Section 5.4) while refusal rose sharply near each model’s own context ceiling, a pattern consistent with a broader shift in how providers tune current mod-els: penalizing confident wrong answers during alignment training plausibly pushes a model toward abstention as the safer default under uncertainty, trading hallucination risk for refusal risk rather than eliminating error. Our design cannot test this mechanism directly, since doing so would require comparing a base model against its own instruction-tuned counterpart on the identical probe, holding everything except the alignment step fixed. If the refusal cliff we observe is substantially reduced or absent in the base model, that would support alignment tuning as the driver; if it persists at a similar magnitude, the more likely explanation is ar-chitectural, tied to how attention or retrieval degrades near a model’s effective context limit regardless of tuning. Either answer would clarify whether the near-zero fabrication rate re-ported throughout this paper reflects a genuine capability or a trained-in reluctance to answer that happens to look like one under the metrics typically used to measure hallucination. 19 Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+# 11 Conclusion 
+
+Format, instruction count, and context length are usually studied one at a time. We crossed all three on one held corpus, five models, and two capability tiers, and the result is a paper whose headline finding is not about markdown versus plain text at all: it is that neither format’s ef-fect nor its sign can be predicted without accounting for scale. Instruction-following collapses to a floor by N = 80 regardless of which of four formats carries the rules, and prompt place-ment, a factor most format studies do not vary, moves adherence by as much as format does. Recall accuracy stays at ceiling until roughly 64–128k tokens and then degrades in a format-dependent way that tracks a model’s own effective context ceiling rather than absolute token count. Neither pre-registered structure hypothesis survives contact with the data: the same format is the best performer for one model or rung and the worst for another. And the failure mode that actually grows under context pressure is refusal, not the sycophancy or fabrication that hallucination benchmarks typically target. None of this argues that format is irrelevant. It argues that format is not separable from the scale at which it is deployed, and that claims about which format is best need to specify the instruction count or context length at which they were measured to mean anything at all. We release the full harness, the Book of Veyra corpus generator, and all raw results as VeyraBench specifically so that these thresholds can be re-measured, extended to new models, and checked directly rather than taken on trust. 
+
+# Data and Code Availability 
+
+The full benchmark harness ( benchmark.py ), the Book of Veyra corpus generator, the determin-istic case files for both experiments, and all raw and scored model outputs underlying every table and figure in this paper are released at: 
+
+https://github.com/iNetanel/veyrabench 
+
+The corpus and cases regenerate byte-identically from the fixed seed reported in Section 3; we verified this directly via repeated generation and MD5 comparison. Code ( benchmark.py ) is released under the MIT License. Generated data and content (the Book of Veyra corpus, case files, and all raw and scored results) are released under CC-BY-4.0. The repository’s raw result files (approximately 40MB across both experiments) are hosted alongside the code rather than distributed with this manuscript; a versioned, citable snapshot will be archived on Zenodo upon publication. 
+
+# References 
+
+Yejin Bang, Ziwei Ji, Alan Schelten, Anthony Hartshorn, Tara Fowler, Cheng Zhang, Nicola Cancedda, and Pascale Fung. HalluLens: LLM hallucination benchmark. In Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) ,pages 24128–24156, Vienna, Austria, 2025. Association for Computational Linguistics. Yunfan Gao, Yun Xiong, Wenlong Wu, Zijing Huang, Bohan Li, and Haofen Wang. U-NIAH: Unified RAG and LLM evaluation for long context needle-in-a-haystack. arXiv:2503.00353, March 2025. URL https://arxiv.org/abs/2503.00353 .Keno Harada, Yudai Yamazaki, Masachika Taniguchi, Edison Marrese-Taylor, Takeshi Kojima, Yusuke Iwasawa, and Yutaka Matsuo. When instructions multiply: Measuring and esti-mating LLM capabilities of multiple instructions following. In Findings of the Association for 
+
+20 Eliav / MHIL — Prompt Design at Scale arXiv Preprint, July 2026 
+
+Computational Linguistics: EMNLP 2025 , pages 16506–16526, Suzhou, China, 2025. Associa-tion for Computational Linguistics. doi:10.18653/v1/2025.findings-emnlp.896. Jia He, Mukund Rungta, David Koleczek, Arshdeep Sekhon, Franklin X. Wang, and Sadid Hasan. Does prompt formatting have any impact on LLM performance? arXiv:2411.10541, November 2024. URL https://arxiv.org/abs/2411.10541 .Kelly Hong, Anton Troynikov, and Jeff Huber. Context rot: How increasing input tokens im-pacts LLM performance. Technical report, Chroma, July 2025. URL https://research. trychroma.com/context-rot .Shomik Jain, Charlotte Park, Matt Viana, Ashia Wilson, and Dana Calacci. Interaction context often increases sycophancy in LLMs. In Proceedings of the 2026 CHI Confer-ence on Human Factors in Computing Systems (CHI ’26) , Barcelona, Spain, 2026. ACM. doi:10.1145/3772318.3791915. Daniel Jaroslawicz, Brendan Whiting, Parth Shah, and Karime Maamari. How many instruc-tions can LLMs follow at once? arXiv:2507.11538, July 2025. URL https://arxiv.org/abs/ 2507.11538 .Mo Li, Songyang Zhang, Taolin Zhang, Haodong Duan, Yunxin Liu, and Kai Chen. NeedleBench: Evaluating LLM retrieval and reasoning across varying information densi-ties. arXiv:2407.11963, July 2024. URL https://arxiv.org/abs/2407.11963 .Nelson F. Liu, Kevin Lin, John Hewitt, Ashwin Paranjape, Michele Bevilacqua, Fabio Petroni, and Percy Liang. Lost in the middle: How language models use long contexts. Transactions of the Association for Computational Linguistics , 12:157–173, 2024. doi:10.1162/tacl_a_00638. Jiacheng Liu, Mayi Xu, Qiankun Pi, Wenli Li, Ming Zhong, Yuanyuan Zhu, Mengchi Liu, and Tieyun Qian. Format as a prior: Quantifying and analyzing bias in LLMs for heterogeneous data. arXiv:2508.15793, August 2025. URL https://arxiv.org/abs/2508.15793 .Jio Oh, Geon Heo, Seungjun Oh, Hyunjin Kim, JinYeong Bak, Jindong Wang, Xing Xie, and Steven Euijong Whang. Talking with tables for better LLM factual data interactions. arXiv:2412.17189, December 2024. URL https://arxiv.org/abs/2412.17189 .Karan Prasad. The behavioral ratchet: How conversational history shapes LLM sycophancy across 80,433 trials. Zenodo preprint, March 2026. doi:10.5281/zenodo.19026682. Melanie Sclar, Yejin Choi, Yulia Tsvetkov, and Alane Suhr. Quantifying language models’ sensitivity to spurious features in prompt design or: How i learned to start worrying about prompt formatting. In International Conference on Learning Representations (ICLR) , 2024. URL 
+
+https://arxiv.org/abs/2310.11324 .Yijun Yang, Zeyu Huang, Wenhao Zhu, Zihan Qiu, Fei Yuan, Jeff Z. Pan, and Ivan Titov. Acontrollable examination for long-context language models. arXiv:2506.02921, 2025. URL 
+
+https://arxiv.org/abs/2506.02921 .Jeffrey Zhou, Tianjian Lu, Swaroop Mishra, Siddhartha Brahma, Sujoy Basu, Yi Luan, Denny Zhou, and Le Hou. Instruction-following evaluation for large language models. arXiv:2311.07911, November 2023. URL https://arxiv.org/abs/2311.07911 .21
