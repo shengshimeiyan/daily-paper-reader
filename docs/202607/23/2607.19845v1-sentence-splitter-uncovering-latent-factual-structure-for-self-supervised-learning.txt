@@ -1,0 +1,396 @@
+Title: Sentence Splitter: Uncovering Latent Factual Structure for Self-Supervised Learning
+
+URL Source: https://arxiv.org/pdf/2607.19845v1
+
+Published Time: Thu, 23 Jul 2026 00:40:00 GMT
+
+Number of Pages: 11
+
+Markdown Content:
+# Sentence Splitter: Uncovering Latent Factual Structure for Self-Supervised Learning 
+
+Ahmad Pouramini 1, Mahsa Afsharizadeh Department of Computer Engineering, Sirjan University of Technology 
+
+Abstract 
+
+This paper introduces Sentence Splitter , a self-supervised framework built upon a T5-based encoder–decoder architecture for uncovering the latent factual structure of natural language sen-tences. The proposed method identifies the semantic boundary between a descriptive prefix ( head )and its factual completion ( tail ) by formulating sentence splitting as a discrete segmentation prob-lem, where a sentence of length N admits N possible split points but only one recovers the intended head–tail structure. Rather than explicitly searching over all candidate boundaries, the model learns to recover the factual completion through probabilistic sequence generation. To eliminate the need for manual annotation, symbolic head–tail pairs are first verbalized into natural-language templates that provide supervision for training the Sentence Splitter. The trained splitter is then applied to raw text to extract aligned prefix–tail pairs, which are subsequently used to train a generative model that proposes additional plausible completions through a lightweight bootstrapping process. This unified pipeline provides a scalable and structure-aware approach to constructing self-supervised training data while bridging symbolic knowledge and natural language. Experiments on both structured and nat-urally occurring text demonstrate that the proposed splitter generalizes beyond synthetic templates and that the resulting structure-aware supervision consistently improves downstream performance on knowledge graph completion and commonsense question answering, highlighting the effectiveness of recovering latent factual structure for knowledge-centric NLP. 
+
+Keywords: Sentence Splitting; Self-Supervised Learning; Natural Language Processing; Semantic De-composition 
+
+# 1 Introduction 
+
+Natural language often encodes factual structure implicitly: a descriptive prefix (the head ) introduces an entity or situation, followed by a completion segment (the tail ) that supplies the key factual value. In a sentence of length N , any of the N token boundaries may serve as the correct split between these two components. Identifying this boundary forms a discrete segmentation problem, one instance of the broader class of NLP tasks that require recovering latent structure inside text. This work introduces a Sentence Splitter , a model trained to recover the informative completion segment of naturally phrased sentences while identifying the accompanying descriptive prefix as contex-tual input. Unlike rule-based or parser-dependent pipelines, the splitter resolves segmentation implicitly through probabilistic decoding, mapping a sentence directly to its latent tail without explicitly enumer-ating candidate boundaries. We formulate the problem as sentence splitting rather than general span masking. While factual information can, in principle, occur anywhere in a sentence, focusing on suffix completions provides a strong inductive bias aligned with knowledge graph verbalizations and enables a simple, parser-free learning objective. The resulting prefix–tail pairs form a scalable, semantically aligned supervision signal for structure-aware learning. In addition to pre-training, these pairs naturally support an adaptation or fine-tuning phase, where models are trained to predict the tail given its prefix. This provides a lightweight struc-tured resource for query answering and knowledge retrieval without requiring explicit knowledge graph construction. The main contributions of this work are summarized as follows: 
+
+• Discrete sentence splitting. We formulate factual sentence splitting as a discrete decision prob-lem over candidate segmentation boundaries and solve it through probabilistic sequence generation, avoiding explicit combinatorial search. 
+
+> 1speaker
+
+1arXiv:2607.19845v1 [cs.CL] 22 Jul 2026 • Symbolic self-supervision. We introduce a self-supervised training strategy that automatically generates supervision by verbalizing symbolic head–tail pairs into natural-language sentences, en-abling scalable learning from structured knowledge without manual annotation. 
+
+• Bootstrapped structure-aware learning. We propose a lightweight bootstrapping framework in which the Sentence Splitter extracts prefix–tail pairs from raw text and a generative model expands them with plausible factual completions, producing richer structure-aware supervision for downstream learning. Unlike span-corruption objectives, which mask randomly selected spans, or segmentation approaches that rely on annotated boundaries, the proposed framework learns semantically meaningful factual com-pletions from automatically generated supervision while remaining independent of external parsers. The remainder of the paper is organized as follows. Section 2 reviews related work. Section 3 presents the proposed Sentence Splitter and the overall framework. Section 4 reports the experimental evaluation, and Section 5 discusses the results, limitations, and future research directions. 
+
+# 2 Related Work 
+
+Research on sentence segmentation and decomposition has a long history. Classical syntactic parsers— from early probabilistic grammars to modern dependency parsers—expose hierarchical spans and have been used for segmentation through syntactic scoring [4]. Sentence simplification methods treat segmen-tation as partitioning a complex sentence into coherent clauses [12]. Other work models segmentation as a latent combinatorial variable, such as dynamic-programming-based marginalization [20] or Segmen-tal RNNs with semi-Markov structure [7]. These approaches show that segmentation can be learned implicitly, but they typically require annotated parses or supervised clause boundaries. Self-supervised pretraining has largely relied on corruption-based objectives such as masked language modeling [3, 13] or autoregressive next-token prediction [1]. Span-corruption variants [13, 16] introduce contiguity but select spans randomly, without modeling interpretable semantic units. Structure-aware denoising approaches attempt to bias models toward linguistic structure by masking constituents [25] or dependency subtrees [17], or by corrupting semantic roles [26]. These methods depend on external parsers, making them brittle in noisy or domain-shifted settings. A parallel line of work links symbolic knowledge with natural language. Knowledge graph completion models generate or rank textualized triples [5, 22, 18], often assuming that the head–tail segmentation is already given. Our work instead treats the segmentation itself as the prediction target, discovering factual completion segments in free-form text. Bootstrapped data generation techniques such as Self-Instruct [19], Evol-Instruct [24], and STaR [23] refine training sets using model-generated examples. Knowledge-intensive pipelines often rely on stronger teacher models to produce high-quality explanations [11, 21]. Our approach shares the spirit of iterative refinement but differs in its structural focus: the Sentence Splitter learns to induce prefix–tail pairs that can be expanded by a generator into a richer factual dataset. Across these threads, the Sentence Splitter introduces a distinct, scalable objective centered on re-covering factual completions in natural text. It bridges structural pretraining, latent segmentation, and knowledge-centric generation while avoiding external parsing or manual annotation. The next section presents the Sentence Splitter and the objective used to learn semantic head–tail boundaries. 
+
+# 3 Method 
+
+# 3.1 Sentence Splitter 
+
+A natural sentence of length N admits N possible prefix–tail split points. Each token boundary is a candidate location where a factual completion may begin, yielding a discrete search space that grows linearly with sentence length. Rather than explicitly enumerating or scoring all N candidates, our approach uses a neural model to approximate this combinatorial decision in a single forward pass. Given a naturally phrased sentence S
+
+describing a factual pair ( h, t ), the Sentence Splitter predicts only the tail segment t. The remainder of the sentence becomes the prefix p, producing aligned ( p, t ) training pairs without any manual annotation. A valid split is one in which the tail corresponds to a minimal, contiguous span that can substitute for 2the tail element of an underlying symbolic fact, while preserving the original head context. Splits that are syntactically valid but fail to isolate this factual completion are considered incorrect. For illustration, consider the example in Example 3.1. Only one split corresponds to the correct factual completion; other token-level splits remain syntactically valid but semantically incorrect. 
+
+Example 3.1 Let the input sentence be: 
+
+“To drive a car one needs to obtain a license.” 
+
+A valid split that corresponds to the underlying factual pair is: to drive a car one needs | {z }
+
+> p
+
+| to obtain a license | {z }
+
+> t
+
+.
+
+In contrast, the following segmentation is unacceptable because it doesn’t isolate the true factual com-pletion: to drive | {z }
+
+> p
+
+| a car one needs to obtain a license | {z }
+
+> t
+
+.
+
+# 3.2 Learning Objective 
+
+Structured knowledge in the form of head–tail pairs is first verbalized into natural sentences using simple templates. The model then learns an approximation to the mapping 
+
+fθ : S → t, (1) where S is a complete input sentence and t is the corresponding factual completion (tail) used as the supervision signal during training. Although a sentence of length N admits N possible split points, the model does not explicitly enu-merate or score these candidates. Instead, the decoder implicitly approximates the optimal completion by generating the sequence 
+
+t∗ = arg max  
+
+> t
+
+Pθ (t | S),
+
+thereby replacing explicit combinatorial search with probabilistic sequence generation. The current formulation assumes that each input sentence is associated with a single dominant factual completion. Although a sentence may contain multiple factual fragments, the symbolic head–tail pairs used for supervision provide exactly one target tail for each training instance. Consequently, the decoder predicts the single completion that maximizes Pθ (t | S) under the learned model. Extending the framework to jointly identify multiple factual completions within a sentence is left as future work. The decoder itself is not constrained to generate a span occurring in the input sentence. Consequently, the predicted output ˆ t = fθ (S) may occasionally differ from any contiguous segment of S. During the extraction stage, however, a prediction is accepted only if it exactly matches a contiguous token span of the input sentence. Predictions that do not satisfy this condition are discarded. For every accepted prediction, the matched span is removed from the sentence to produce the corre-sponding prefix p, yielding an aligned prefix–tail pair 
+
+S = p ⊕ ˆt, (p, ˆt) ∈ D split ,
+
+where ⊕ denotes concatenation of the extracted prefix and tail. A minimal version of this procedure is summarized in Algorithm 1. 
+
+Algorithm 1 Sentence Splitter (Single-Sentence Case) 
+
+Require: sentence S, model fθ 
+
+> 1:
+
+ˆt ← fθ (S) ▷ Implicit maximization of Pθ (t | S) 
+
+> 2:
+
+if ˆt exactly matches a contiguous token span of S then  
+
+> 3:
+
+p ← S with the matched span removed  
+
+> 4:
+
+return (p, ˆt) 
+
+> 5:
+
+else  
+
+> 6:
+
+return discard  
+
+> 7:
+
+end if 
+
+This core mechanism serves as the foundation for the broader pipeline, where the extracted prefix–tail pairs are subsequently used for corpus-level structural extraction and generative data augmentation, as described in the following section. 3Figure 1: The full pipeline for training a sentence-splitter and expanding its supervised data using a trained generative model. 
+
+# 3.3 Pipeline 
+
+The overall workflow is illustrated in Figure 1. The process begins with symbolic knowledge graph tuples (h, r, t ), which are verbalized into natural sentences through lightweight templates. Each verbalized sentence is paired with its known tail t, forming the initial supervised dataset 
+
+Dsup = {(S, t )}.
+
+This dataset is used to fine-tune the Sentence Splitter model f split  
+
+> θ
+
+, whose task is to recover the correct tail segment inside a sentence. For a sentence of length N , there are N possible token boundaries; the model learns to identify the one corresponding to the factual completion. After this initial training, the splitter is applied to a large raw corpus C. For each sentence S ∈ C , the model predicts a candidate tail segment by implicitly solving 
+
+t∗ = arg max  
+
+> t
+
+P split  
+
+> θ
+
+(t | S),
+
+which replaces explicit combinatorial search over token boundaries with probabilistic sequence gener-ation. If the predicted tail exactly matches a contiguous token span of S, it is extracted and removed to yield a prefix–tail pair ( p, t ∗), forming the dataset 
+
+Dsplit = {(p, t ∗)}.
+
+A second model, the Generator PLM f gen  
+
+> θ
+
+, is then fine-tuned on Dsplit . Its role is to generate plausible alternative tails for a given prefix. For every ( p, t ) ∈ D split , the generator predicts 4˜t = f gen  
+
+> θ
+
+(p),
+
+from which a reconstructed sentence 
+
+Snew = p ⊕ ˜t
+
+is obtained. Before entering the augmented training set, each reconstructed sentence is passed through an optional validation stage whose purpose is to eliminate obviously invalid or low-quality generations. This valida-tion stage is independent of the proposed sentence-splitting framework and may be instantiated using application-specific quality criteria. The accepted examples form the augmented dataset 
+
+Daug = {(Snew , ˜t)}.
+
+The augmented dataset is merged back into the supervised pool 
+
+Dsup ← D sup ∪ D aug ,
+
+and the splitter f split  
+
+> θ
+
+is retrained on this enlarged dataset. This establishes a mild bootstrapping loop: the splitter extracts structural regularities from raw text, the generator proposes new tails consistent with those structures, and the splitter benefits from the enriched training signal. 
+
+Dsup train 
+
+−−−→ f split 
+
+> θ
+> split
+
+−−−→ D split train 
+
+−−−→ f gen 
+
+> θ
+> generate
+
+−−−−−→ D aug merge 
+
+−−−−→ D sup .
+
+# 3.4 Validation of Generated Sentences 
+
+The validation stage shown in Figure 1 serves to prevent low-quality generated examples from being incorporated into the augmented training set. Since the primary contribution of this work is the pro-posed sentence-splitting framework rather than sentence-quality estimation, the validation module is intentionally kept independent of the proposed method. Depending on the target application, this module may employ lightweight lexical or statistical criteria, such as minimum tail length, removal of duplicated or repetitive generations, language-model fluency or perplexity thresholds, or semantic similarity measures between the generated and original sentences. Such criteria are implementation dependent and may be selected to balance generation quality and data diversity. The experiments presented in this paper focus on evaluating the effectiveness of the proposed sentence-splitting framework. Consequently, no specific validation strategy is optimized or compared, leaving the design of task-specific validation modules as an interesting direction for future work. A complete specification of the pipeline, including its iterative bootstrapping loop, is provided in Algorithm 2. 
+
+# 4 Experiments 
+
+This section evaluates the proposed structure-aware self-supervision pipeline. The experiments focus on knowledge graph completion and commonsense reasoning tasks, using well-established benchmarks and pretrained encoder–decoder models. The goal is to measure whether the Sentence Splitter and the subsequent augmentation loop produce training signals that improve downstream performance. 
+
+# 4.1 Datasets 
+
+ATOMIC2020. We conduct experiments on a subset of relations from ATOMIC2020 [5], an expanded version of the ATOMIC commonsense knowledge graph [14]. ATOMIC2020 contains approximately 1.3M triplets of the form ( h, r, t ), covering 23 relation types. These relations are grouped into three broad categories: (1) social interactions and intents, (2) physical entities and affordances, and (3) general event dynamics such as causal or temporal relations. Some of the physical-entity relations incorporate content from ConceptNet [15], producing a comprehensive commonsense resource. 5Algorithm 2 Full Structure-Aware Self-Supervision Pipeline (with Bootstrapped Loop) 
+
+Require: Knowledge graph tuples K, raw corpus C, splitter PLM f split  
+
+> θ
+
+, generator PLM f gen  
+
+> θ
+
+, max iterations T
+
+Stage 1: Initial Supervised Dataset from KG  
+
+> 1:
+
+Dsup ← ∅  
+
+> 2:
+
+for all (h, r, t ) ∈ K do  
+
+> 3:
+
+S ← textualize( h, r, t ) 
+
+> 4:
+
+add ( S, t ) to Dsup  
+
+> 5:
+
+end for Stage 2: Initial Training  
+
+> 6:
+
+Fine-tune f split  
+
+> θ
+
+on Dsup 
+
+Stage 3: Bootstrapped Loop  
+
+> 7:
+
+for i = 1 to T do (a) Split corpus using the splitter model  
+
+> 8:
+
+Dsplit ← ∅  
+
+> 9:
+
+for all S ∈ C do  
+
+> 10:
+
+ˆt ← f split  
+
+> θ
+
+(S) 
+
+> 11:
+
+if ˆt exactly matches a contiguous token span of S then  
+
+> 12:
+
+p ← S with the matched span removed  
+
+> 13:
+
+add ( p, ˆt) to Dsplit  
+
+> 14:
+
+end if  
+
+> 15:
+
+end for  
+
+> 16:
+
+Fine-tune f gen  
+
+> θ
+
+on Dsplit 
+
+(b) Apply the generator model to prefixes  
+
+> 17:
+
+Daug ← ∅  
+
+> 18:
+
+for all (p, t ) ∈ D split do  
+
+> 19:
+
+˜t ← f gen  
+
+> θ
+
+(p) 
+
+> 20:
+
+S ← p ⊕ ˜t 
+
+> 21:
+
+if S passes the validation module then  
+
+> 22:
+
+add ( S, ˜t) to Daug  
+
+> 23:
+
+end if  
+
+> 24:
+
+end for (c) Merge and retrain both models  
+
+> 25:
+
+Dsup ← D sup ∪ D aug  
+
+> 26:
+
+Fine-tune f split  
+
+> θ
+
+on Dsup  
+
+> 27:
+
+end for  
+
+> 28:
+
+return Dsplit 
+
+Each triplet can be verbalized as a natural sentence using lightweight templates. Relations centered on social situations naturally correspond to conditional statements. For example: If PersonX cooks, he intends to satisfy hunger. corresponds to the relation xIntent . A single head may be associated with multiple tails for the same relation, reflecting diverse plausible consequences. 
+
+CommonsenseQA. For downstream evaluation, we use CommonsenseQA, a multiple-choice bench-mark requiring reasoning about everyday physical and social situations. The task measures a model’s ability to apply commonsense knowledge beyond the explicit wording of the question. 
+
+OMCS corpus. To supply raw, naturally phrased training material, we use the Open Mind Common Sense (OMCS) corpus [9]. OMCS consists of more than 700,000 crowdsourced sentences expressing ordinary commonsense knowledge. Each sentence is accompanied by a numeric quality score. For training the splitter and generator models in a self-supervised manner, we select the top 8,000 highest-scoring sentences. These sentences are then segmented into prefix–tail pairs using the Sentence Splitter described in Section 3. 6Table 1: Exact-match accuracy of the Sentence Splitter on structured and naturally occurring sentences. Dataset Samples Exact Match (%) ATOMIC verbalizations 1,000 96.0 OMCS (manual annotation) 100 84.0 
+
+# 4.2 Models 
+
+We use T5 [13], an encoder–decoder Transformer well-suited for prefix-to-sequence prediction. T5-base is pretrained on the C4 corpus with a denoising objective, followed by an additional 100k steps of causal language modeling. Both T5-base and T5-large are further trained in a multitask setting that mixes supervised objectives with self-supervised denoising. These models have been widely used to generate tails in commonsense knowledge graphs such as ATOMIC, which forms a natural foundation for our pipeline [5, 2, 10, 6]. 
+
+# 4.3 Sentence Splitter Evaluation 
+
+To evaluate the Sentence Splitter independently of the augmentation loop, we first assess its ability to recover factual completions from structured sentences generated from knowledge graph tuples. Following the training protocol, the model is evaluated on 1,000 verbalized ATOMIC relation instances using exact-match accuracy. A prediction is counted as correct only if the predicted tail exactly matches the gold tail and appears as a contiguous token span of the input sentence. Since these verbalizations closely resemble the synthetic training data, we additionally evaluate the model on naturally occurring text to assess its ability to generalize beyond templated sentences. We manually annotate the correct prefix–tail boundary for a randomly selected set of 100 sentences from the OMCS corpus and evaluate the splitter using the same exact-match criterion. The results are summarized in Table 1. As expected, performance is highest on the structured ATOMIC verbalizations, where the splitter achieves an exact-match accuracy of 96.0%. More importantly, the model attains an accuracy of 84.0% on manually annotated OMCS sentences, demonstrating that the learned segmentation strategy transfers reasonably well to naturally occurring text despite being trained primarily on templated knowledge-graph verbalizations. The remaining errors are largely attributable to the greater syntactic variability and linguistic complexity present in free-form language. These results support the central hypothesis of this work: supervision obtained from symbolic knowledge can be used to learn a sentence-splitting strategy that generalizes beyond synthetic templates and recovers meaningful factual completions in naturally written text. 
+
+# 4.4 Downstream Evaluation 
+
+We examine how structure-aware pretraining influences two downstream tasks: 
+
+• CommonsenseQA , evaluated using answer-selection accuracy. 
+
+• ATOMIC2020 completion , evaluated using ROUGE scores [8], following the evaluation protocol of [5]. All models are pretrained on the same pool of 3,000 sentences under three configurations: 
+
+• (i) standard masked language modeling (MLM), 
+
+• (ii) MLM augmented with splitter-based self-supervision, 
+
+• (iii) the full pipeline, including one bootstrap iteration of generator-based augmentation. For the standard MLM baseline, each sentence is converted into a denoising training example by randomly selecting a split boundary and replacing the resulting contiguous suffix with a special mask token in the encoder input, while the decoder is trained to reconstruct the masked span. Thus, the baseline is intentionally designed as a controlled comparison with the proposed method. Both approaches use the same training corpus, denoising objective, optimization procedure, and downstream fine-tuning protocol; they differ only in how the masked span is determined. The baseline selects the split boundary 7Table 2: Downstream task performance after structure-aware pretraining. Results are reported as mean 
+
+± standard deviation over three runs with different random seeds. Pretraining setup CommonsenseQA Acc. (%) ATOMIC ROUGE (%) Standard MLM 51 .72 ± 2.93 20 .65 ± 1.23 + splitter (no augmentation) 55 .73 ± 1.25 25 .14 ± 1.31 + splitter + one bootstrap iteration 57 .31 ± 0.85 27 .51 ± 0.92 uniformly at random, whereas the proposed method predicts a semantically meaningful boundary using the Sentence Splitter. To align the pretrained models with each downstream task, we perform light fine-tuning using 30 training examples per task, resulting in a few-shot evaluation setting. For ATOMIC2020, ROUGE scores are averaged across all 23 relation types. To account for the effect of random initialization, each experiment is repeated using three different random seeds. Table 2 reports the mean performance together with the corresponding standard deviation. The results demonstrate that the proposed sentence-splitting objective consistently improves down-stream performance over the standard MLM baseline across different random initializations. While the baseline learns to reconstruct randomly selected contiguous spans, the proposed method replaces this ran-dom selection with semantically meaningful prefix–tail decompositions obtained by the Sentence Splitter. Incorporating the splitter alone yields substantial gains on both CommonsenseQA and ATOMIC2020, while a single bootstrap iteration provides an additional improvement. Moreover, the progressively smaller standard deviations suggest that the proposed structure-aware pretraining strategy produces not only higher average performance but also more stable learning behavior. The present study intentionally evaluates only a single bootstrap iteration in order to isolate the contribution of the proposed structure-aware augmentation from the effects of repeated self-training. While additional iterations may further improve performance, they may also introduce semantic drift or error accumulation in the generated supervision signal. A systematic investigation of the trade-off between iterative improvement and error propagation is beyond the scope of this work and is therefore left for future research. Overall, these findings indicate that identifying factual completions in natural sentences provides a more informative structured supervision signal than randomly masking contiguous spans. 
+
+# 5 Discussion 
+
+The experimental results demonstrate that the proposed Sentence Splitter reliably identifies meaningful semantic boundaries in both structured and naturally occurring text. Its high exact-match accuracy on templated ATOMIC verbalizations confirms that the proposed discrete segmentation objective is readily learnable, while the evaluation on manually annotated OMCS sentences indicates that the learned segmentation strategy generalizes beyond synthetic templates to free-form language. Rather than relying on handcrafted rules, dependency parsers, or explicit boundary enumeration, the model implicitly learns to recover semantically meaningful factual completions through probabilistic sequence generation. Because the supervision required by the framework consists only of symbolic head–tail pairs, the proposed approach naturally extends beyond knowledge graph verbalizations. Any domain contain-ing latent factual completions—including encyclopedic articles, instructional documents, scientific litera-ture, biomedical records, or legal documents—can potentially benefit from this learning paradigm. The lightweight bootstrapping loop further enhances this capability by allowing the generator to propose ad-ditional plausible factual completions, gradually enriching the diversity of structural patterns available for subsequent training. The proposed framework therefore establishes a principled connection between symbolic knowledge, discrete sentence segmentation, and large-scale self-supervised learning. The consistent improvements observed on both CommonsenseQA and ATOMIC2020 suggest that recovering latent factual structure provides a complementary supervision signal beyond conventional masked language modeling, improving both downstream performance and training stability across different random initializations. More broadly, the proposed framework suggests a general strategy for domain adaptation through structure-aware bootstrapping. Starting from a relatively small collection of domain-specific symbolic knowledge, such as a knowledge graph or ontology, the Sentence Splitter can progressively extract domain-relevant factual completions from large unlabeled corpora. These extracted examples can then be used 8to continually retrain both the splitter and the generator, allowing the supervision signal itself to evolve toward the target domain. Evaluating this adaptation strategy on specialized domains, such as biomedical and legal corpora, represents an important next step toward assessing the generalizability and practical applicability of the proposed framework. Beyond domain adaptation, the proposed framework also opens new research directions for improving the bootstrapping process itself. In the current implementation, generated sentences are accepted using simple validation rules. A promising extension is to replace these fixed criteria with adaptive acceptance mechanisms that optimize the quality of generated supervision during training. For example, reinforce-ment learning could be employed to dynamically adjust sentence acceptance according to downstream task performance, confidence estimates, or semantic consistency, allowing the system to progressively refine its own supervision policy. Finally, the proposed framework raises broader questions regarding the dynamics of iterative self-supervision. In the present work, only a single augmentation iteration is evaluated in order to isolate the contribution of structure-aware supervision. However, repeated bootstrapping may introduce semantic drift, error accumulation, or memorization effects that are not yet fully understood. Future work will therefore investigate the stability of long-term bootstrapping through confidence-aware filtering, adaptive sample selection, and quantitative measures of semantic consistency. More generally, understanding when iterative self-supervision improves generalization and when it leads to degradation or collapse represents an important direction for developing reliable, scalable, and structure-aware learning systems. 
+
+# 6 Conclusion 
+
+This paper introduced Sentence Splitting, a T5-based encoder–decoder framework that formulates fac-tual sentence decomposition as a discrete segmentation problem. By automatically generating supervision from symbolic knowledge graph tuples, the proposed approach learns semantically meaningful prefix–tail decompositions without requiring manually annotated split boundaries. Experimental results demon-strate that the learned splitter generalizes from templated knowledge graph verbalizations to naturally occurring text and that the resulting structure-aware supervision consistently improves downstream per-formance on knowledge graph completion and commonsense question answering. A limitation of the current framework is that it assumes the factual completion forms a single contigu-ous suffix of the sentence. While this assumption substantially simplifies the learning objective and aligns naturally with knowledge graph verbalizations, many naturally occurring sentences express relevant fac-tual information in the middle of a sentence, through multiple spans, or via non-contiguous expressions. Consequently, the current model cannot recover all possible forms of latent factual structure. Future work will therefore focus on extending the proposed framework to more general segmentation settings capable of predicting arbitrary or multiple factual spans while preserving the scalability and interpretability of the structure-aware learning paradigm. As discussed in the previous section, we also envision broader extensions toward domain-specific adaptation and more adaptive bootstrapping strate-gies, further advancing the integration of symbolic knowledge and self-supervised learning for robust knowledge-aware language models. 
+
+# References 
+
+[1] Tom B. Brown, Benjamin Mann, Nick Ryder, Melanie Subbiah, Jared Kaplan, Prafulla Dhariwal, Arvind Neelakantan, Pranav Shyam, Girish Sastry, Amanda Askell, Sandhini Agarwal, Ariel Herbert-Voss, Gretchen Krueger, Tom Henighan, Rewon Child, Aditya Ramesh, Daniel M. Ziegler, Jeffrey Wu, Clemens Winter, Chris Hesse, Mark Chen, Eric Sigler, Mateusz Litwin, Scott Gray, Benjamin Chess, Jack Clark, Christopher Berner, Sam McCandlish, Alec Radford, Ilya Sutskever, and Dario Amodei. Language models are few-shot learners. In Proceedings of the 2020 Conference on Neural Information Processing Systems (NeurIPS) Workshops , 2020. original preprint: arXiv:2005.14165. [2] Jeff Da, Ronan Le Bras, Ximing Lu, Yejin Choi, and Antoine Bosselut. Analyzing commonsense emergence in few-shot knowledge models. In Conference on Automated Knowledge Base Construc-tion , 2021. [3] Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. Bert: Pre-training of deep bidirectional transformers for language understanding. In Proceedings of the 2019 Conference of 
+
+9the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (NAACL-HLT) , pages 4171–4186. Association for Computational Linguistics, 2019. [4] Benoit Favre, Dilek Hakkani-T¨ ur, Slav Petrov, and Dan Klein. Efficient sentence segmentation using syntactic features. In Proceedings of the IEEE International Conference on Acoustics, Speech, and Signal Processing (ICASSP) , pages 1577–1580. IEEE, 2008. [5] Jena D. Hwang, Chandra Bhagavatula, Ronan Le Bras, Jeff Da, Keisuke Sakaguchi, Antoine Bosse-lut, and Yejin Choi. Comet-atomic 2020: On symbolic and neural commonsense knowledge graphs. In arXiv preprint arXiv:2010.05953 , 2020. COMET family — commonsense knowledge graph gen-eration / text-to-triple work. [6] Daniel Khashabi, Sewon Min, Tushar Khot, Ashish Sabharwal, Oyvind Tafjord, Peter Clark, and Hannaneh Hajishirzi. Unifiedqa: Crossing format boundaries with a single qa system. In Findings of the Association for Computational Linguistics: EMNLP 2020 , pages 1896–1907. Association for Computational Linguistics, 2020. [7] Lingpeng Kong, Chris Dyer, and Noah A. Smith. Segmental recurrent neural networks. In Proceedings of the International Conference on Learning Representations (ICLR) , 2016. [8] Chin-Yew Lin. Rouge: A package for automatic evaluation of summaries. In Annual Meeting of the Association for Computational Linguistics , 2004. [9] Hugo Liu and Pushpak Singh. Conceptnet: A practical commonsense reasoning toolkit. In BT technology journal , volume 22, pages 211–226. Springer, 2004. [10] Nicholas Lourie, Ronan Le Bras, Chandra Bhagavatula, and Yejin Choi. Unicorn on rainbow: A universal commonsense reasoning model on a new multitask benchmark. In Proceedings of the AAAI Conference on Artificial Intelligence , volume 35, pages 13480–13488, 2021. [11] Subhabrata Mukherjee, Arindam Mitra, Ganesh Jawahar, Sahaj Agarwal, Hamid Palangi, Ahmed Awadallah, et al. Orca: Progressive learning from complex explanation traces of gpt-4. arXiv preprint arXiv:2306.02707 , 2023. learning from explanation traces of stronger models. [12] Shashi Narayan and Claire Gardent. Split and rephrase. In Proceedings of the Conference on Empirical Methods in Natural Language Processing (EMNLP) , pages 606–616. ACL, 2017. [13] Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena, Yanqi Zhou, Wei Li, and Peter J. Liu. Exploring the limits of transfer learning with a unified text-to-text transformer. arXiv preprint arXiv:1910.10683 , 2019. [14] Maarten Sap, Ronan Le Bras, Emily Allaway, Chandra Bhagavatula, Nicholas Lourie, Hannah Rashkin, Brendan Roof, Noah A. Smith, and Yejin Choi. ATOMIC: An atlas of machine com-monsense for if-then reasoning. In 33rd AAAI Conference on Artificial Intelligence, AAAI 2019, 31st Innovative Applications of Artificial Intelligence Conference, IAAI 2019 and the 9th AAAI Symposium on Educational Advances in Artificial Intelligence, EAAI 2019 , pages 3027–3035, 2019. [15] Catherine Speer, Robert and Havasi. Conceptnet. Theory and Applications of Natural Language Processing. , pages 121–160, 2013. [16] Yi Tay, Mostafa Dehghani, Vinh Q. Tran, Xavier Garcia, Jason Wei, Xuezhi Wang, Hyung Won Chung, Siamak Shakeri, Dara Bahri, Tal Schuster, Huaixiu Steven Zheng, Denny Zhou, Neil Houlsby, and Donald Metzler. Ul2: Unifying language learning paradigms. arXiv preprint arXiv:2205.05131 ,2022. [17] Abdul Wahab, Rafet Sifa, et al. Dibert: Dependency-injected bidirectional encoder representations from transformers. TechRxiv / preprint (dependency-injected BERT variants) , 2023. dependency-aware pretraining (dependency-injected / dependency objectives). [18] Xiaozhi Wang, Tianyu Gao, Zhaocheng Zhu, Zhengyan Zhang, Zhiyuan Liu, Juanzi Li, and Jian Tang. Kepler: A unified model for knowledge embedding and pre-trained language representation. 
+
+Transactions of the Association for Computational Linguistics , 9:176–194, 2021. 10 [19] Yizhong Wang, Yeganeh Kordi, Swaroop Mishra, Alisa Liu, Noah A. Smith, Daniel Khashabi, and Hannaneh Hajishirzi. Self-instruct: Aligning language models with self-generated instructions. arXiv preprint arXiv:2212.10560 , 2022. [20] Yuntian Wang, Dengyong Deng, Alexander M. Rush, and Yoon Kim Zhou. Sequence modeling via segmentations. In Proceedings of the 34th International Conference on Machine Learning (ICML) ,volume 70, pages 3674–3683. PMLR, 2017. [21] Jason Wei, Maarten Bosma, Vincent Y. Zhao, Kelvin Guu, Adams Wei Yu, Brian Lester, Nan Du, Andrew M. Dai, and Quoc V. Le. Finetuned language models are zero-shot learners. In Proceedings of NeurIPS (or arXiv preprint arXiv:2109.01652) , 2021. [22] Liang Yao, Chengsheng Mao, and Yuan Luo. Kg-bert: Bert for knowledge graph completion. arXiv preprint arXiv:1909.03193 , 2019. [23] Eric Zelikman, Yuhuai Wu, Jesse Mu, and Noah D. Goodman. Star: Bootstrapping reasoning with reasoning. arXiv preprint arXiv:2203.14465 , 2022. NeurIPS / STaR (Self-Taught Reasoner) — iterative rationale / bootstrapping. [24] Weihao Zeng, Can Xu, Yingxiu Zhao, Jian-Guang Lou, and Weizhu Chen. Auto evol-instruct: Automatic instruction evolving for large language models. In Proceedings of EMNLP 2024 , page —, 2024. Evol-Instruct / instruction evolving line of work (Auto Evol-Instruct paper). [25] Junru Zhou, Zhuosheng Zhang, Hai Zhao, and Shuailiang Zhang. Limit-bert: Linguistically informed multi-task bert (syntactic / semantic phrase masking). In Findings of the Association for Compu-tational Linguistics: EMNLP , pages 4450–4461. Association for Computational Linguistics, 2020. introduces syntactic/semantic-phrase masking (constituent-guided masking). [26] Junru Zhou, Zhuosheng Zhang, Hai Zhao, and Shuailiang Zhang. Syntactic and semantic phrase masking / semantic-role guided masking for pretraining. In Findings of the Association for Computa-tional Linguistics: EMNLP , pages 4450–4461, 2020. this entry is the semantic-role / semantic-phrase masking example referenced in the paragraph. 11

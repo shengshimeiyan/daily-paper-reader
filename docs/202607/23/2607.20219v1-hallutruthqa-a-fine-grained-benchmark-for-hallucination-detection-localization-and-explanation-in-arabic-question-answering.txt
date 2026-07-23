@@ -1,0 +1,652 @@
+Title: HalluTruthQA: A Fine-Grained Benchmark for Hallucination Detection, Localization, and Explanation in Arabic Question Answering
+
+URL Source: https://arxiv.org/pdf/2607.20219v1
+
+Published Time: Thu, 23 Jul 2026 01:15:30 GMT
+
+Number of Pages: 17
+
+Markdown Content:
+## HalluTruthQA: A Fine-Grained Benchmark for Hallucination Detection, Localization, and Explanation in Arabic Question Answering 
+
+Abdessalam Bouchekif 1 , Mohammed-En-Nadhir Zighem 2 , Salah Eddine Bekhouche 3
+
+Hichem Telli 2 , Somaya Eltanbouly 1 , Shahd Gaben 1
+
+Heba Sbahi 1 , Samer Rashwani 1 , Mutaz Al-Khatib 1
+
+Emad Mohamed 4 , Mohammed Ghaly 1 , Abdenour Hadid 5        
+
+> 1Hamad Bin Khalifa University, Qatar 2University of Biskra, Algeria
+> 3University of the Basque Country, Spain 4Nazarbayev University, Kazakhstan
+> 5Universiti Malaysia Kelantan, Malaysia
+> *abouchekif@hbku.edu.qa
+
+Abstract 
+
+Large language models (LLMs) can generate fluent Arabic answers, yet factual errors re-main difficult to detect, localize, explain, and verify. Existing hallucination benchmarks of-ten provide response-level labels, with lim-ited support for identifying the exact erroneous content, explaining why it is incorrect, or se-lecting the correct factual answer. We in-troduce HalluTruthQA, a fine-grained bench-mark for hallucination evaluation in Arabic question answering. The benchmark con-tains 2,400 expert-curated examples across four knowledge-intensive domains: Islamic knowledge, history, science, and geography. Each example pairs an Arabic question and a model-generated answer with a verified refer-ence answer, a binary hallucination label, six candidate answers for factual verification, and, for hallucinated answers, character-level erro-neous spans, human-written explanations, and macro and micro hallucination types. We evaluate four open-source LLMs, Allam, Falcon-H1, Qwen32, and Silma, in a zero-shot setting across hallucination detection, span-level localization, factual verification, and explanation evaluation. Results show that these tasks capture different abilities: no sin-gle model achieves the strongest performance across all tasks, with best scores of 0.880 Macro-F1 for detection, 0.516 F1-Sp for lo-calization, 0.852 LO-Score for factual verifi-cation, and 0.644 final score for explanation evaluation. Our taxonomy shows that halluci-nation evaluation should move beyond detec-tion toward localizing, verifying, and explain-ing factual errors. The code, dataset, prompts, and evaluation scripts are available at https: //gitlab.com/nlpresearcher/HalluTruthQA. 
+
+1 Introduction 
+
+Large language models (LLMs) have achieved strong performance in open-domain and knowledge-intensive question answering. While they generate fluent and persuasive answers, their factual reliability remains a major challenge. LLMs are prone to hallucinations: statements that are unsupported, fabricated, or factually incorrect despite appearing plausible. These errors may involve wrong entities, dates, numerical values, locations, quotations, source attributions, or explanatory claims. In question answering, even a short erroneous span can make an otherwise fluent answer unreliable. Most hallucination evaluation resources rely on response-level labels indicating whether an answer is correct or hallucinated. While useful, such labels provide limited insight into the nature of the error. A response may contain the correct short answer but still include a fabricated source, an incorrect quotation, a wrong date, or an unsupported explanation. In these cases, binary evaluation fails to identify where the error occurs, why it is wrong, or whether the model can select the correct factual answer. This motivates a fine-grained approach to hallu-cination evaluation that integrates answer-level detection, span-level localization, explanation, and verification. This problem remains underexplored in Ara-bic. While existing Arabic resources have made progress, they do not provide comprehensive sup-port for knowledge-intensive question answering, exact character-level span annotations, human-written explanations, and candidate-based factual verification within a single benchmark. This gap is critical, as Arabic QA often involves domains where factual accuracy depends on fine-grained arXiv:2607.20219v1 [cs.CL] 22 Jul 2026 details and source-sensitive verification. Islamic knowledge, in particular, represents a sensitive setting. An answer may be superficially correct while grounding its claim in an incorrect Qur’anic reference, a fabricated hadith attribution, an invented quotation, or an unsupported legal or doctrinal claim. In this context, factual reliability depends not only on the final answer but also on the faithfulness of the supporting evidence. Sim-ilar challenges arise in history, science, and ge-ography, where errors frequently involve temporal reasoning, numerical values, spatial relations, and distinctions between closely related entities. We introduce HalluTruthQA, a fine-grained benchmark for hallucination evaluation in Ara-bic question answering. The benchmark contains 2,400 expert-curated QA examples across four knowledge-intensive domains: Islamic knowl-edge, history, science, and geography. Each exam-ple pairs an Arabic question and a model-generated answer with a verified reference answer, a binary hallucination label, six candidate answers for fac-tual verification, and, for hallucinated answers, character-level erroneous spans accompanied by human-written explanations. We evaluate four open-source LLMs in a zero-shot setting across the four tasks. Our results show that these tasks capture distinct challenges: mod-els that perform well at detecting hallucinations do not necessarily localize erroneous spans, select the correct answer, or provide faithful explanations. This work makes three contributions: • We introduce HalluTruthQA, a fine-grained Arabic QA hallucination benchmark with 2,400 expert-curated QA examples across four knowledge-intensive domains. • We provide a multi-layer annotation scheme that includes response-level hallucination la-bels, character-level erroneous spans, human-written explanations, and six candidate answers for factual verification. • We evaluate four open-source LLMs in azero-shot setting across hallucination detection, span-level localization, factual verification, and explanation evaluation. 
+
+2 Related Work 
+
+Hallucination evaluation has become a key topic in LLM research. Recent benchmarks have stud-ied factuality and hallucination across question an-swering, summarization, retrieval-augmented gen-eration, and multilingual generation. Represen-tative resources include TruthfulQA (Lin et al., 2022), HaluEval (Li et al., 2023), FELM (Chen et al., 2023), RAGTruth (Niu et al., 2024), Mu-SHROOM (Vazquez et al., 2025), and Hallu-Verse25 (Abdaljalil et al., 2025). These resources vary in task setting, language coverage, and an-notation granularity, ranging from response-level factuality labels to segment- or word-level annota-tions. Arabic hallucination resources remain lim-ited. Halwasa (Mubarak et al., 2024) provides an Arabic hallucination dataset for LLM-generated text, but focuses on isolated sentences rather than natural question answering. HalluVerse25 (Abdal-jalil et al., 2025) includes Arabic in a multilingual setting, but constructs hallucinations by injecting controlled errors into biographical sentences using GPT-4. More recently, AraHalluEval (Alansari and Luqman, 2025) introduced an Arabic evalu-ation framework for generative QA and summa-rization, annotating model outputs with response-level indicators such as named-entity errors and factual contradictions. However, it does not local-ize the exact hallucinated spans in the generated text. In parallel, the Mu-SHROOM shared task frames hallucination detection as multilingual span labeling, and follow-up systems have explored se-mantic role decomposition and textual entailment for this purpose (Elchafei and Abu-Elkheir, 2025). Arabic-specific resources that jointly support span localization, human-written explanations, and fac-tual verification in QA therefore remain scarce. Recent work has increasingly focused on evalu-ating LLMs in Islamic knowledge and legal rea-soning, including Islamic inheritance reasoning and broader assessments of Qur’anic, Hadith, and Fiqh knowledge (Bouchekif et al., 2025a; Mubarak et al., 2025; Abdelaal et al., 2026; Bouchekif et al., 2026a,b). These benchmarks provide valuable evaluations of domain knowledge, legal reasoning, and answer accuracy. However, they do not pro-vide a fine-grained analysis of hallucinations and model errors, such as the exact localization of in-correct spans, the explanation of why a generated statement is erroneous, or the verification of the correct factual answer. Fine-grained localization is especially impor-tant in legal and religious domains, where answers must be grounded in authoritative rules, sources, and evidence. Prior work shows that LLMs can produce persuasive explanations while misquot-ing Qur’anic verses or generating non-existent ev-Domain Hallucinated Non-hallucinated Spans                
+
+> Islamic 341 (56.8%) 259 (43.2%) 393 History 193 (32.2%) 407 (67.8%) 199 Science 255 (42.5%) 345 (57.5%) 255 Geography 224 (37.3%) 376 (62.7%) 273
+> Total 1013 (42.2%) 1387 (57.8%) 1120
+> Table 1: Hallucination distribution by domain.
+
+idence to justify their answers (Bouchekif et al., 2025b). This highlights the need for hallucina-tion evaluation that goes beyond binary correct-ness and explicitly assesses source attribution, ev-idential grounding, and localized factual errors. Unlike prior Arabic hallucination resources, HalluTruthQA focuses on knowledge-intensive Arabic question answering and combines four di-mensions of evaluation: response-level hallucina-tion detection, character-level span localization, human-written explanations, and candidate-based factual verification. Each instance is centered on a model-generated answer that is checked against a verified reference answer. This design allows us to evaluate not only whether an answer is halluci-nated, but also where the error appears, why it is incorrect, and whether the correct factual answer can be selected. 
+
+3 Data Description 
+
+HalluTruthQA contains 2,400 Arabic QA exam-ples across four knowledge-intensive domains: Is-lamic knowledge, history, science, and geography (Table 1). Each example includes an Arabic ques-tion, a model-generated answer, a verified refer-ence answer, and a binary hallucination label. For hallucinated answers, we provide character-level erroneous spans and human-written explanations. These spans are further analyzed to identify macro and micro hallucination types. Each question is also paired with six manually constructed can-didate answers: one verified correct answer and five plausible distractors written in a style close to the generated output, so factual verification can-not rely on superficial stylistic cues. The bench-mark supports hallucination detection, span-level localization, explanation evaluation, and multiple-choice factual verification. We use Fanar-1-9B-Instruct 1(Fanar Team et al., 2025) as the single response generator for all ques-tions. This provides a controlled and reproducible 
+
+> 1https://huggingface.co/QCRI/Fanar-1-9B-Instruct
+
+setting, where all answers are produced by the same Arabic-centric instruction-tuned model. It also avoids additional variation that could come from using several generators with different styles, strengths, and error patterns. Since the evaluated answers are generated by Fanar, we additionally report Fanar as a self-detection reference setting to study whether a model can detect, localize, ver-ify, and explain hallucinations in its own outputs. These results are reported separately, rather than as evidence that Fanar is superior to the other models. Answer generation used a maximum of 1024 new tokens, temperature 0.0, top-p = 1.0, batch size 4, and bfloat16 precision on a 48 GB GPU. 
+
+3.1 Annotation Process 
+
+Annotation followed two passes: expert annota-tion followed by verification by trained research assistants. The four domains were handled by four experts with relevant academic backgrounds, with one expert responsible for each domain. This en-sured that each subset was annotated by an ex-pert familiar with the corresponding knowledge area and its factual verification needs. Annota-tors checked errors involving entities, dates, nu-merical values, unsupported claims, fabricated ref-erences, and incorrect attributions. For Islamic knowledge, they also verified Qur’anic references and wording, hadith attributions, and unsupported religious claims. For hallucinated responses, an-notators marked character-level erroneous spans and wrote explanations. These spans were used to identify macro and micro hallucination types. An-notators manually created six candidate answers per question: one verified correct answer and five plausible distractors. The distractors were written in a style close to the generated response but were factually incorrect, so factual verification could not rely on superficial stylistic cues. In the second pass, two research assistants re-viewed all 2,400 examples. This pass flagged 84 examples (3.5%), which were returned to the orig-inal domain experts for adjudication. Of these, 34 were confirmed without changes, 11 questions were revised for ambiguity, and 39 examples were revised, mainly to span boundaries. Before final adjudication, expert–reviewer agreement was high across annotation dimensions, with Cohen’s κ =0.93 for binary labels, κ = 0 .87 for macro-types, 
+
+κ = 0 .81 for micro-types, 97.9% agreement on the multiple-choice answer key, and span-level agree-ment of 0.89 character-F1 and 0.84 IoU. More an-Figure 1: Hallucination macro-type distribution across domains. 
+
+notation details are provided in Appendix B. 
+
+3.2 Hallucination Type Distribution 
+
+Figure 1 shows the distribution of hallucination macro-types across domains. Across all halluci-nated spans, Factual Contradiction is the domi-nant category (59.3%), typically involving wrong entities, dates, locations, events, numbers, roles, or concepts. Context Inconsistency follows (27.0%), covering source, attribution, or evidential mis-matches. Factual Fabrication accounts for 11.3%, while Nonsensical / Irrelevant Response and Logi-cal Inconsistency are rare (1.4% and 1.0%). At the domain level, Factual Contradiction dominates in History, Science, and Geography, accounting for 80.4%, 93.3%, and 58.6% of hallucinated spans, respectively. Islamic Knowledge differs: Con-text Inconsistency accounts for 61.6%, reflecting the need for faithful grounding in the appropriate verse, hadith, legal ruling, or source context. Ge-ography shows the highest rate of Factual Fab-rication (28.2%), often involving fabricated or overly specific locations and explanations. Over-all, hallucinations are usually fluent and relevant, but factually incorrect, unsupported or fabricated. These patterns highlight the need to evaluate attri-bution faithfulness and span-level localization be-yond response-level detection. The complete hal-lucination taxonomy, including macro-type defi-nitions, observed micro-types, and representative examples, is presented in Appendix D. 
+
+4 Experimental Setup 
+
+4.1 Evaluation Tasks 
+
+We assess model performance across four tasks: • Binary Hallucination Detection: Given a question and a generated answer, the model predicts whether the response is hallucinated or non-hallucinated. This task evaluates the model’s ability to detect factually incorrect, fabricated, or unsupported content. • Span-level Localization: For hallucinated in-stances, the model localizes erroneous spans at the character level. Performance is based on overlap between predicted and gold erroneous spans. • Explanation Evaluation: The model gener-ates an explanation identifying the erroneous content and justifying why it is factually in-correct. We use an LLM-as-a-judge proto-col to compare generated explanations against human-written reference explanations. The judge assigns a score from 0 to 2 (0: incorrec-t/irrelevant; 1: partially correct; 2: complete/-correct), normalized to [0 , 1] .• Multiple-Choice Factual Verification: The model selects the correct option from six can-didate answers, including one correct answer and five distractors. This evaluates whether the model can identify the correct factual answer among plausible alternatives. 4.2 Models and Inference Protocol Models. We evaluate four open-source LLMs: Allam, Falcon-H1, Qwen32, and Silma. Since all evaluated answers are generated by Fanar, we ad-ditionally report Fanar as a self-detection reference setting to assess whether it can detect hallucina-tions in its own generated answers. 
+
+Inference Setup. All models are evaluated in a zero-shot, closed-book setting without access to external knowledge bases or web search. To en-sure a fair comparison, we use identical genera-tion parameters: temperature 0.0, top-p = 1 .0, and a maximum of 1024 new tokens. We use a two-stage prompting strategy: the first prompt asks the model to perform binary hallucination detec-tion; for cases predicted as hallucination, the sec-ond prompt asks for span localization, explanation, and factual verification. 
+
+4.3 Evaluation Metrics 
+
+We evaluate models on hallucination detection, span-level localization, factual verification, and explanation quality. • Hallucination Detection: We report accuracy and F1-score for both hallucinated and non-hallucinated classes. We use Macro-F1 as the primary detection metric, as it equally weights both classes and is robust to label imbalance. • Span-level Localization: We report partial-credit span-level F1 ( F1-Sp ) following Sky et al. (2024). Although hallucinated spans are stored as character offsets, we compute F1-Sp 
+
+after mapping predicted and gold spans to to-ken sets. Recall is the average coverage of each gold span by the predicted spans, while preci-sion is the average coverage of each predicted span by the gold spans. F1-Sp is the harmonic mean of these two values. Detection-label mis-matches receive a span score of zero, while true-negative examples are excluded. This met-ric rewards partial span overlap without requir-ing exact boundary matches. • Multiple-Choice Factual Verification: We re-port Correct , the number of correctly selected options among true-positive hallucination pre-dictions, and LO-Score (Label–Option Score), which evaluates hallucination detection and op-tion selection. For each example, LO-Score gives 1.0 for a correct no-hallucination predic-tion, 0.5 for a correct hallucination prediction with an incorrect option, 1.0 for a correct hallu-cination prediction with the correct option, and 0.0 for incorrect label prediction. • Explanation Evaluation. We evaluate expla-nation quality using an LLM-as-a-judge proto-col. We use GPT-5.5. The judge is given the question, the model answer, the gold erroneous span, the human-written reference explanation, and the model explanation. It then assigns a score indicating whether the model explanation correctly explains the hallucination. Explanation quality is computed only when both the gold label and the model prediction are hallucinated. The full judge prompt is pro-vided in Appendix E. To check the reliability of the automatic scores, two annotators reviewed a random sample of 25 judged explanations per domain. This review did not reveal systematic disagreement between the judge scores and the human-written reference explanations. Because span localization, factual verification, and explanation generation are performed only after a model predicts hallucination, these scores should be interpreted as pipeline metrics. Errors in binary hallucination detection can therefore propagate to the downstream tasks. 
+
+4.4 Results Analysis 
+
+Table 2 compares model performance across hal-lucination detection, span localization, multiple-choice factual verification, and explanation qual-ity. Since all evaluated answers were generated by Fanar, its self-detection result may partly re-flect cues from its own writing style and the way it expresses uncertainty in generated answers. We therefore report Fanar separately as a reference set-ting, rather than as direct evidence of general su-periority over the other models. Among the independent evaluation models, Al-lam shows the strongest detection performance, achieving the highest global Macro-F1 score (0.880) with balanced performance across the two classes. Falcon-H1 and Qwen32 obtain slightly lower Macro-F1 scores, with 0.859 and 0.849, respectively. Silma shows a different behavior: its lower hallucination F1 compared to its non-hallucination F1 indicates that it is more conser-vative and misses more hallucinated responses. Span-level localization shows that detecting a hallucinated answer is not sufficient: models must also identify the erroneous portion of the response. Domain Model Hallucination Detection Span Localization MCQ Selection Explanation Acc. Hall. F1 No-Hall. F1 Macro-F1 Span P. Span R. F1-Sp Correct LO-Score Err. Ident. Fact. Corr. Final Score                                                                                                                                                                                                                                                                                                                  
+
+> Islamic Qwen32 0.868 0.888 0.840 0.864 0.850 0.344 0.489 306/313 0.863 0.661 0.433 0.547 Falcon-H1 0.863 0.888 0.826 0.857 0.769 0.312 0.444 312/324 0.853 0.659 0.494 0.576 Allam 0.862 0.876 0.844 0.860 0.839 0.248 0.383 247/293 0.823 0.668 0.530 0.599
+> Silma 0.737 0.713 0.757 0.735 0.802 0.102 0.181 81/196 0.641 0.243 0.119 0.181 Fanar 0.908 0.924 0.885 0.904 0.823 0.319 0.460 303/333 0.883 0.627 0.354 0.490 Geography Qwen32 0.895 0.870 0.912 0.891 0.635 0.409 0.498 207/211 0.892 0.594 0.584 0.589
+> Falcon-H1 0.853 0.825 0.874 0.849 0.463 0.410 0.435 202/208 0.848 0.593 0.554 0.574 Allam 0.877 0.832 0.903 0.867 0.500 0.254 0.337 112/183 0.818 0.522 0.520 0.521 Silma 0.820 0.697 0.872 0.784 0.524 0.166 0.252 76/124 0.780 0.341 0.321 0.331 Fanar 0.877 0.835 0.902 0.868 0.510 0.254 0.340 175/187 0.867 0.517 0.499 0.508 Science Allam 0.915 0.908 0.921 0.915 0.766 0.344 0.475 243/253 0.907 0.761 0.723 0.742
+> Qwen32 0.778 0.793 0.762 0.777 0.570 0.388 0.462 254/254 0.778 0.688 0.485 0.587 Falcon-H1 0.885 0.880 0.889 0.885 0.663 0.344 0.453 254/254 0.885 0.675 0.510 0.592 Silma 0.955 0.947 0.961 0.954 0.878 0.207 0.335 150/241 0.879 0.503 0.390 0.446 Fanar 0.965 0.960 0.969 0.965 0.849 0.408 0.551 253/255 0.963 0.685 0.466 0.575 History Qwen32 0.855 0.812 0.881 0.847 0.545 0.660 0.597 175/188 0.844 0.689 0.611 0.650 Allam 0.873 0.827 0.899 0.863 0.557 0.594 0.575 120/182 0.821 0.711 0.694 0.702
+> Falcon-H1 0.836 0.794 0.864 0.829 0.513 0.634 0.567 172/189 0.822 0.687 0.623 0.655 Silma 0.881 0.819 0.912 0.865 0.484 0.362 0.415 97/161 0.828 0.263 0.246 0.255 Fanar 0.902 0.863 0.923 0.893 0.634 0.696 0.664 166/186 0.885 0.683 0.521 0.602 Global Qwen32 0.849 0.842 0.855 0.849 0.656 0.426 0.516 942/966 0.844 0.659 0.514 0.587 Falcon-H1 0.859 0.853 0.866 0.859 0.618 0.400 0.486 940/975 0.852 0.654 0.536 0.595 Allam 0.882 0.865 0.894 0.880 0.688 0.333 0.449 722/911 0.842 0.673 0.614 0.644
+> Silma 0.848 0.799 0.878 0.838 0.699 0.188 0.296 404/722 0.782 0.351 0.272 0.312 Fanar 0.913 0.902 0.922 0.912 0.727 0.390 0.508 897/961 0.900 0.632 0.444 0.538
+
+Table 2: Model performance by domain and overall. 
+
+Under the partial-credit F1-Sp metric, Qwen32 achieves the best global localization performance, with an F1-Sp of 0.516, a precision of 0.656, and the highest recall of 0.426. Fanar follows closely with an F1-Sp of 0.508 and obtains the highest span precision (0.727), although its lower recall (0.390) indicates that it localizes fewer gold erro-neous spans. Falcon-H1 ranks third with an F1-Sp of 0.486, followed by Allam with 0.449. These re-sults reveal a precision–recall trade-off: although Fanar and Allam produce relatively precise spans, they leave a substantial proportion of the anno-tated erroneous content uncovered. Silma remains the weakest localization model, with an F1-Sp of 0.296 and particularly low recall (0.188), consis-tent with its conservative hallucination detection behavior. The low F1-Sp scores show that span localiza-tion is substantially harder than binary hallucina-tion detection. The difficulty is not only deciding whether an answer is hallucinated, but identifying the exact part of the Arabic response that makes it wrong. Many errors involve short factual units, such as dates, numbers, entities, verse references, or source attributions, where small boundary dif-ferences can reduce overlap. In other cases, the correct short answer is followed by hallucinated support, so models may select only the answer en-tity or miss the false supporting claim. Arabic also introduces boundary variation because clitics, attached particles, and surface forms can make character-level spans harder to align exactly. As a result, models may detect the hallucination cor-rectly but produce spans that are too short, too broad, or shifted from the erroneous span. For MCQs, Falcon-H1 performs best among the independent models, with a global LO-Score of 0.852, closely followed by Qwen32 (0.844) and Allam (0.842). Falcon-H1 is particularly effective at selecting the correct candidate answer once an error is identified, selecting the wrong option in only 3.6% of true-positive cases. In terms of explanation quality, Allam outper-forms all evaluated systems, including Fanar. It achieves the highest Error Identification (0.673) and Factual Correction (0.614) scores, leading to the best Final Score of 0.644. This high-lights a clear difference between detection and explanation: while Fanar excels at hallucination detection and candidate-option selection and re-mains competitive in span localization, Allam pro-vides stronger natural-language explanations with clearer factual corrections. 
+
+Domain-Specific Insights. The domain-level results show that hallucination evaluation presents different challenges across knowledge areas. In the Islamic Knowledge domain, factual correc-tion and evidence grounding are difficult for all models, as errors often involve scriptural word-ing, hadith attribution, transmission-related infor-mation, or source-specific religious context. Al-though Fanar and Qwen32 achieve strong detec-tion performance, their factual-correction scores remain lower than in other domains. This sug-gests that detecting a hallucination does not nec-essarily mean that a model can recover or jus-tify the correct religious evidence. For span lo-calization in Islamic Knowledge, Qwen32 obtains the highest partial-credit F1-Sp score (0.489), fol-lowed by Fanar (0.460), Falcon-H1 (0.444), and Allam (0.383). The relatively high span preci-sion of Qwen32 (0.850), Allam (0.839), and Fa-nar (0.823), together with much lower recall, in-dicates that models often identify accurate erro-neous spans when they make a prediction, but miss a large portion of the full annotated error. Overall, models can localize some explicit fabricated ref-erences or incorrect religious claims, but they still struggle to cover all erroneous content and to pro-duce reliable factual corrections. In Geography, Qwen32 achieves the strongest overall performance, leading in Macro-F1, F1-Sp, LO-Score, and explanation quality. Its F1-Sp score reaches 0.498, outperforming Falcon-H1 (0.435), Fanar (0.340), and Allam (0.337). This suggests that Qwen32 is more effective at localizing errors involving geographic locations and spatial claims. In Science, detection performance is gener-ally high across models. Including the self-detection reference setting, Fanar achieves the highest Macro-F1 score (0.965) and the highest F1-Sp score (0.551). Among the independent eval-uation models, Silma achieves the strongest detec-tion performance with a Macro-F1 of 0.954, while Allam obtains the best span localization score with an F1-Sp of 0.475 and the best explanation Final Score of 0.742. These results suggest that sci-entific hallucinations often involve erroneous val-ues, entities, formulas, or causal claims, which can be localized more easily than implicit or context-dependent errors. However, substantial portions of the annotated erroneous spans remain uncovered. In History, Fanar achieves the best localization performance in the self-detection reference setting, with an F1-Sp score of 0.664. Among the inde-pendent models, Qwen32 obtains the highest F1-Sp score (0.597), followed by Allam (0.575) and Falcon-H1 (0.567). The higher recall of Fanar (0.696) and Qwen32 (0.660) indicates that these models capture a larger share of historically erro-neous content. At the same time, Allam provides the strongest explanation quality, with the highest Final Score of 0.702. 
+
+Error Analysis. To better understand the types of errors, we analyze the 790 unique instances where at least one model makes a wrong predic-tion. Since the same instance can be misclassified by more than one model, these instances produce 1,556 model-level errors in total. We group the most frequent errors into four main families: 1. Temporal, Numeric, and Unit Normalization (39.0%): These errors occur when models fail to recognize that two different formats express the same fact. For example, a model may mark an answer as hallucinated because it says “40 AH”, while the reference answer says “661 CE”. Although the formats are different, they refer to the same historical period. This shows that models still struggle with converting dates, numbers, units, and other equivalent factual ex-pressions (see Example Non-Hallucinated, Ex-ample 2, Example 3, and Example 17). 2. Source Attribution and Evidence Verification (22.2%): These errors are especially common in the Islamic domain. They occur when the model gives the correct main answer but sup-ports it with an incorrect source, such as a fab-ricated verse reference, a wrong citation, or an inaccurate attribution. In these cases, models often focus on the fact that the short answer is correct, but they fail to verify whether the sup-porting evidence is also correct (see Example 11 and Example 15). 3. Correct Short Answer with Hallucinated Sup-port (17.1%): These errors occur when the model gives the correct short answer but adds a false or unsupported explanation. For example, the named entity or final answer may match the reference answer, but the justification contains an incorrect claim. Detection models often miss these cases because they rely too much on the overlap with the correct answer and ignore the hallucinated information in the explanation (see Example 9 and Example 10). 4. Fully Incorrect Answer (11.3%): These errors occur when the model’s main answer is factu-ally incorrect. In some cases, the generated an-swer may be entirely different from, or directly contradict, the correct answer. The error affects the core answer rather than only the explanation or supporting evidence (see Example 7, Exam-ple 8, and Example 11). Together, these four families cover 89.6% of the model-level errors. The remaining 10.4% corre-spond to mixed or less frequent cases that com-bine several patterns, such as partial factual mis-matches, weak evidence checking, over-specific additions, or imprecise span localization. We do not treat these cases as a separate family because they do not form a single recurring error pattern. 
+
+Common Failure Cases. A total of 39 specific examples triggered an identical failure across all five evaluated systems, including Fanar in the self-detection reference setting. The vast majority of these shared errors (79.5%) are false positives, where a valid response was uniformly misclassi-fied as hallucinated. Only 20.5% correspond to missed true hallucinations. These shared failures are concentrated in History (18 cases), followed by Geography (10), Islamic (8), and Science (3). These findings emphasize that resolving halluci-nations in advanced Arabic models requires mov-ing beyond factual recall; models must recognize semantic paraphrases, validate fine-grained source attributions, handle temporal and numerical con-versions, isolate correct short answers from faulty supporting explanations, and localize the exact er-roneous spans. Additional annotation and evalua-tion details are provided in Appendix B. 
+
+5 Conclusion 
+
+We introduced HalluTruthQA, a fine-grained, expert-curated benchmark for evaluating halluci-nations in Arabic question answering. Spanning Islamic knowledge, history, science, and geogra-phy, HalluTruthQA provides response-level hal-lucination labels, character-level erroneous spans, human-written explanations, and multiple-choice factual verification candidates. This multidimen-sional design shifts hallucination evaluation from binary correctness toward a granular understand-ing of where and why models fail, and whether they can recover the correct factual information. Our evaluation of four open-source instruction-tuned LLMs, together with the Fanar self-detection reference setting, shows that hallucination detec-tion, span localization, factual verification, and ex-planation quality remain distinct, non-trivial chal-lenges. A key finding is that strong detection per-formance does not necessarily imply high-quality explanations or accurate span localization: Fanar performs strongly in the self-detection reference setting, Qwen32 achieves the best global span lo-calization, and Allam provides the most reliable factual explanations. Moreover, our results re-veal domain-specific patterns: Islamic Knowledge is particularly affected by evidence-grounding and source-attribution errors, whereas history, science, and geography are mainly affected by factual con-tradictions and fabricated details. These findings underscore the need for Arabic hallucination benchmarks that move beyond bi-nary detection to assess attribution faithfulness, temporal consistency, and reasoning errors. Hal-luTruthQA provides a step toward more reliable Arabic QA systems. Future work will expand the benchmark to additional domains, broader model coverage, and training settings aimed at improving factual reliability in Arabic language models. 
+
+Limitations 
+
+This work has several limitations. • First, HalluTruthQA focuses on four knowledge-intensive domains: Islamic knowledge, history, science, and geography. Although these do-mains cover diverse factual phenomena, the benchmark does not capture all types of Arabic question answering, such as legal, medical, fi-nancial, or conversational settings. • Second, the model-generated answers in the dataset are produced using a single LLM, Fanar. This design enables controlled annotation and analysis, but it may limit the diversity of halluci-nation patterns compared to datasets built from multiple generation models. Future work can ex-tend the benchmark with answers generated by a range of Arabic and multilingual LLMs. • Third, span-level hallucination annotation is challenging. In some cases, hallucinated con-tent may involve implicit reasoning errors, un-supported claims, or source attribution errors that are difficult to isolate with exact character boundaries. To reduce this issue, we rely on ex-pert validation and use overlap-based span eval-uation, but boundary variation remains possible. • Fourth, explanation quality is evaluated using an LLM-as-a-judge protocol, with additional hu-man validation on a sample of judged explana-tions. While this helps make the evaluation scal-able, automatic judging may still introduce bias or inconsistency. More extensive human evalu-ation would further strengthen the reliability of explanation assessment. • Finally, we deliberately focus on open mod-els and exclude proprietary API-based systems such as Gemini or Claude from the main eval-uation. This choice is motivated by fairness and reproducibility. Our benchmark is designed as a closed-book evaluation, where all models are tested under the same inference conditions and without access to external search. In con-trast, API-based systems may rely on chang-ing backend versions, retrieval components, web search, or system-level grounding that are not al-ways fully controllable by researchers. Includ-ing such systems could make it harder to en-sure that the evaluation measures the model itself rather than external information access. This de-sign also supports the analysis and improvement of open Arabic language models, which can be inspected, reproduced, and adapted by the re-search community. 
+
+References 
+
+Samir Abdaljalil, Hasan Kurban, and Erchin Ser-pedin. 2025. Halluverse25: Fine-grained mul-tilingual benchmark dataset for llm hallucina-tions. arXiv preprint arXiv:2503.07833 .Ali Abdelaal, Mohammed Nader Al Haffar, Mahmoud Fawzi, and Walid Magdy. 2026. Islamicmmlu: a benchmark for evaluating llms on islamic knowledge. arXiv preprint arXiv:2603.23750 .Aisha Alansari and Hamzah Luqman. 2025. Ara-HalluEval: A fine-grained hallucination evalu-ation framework for Arabic LLMs. In Proceed-ings of The Third Arabic Natural Language Pro-cessing Conference , pages 148–161, Suzhou, China. Association for Computational Linguis-tics. Abdessalam Bouchekif, Somaya Eltanbouly, Samer Rashwani, Shahd Gaben, Mutaz Al-Khatib, Heba Sbahi, Emad Mohamed, and Mohammed Ghaly. 2026a. QIAS 2026: Overview of the shared task on islamic inher-itance reasoning. In Proceedings of OSACT / LREC-COLING .Abdessalam Bouchekif, Shahd Gaben, Samer Rashwani, Somaya Eltanbouly, Mutaz Al-Khatib, Heba Sbahi, Mohammed Ghaly, and Emad Mohamed. 2026b. Mawarith: A dataset and benchmark for legal inheritance reasoning with llms. arXiv preprint arXiv:2603.07539 .Abdessalam Bouchekif, Samer Rashwani, Emad Soliman Ali Mohamed, Mutaz Alkhatib, Heba Sbahi, Shahd Gaben, Wajdi Zaghouani, Aiman Erbad, and Mohammed Ghaly. 2025a. QIAS 2025: Overview of the shared task on islamic inheritance reasoning and knowledge assess-ment. In Proceedings of The Third Arabic Nat-ural Language Processing Conference: Shared Tasks , pages 851–860, Suzhou, China. Associa-tion for Computational Linguistics. Abdessalam Bouchekif, Samer Rashwani, Heba Sbahi, Shahd Gaben, Mutaz Al Khatib, and Mo-hammed Ghaly. 2025b. Assessing large lan-guage models on islamic legal reasoning: Ev-idence from inheritance law evaluation. In 
+
+Proceedings of The Third Arabic Natural Lan-guage Processing Conference , pages 246–257, Suzhou, China. Association for Computational Linguistics. Shiqi Chen, Yiran Zhao, Jinghan Zhang, I-Chun Chern, Siyang Gao, Pengfei Liu, and Junx-ian He. 2023. FELM: Benchmarking factual-ity evaluation of large language models. In 
+
+Thirty-seventh Conference on Neural Informa-tion Processing Systems Datasets and Bench-marks Track .Passant Elchafei and Mervat Abu-Elkheir. 2025. Hallucination detectives at SemEval-2025 task 3: Span-level hallucination detection for LLM-generated answers. In Proceedings of the 19th International Workshop on Semantic Evaluation (SemEval-2025) , pages 601–606, Vienna, Aus-tria. Association for Computational Linguistics. Fanar Team, Ummar Abbas, Mohammad Shah-meer Ahmad, Firoj Alam, Enes Altinisik, Ehsannedin Asgari, Yazan Boshmaf, Sabri Boughorbel, Sanjay Chawla, Shammur Chowd-hury, Fahim Dalvi, Kareem Darwish, Nadir Durrani, Mohamed Elfeky, Ahmed Elma-garmid, Mohamed Eltabakh, Masoomali Fatehkia, Anastasios Fragkopoulos, Maram Hasanain, and 23 others. 2025. Fanar: An arabic-centric multimodal generative AI platform. Preprint , arXiv:2501.13944. Junyi Li, Xiaoxue Cheng, Xin Zhao, Jian-Yun Nie, and Ji-Rong Wen. 2023. HaluEval: Alarge-scale hallucination evaluation benchmark for large language models. In Proceedings of the 2023 Conference on Empirical Methods in Nat-ural Language Processing , pages 6449–6464, Singapore. Association for Computational Lin-guistics. Stephanie Lin, Jacob Hilton, and Owain Evans. 2022. TruthfulQA: Measuring how models mimic human falsehoods. In Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Pa-pers) , pages 3214–3252, Dublin, Ireland. Asso-ciation for Computational Linguistics. Hamdy Mubarak, Hend Al-Khalifa, and Khaloud Suliman Alkhalefah. 2024. Hal-wasa: Quantify and analyze hallucinations in large language models: Arabic as a case study. In Proceedings of the 2024 Joint International Conference on Computational Linguistics, Language Resources and Evaluation (LREC-COLING 2024) , pages 8008–8015, Torino, Italia. ELRA and ICCL. Hamdy Mubarak, Rana Malhas, Watheq Mansour, Abubakr Mohamed, Mahmoud Fawzi, Majd Hawasly, Tamer Elsayed, Kareem Mohamed Darwish, and Walid Magdy. 2025. Islamice-val 2025: The first shared task of capturing llms hallucination in islamic content. In Proceedings of The Third Arabic Natural Language Process-ing Conference: Shared Tasks , pages 480–493. Cheng Niu, Yuanhao Wu, Juno Zhu, Siliang Xu, KaShun Shum, Randy Zhong, Juntong Song, and Tong Zhang. 2024. RAGTruth: A hallucina-tion corpus for developing trustworthy retrieval-augmented language models. In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Pa-pers) , pages 10862–10878, Bangkok, Thailand. Association for Computational Linguistics. Raul Vazquez, Timothee Mickus, Elaine Zosa, Teemu Vahtola, J”org Tiedemann, Aman Sinha, Vincent Segonne, Fernando Sanchez-Vega, Alessandro Raganato, Jindřich Li-bovick’y, Jussi Karlgren, Shaoxiong Ji, Jindřich Helcl, Liane Guillou, Ona De Gibert, Jaione Bengoetxea, Joseph Attieh, and Marianna Apidianaki. 2025. SemEval-2025 task 3: Mu-SHROOM, the multilingual shared-task on hallucinations and related observable over-generation mistakes. In Proceedings of the 19th International Workshop on Semantic Evaluation (SemEval-2025) , pages 2472–2497, Vienna, Austria. Association for Computational Linguistics. 
+
+A Data Format 
+
+Each instance is stored in a structured JSON for-mat. The format includes the question, generated response, reference answer, response-level hal-lucination label, span-level annotations, explana-tions, multiple-choice candidate answers, and the correct option. 
+
+Hallucinated Answer                     
+
+> {"id": "islamicHallucination_8", "question":
+> ாணُ ﺍሒᇭ۬ ᆙᆊ ﺍܳگݠﺁﻥ ﺍܳـቕሹ୍ଲ؟", "݁؇ ﺍܳٴᄴᄥ ﺍᄳᄟﻱ ﺫ
+> "generated_answer":
+> ாணُ ﺍሒᇭ۬ ᆙᆊ ﺍܳگݠﺁﻥ ﺍܳـቕሹ୍ଲ ﻭ۱ ި݁๤ཡ، ﻭﺫሒᇭ ዻዧ ݿިﺭﺓ لިݿژ ﺍ৚৑ل۰ 47: ّ֟"ᄴᄥً ﻭﺍ༡ڎ ڣگޔ ﺫ ᄩْᄟ َُ݁؇ ᄳِᄟِﻱ ﺍܳټّ֟ڎْلඔْ൹َ ِﺇ֣ﻥ ᕚීّ֟ݿُިﻝ ُڢَ؇ﻝ َﺍﺭْۏِــ ْؕﺇ ֣ሌَᇿ ﺭ۹ًَِّ َڣَފْ؊ ෂَ؇ﺀ َﻩ ُﺍ༥ ؇ّ֟గَఒًَِِ۬ڣ ሒِ ᇃُިਐْಮُﺍ ጥِ጑َညْ৊ﻭَڢَ؇ﻝ َﺍ ڢَڎ ْޖగَఒَْب ُﺇ֣ﻥّ֟",
+> "gold_answer": َாணُ ﺍ๤ཛྷ۬ ᆙᆊﺍሒᇭ ۰༡ ﺍܳگݠﺁﻥ ﺍܳـቕሹ୍ଲ ۱ ި݁๤ཡ، ﻭ ݆݁ﺫዻዧ ڢިᄩᄟ ّأ؇ሌᇿ: »ﻭَڢَ؇ﻝ ُ"ﺍܳٴᄴᄥ ﺍᄳᄟﻱ ﺫ ሒِᇧِாْண َ݁ټْިَﺍﻩُ«، ﻭڢިᄩᄟ ّأ؇ሌᇿ: »ﺍﺩ༠ُْߺُࠊﺍ ݁๤ْཡِ َﺇ֣ﻥ ނَ؇ﺀ َﺍՃՂّ֟Մ ᕚِِّ۬ﺃ ᕚَﺃਵْਦ৖ِ৑َ ๤ْཡَِّﺍﻩ ُِ݆݁݁ଫَଐِْﻱ ﺍނᄳّ֟ ﺍᄟ ﺁِ݁ٷඔ൹َِ",
+> "generator_model": "QCRI/Fanar-1-9B-Instruct", "label": "hallucination", "hallucinations": [{"span_start": 67, "span_end": 75, "hallucinated_span":
+> ,"47 ۰ل৚৑ﺍ"
+> "explanation":
+> ሒᇭ ﻭﺭﺩ ؇ஓ஁ᎂلިݿژ: 47، ﻭ ሒᇭ ߌߵﺩ ቕረ ๤ཡ݁ ྾ང۰؛ ﺍ༲٭ොේ ଫଃ༚ ۰ل৚৑ﺍ ሌᇿﺇ ᄭᄟ؇༡৕৑ﺍ" ݁ިﺍݪ ؕﺃරඝﻯ ݆݁ﺍܳފިﺭﺓ، ݁ዛዊ؇ لިݿژ: 21 ﻭ لިݿژ: 99."
+> }, {"span_start": 77, "span_end": 226, "hallucinated_span":
+> ِﻱᄳِᄟ ؇َُ݁ ᄩْᄟ ᕚ ؊ْﺭ۹ًَِّ َڣَފ ሌَᇿّ֟ݿُިﻝ ُڢَ؇ﻝ َﺍﺭْۏِــ ْؕﺇ ֣ී ෂَ؇ﺀ َﻩ ُﺍ༥ ؇ّ֟గَఒًَِِ۬ڣ ሒِ ᇃُިਐْಮُﺍ ጥِ጑َညْ৊ﻭَڢَ؇ﻝ َﺍ" ﺍܳټّ֟ڎْلඔْ൹َ ِﺇ֣ﻥ ّ֟ڢَڎ ْޖగَఒَْب ُﺇ֣ﻥّ֟",
+> "explanation":
+> ଫଐ᛻ෛﻉ ݁ྡྷފިﺏ ﺇሌᇿ ﺍܳگݠﺁﻥ، ﻭڣ٭ ۬ﺃܳڰ؇ﻅ ଫଃ༚ ڢݠﺁ۰ਃ಻ ݁ټܭ ﺍܳټڎلඔ൹؛ ﻭﺍ৚৑ل۰ "۱ڍﺍ َݧ ੼ ﺍܳݱۜ٭ሒᇭ ۰༲ لިݿژ: ౫౜ళ 47ڎﺙ ݆ﺍෑෂﺭﺍ۰༟ ﻭﺍܳފٷඔ൹: ڢ؇ﻝ ߙ߳ﺭިﻥ ݿٴ ؕݿٷඔ൹ ﺩﺃً؇."
+> }], "options": {"A":
+> ாணُ ﺍ๤ཛྷ۬ ᆙᆊﺍሒᇭ ۰༡ ﺍܳگݠﺁﻥ ﺍܳـቕሹ୍ଲ ۱ ި݁๤ཡ، ﻭڢڎ ﻭﺭﺩ ﺍሒᇭ ؇۳ᆙᆊ ݿ٭؇ﻕ "- ﺍܳٴᄴᄥ ﺍᄳᄟﻱ ﺫ ڢݱ۰ لިݿژ ༟ܹ٭ ۬ﺍܳފఈఃﻡ.",
+> "B":
+> ሒᇭ ؇۱ாண ாணُ ﺍ๤ཛྷ۬ ᆙᆊﺍሒᇭ ۰༡ ﺍܳگݠﺁﻥ ﺍܳـቕሹ୍ଲ ۱ ިڣܹފޚඔ൹، ﻭڢڎ ﻭﺭﺩ ﺫ "- ﺍܳٴᄴᄥ ﺍᄳᄟﻱ ﺫ ݿ٭؇ﻕ ﺍ৙৑ﺭﺽ ﺍৎ৊گڎݿ۰.", "C": ݆݁ ாணُ ﺍ๤ཛྷ۬ ᆙᆊﺍሒᇭ ۰༡ ﺍܳگݠﺁﻥ ﺍܳـቕሹ୍ଲ ۱ ިﺍܳأݠﺍﻕ، ﻭڢڎ ﺍﺭਊಾޔ ًأڎﺩ "- ﺍܳٴᄴᄥ ﺍᄳᄟﻱ ﺫ ڢݱݧ ﺍྟཹ৙৑٭؇ﺀ ﻭﺍ৙৑ ܾ݁ﺍܳފ؇ًگ۰.",
+> "D":
+> ாணُ ﺍ๤ཛྷ۬ ᆙᆊﺍሒᇭ ۰༡ ﺍܳگݠﺁﻥ ﺍܳـቕሹ୍ଲ ۱ ިﺍ৙৑ﺭﺩﻥ، ﻭڢڎ ﺍﺭਊಾޔ༡؊ً ڎﺍﺙ "- ﺍܳٴᄴᄥ ﺍᄳᄟﻱ ﺫ ّ؇ﺭෛຬ٭۰ ﻭڢأب ఈఃً ሒᇭﺩ ﺍܳލ؇ﻡ.",
+> "E":
+> ாணُ ﺍ๤ཛྷ۬ ᆙᆊﺍሒᇭ ۰༡ ﺍܳگݠﺁﻥ ﺍܳـቕሹ୍ଲ ۱ ިﺍࡺࢋࢦ݆، ﻭڢڎ ﺍﺭਊಾޔ ًگݱ۰ ݿٴ؊ "- ﺍܳٴᄴᄥ ﺍᄳᄟﻱ ﺫ ﻭܹ݁ـᄎჼ ݿٴ؊.",
+> "F":
+> ᄎჼ݁ ாணࣕ ாணُ ﺍ๤ཛྷ۬ ᆙᆊﺍሒᇭ ۰༡ ﺍܳگݠﺁﻥ ﺍܳـቕሹ୍ଲ ۱ ިﺍܳފأިﺩل۰، ﻭڢڎ ﺍﺭਊಾޔࢻ "- ﺍܳٴᄴᄥ ﺍᄳᄟﻱ ﺫ ﺍ୍ଲည৊݁۰ ﻭﺍܳٴ྘ب ﺍࠍ੆ݠﺍﻡ."
+> }, "answer": "A" }
+
+For non-hallucinated responses, the span list is empty. This unified format allows the same dataset to be used for response-level hallucination detec-tion, explainable hallucination analysis, span-level hallucination localization, multiple-choice factual verification, and training models to select or gen-erate factually reliable answers. 
+
+Non-Hallucinated Answer     
+
+> {"id": "historicHallucination_474", "question":
+> "ሒᇭ ﺃﻱ ༟؇ﻡ ﺍ๤ཡปᘟውᚶ ﺍࠍ੅ܹڰ؇ﺀ ﺍීෂﺍނڎદઊ؟",
+> "generated_answer":
+> "ﺍ๤ཡปᘟውᚶ ﺍࠍ੅ܹڰ؇ﺀ ﺍීෂﺍނڎሒᇭ દઊ ﺍܳأ؇ﻡ 40 ۱ـ.",
+> "gold_answer": ,"661 ﻡ"
+> "generator_model": "QCRI/Fanar-1-9B-Instruct", "label": "no_hallucination", }
+
+B Annotation Process and Reliability 
+
+The annotation process involved two stages. First, four domain experts annotated the dataset, with each expert responsible for one domain: Islamic knowledge, history, science, or geography. Each domain expert had a relevant academic back-ground in the corresponding knowledge area. The experts manually annotated the binary hallu-cination label, hallucination macro-type, halluci-nation micro-type, erroneous spans, explanations, and reference answers. They also manually con-structed and validated the multiple-choice candi-date options and the corresponding answer key. Annotators were instructed to ensure that the can-didate options followed the same style, wording, and level of specificity as the model-generated an-swer, so that the correct option could not be iden-tified from stylistic cues. Second, two trained research assistants inde-pendently verified the annotations produced by the four domain experts. The verification pass checked the binary hallucination label, hallucina-tion categories, span boundaries, explanations, and the correctness of the multiple-choice answer key. Since the four domain experts annotated disjoint domain-specific subsets, agreement was not com-puted among the four experts on shared items. In-stead, we report expert–reviewer agreement be-tween the initial domain-expert annotations and the independent verification pass. Disagreements or flagged cases were resolved through adjudication by the original domain expert after the second verification pass. Agreement was computed before final expert ad-judication. We used Cohen’s κ for categorical an-notations and character-level F1 and intersection-over-union (IoU) for span-level annotations. Dis-agreements and flagged cases were subsequently resolved through adjudication by the original do-main expert after the second verification pass. 
+
+Annotation dimension Metric Score 
+
+Binary hallucination label Cohen’s κ 0.93 Macro hallucination type Cohen’s κ 0.87 Micro hallucination type Cohen’s κ 0.81 Multiple-choice answer key Agreement 0.979 Span localization Character-F1 0.89 Span overlap IoU 0.84 
+
+Table 3: Expert–reviewer agreement for HalluTruthQA before final adjudication. Cohen’s κ is reported for categorical annotations, agreement is reported for the multiple-choice answer key, and character-level F1 and IoU are used for span-level annotations. 
+
+The agreement results indicate that the anno-tation process was reliable across all dimensions. Binary hallucination labeling achieved the high-est agreement ( κ = 0.93 ), showing that the domain-expert annotations and the independent verification pass were highly consistent in decid-ing whether a generated answer contained hallu-cinated content. Agreement remained strong for macro-level hallucination categories ( κ = 0 .87 ), suggesting that the main hallucination types were clearly defined and consistently applied. Agreement was slightly lower for micro-level cat-egories ( κ = 0 .81 ), which is expected given the difficulty of distinguishing closely related fine-grained error types, such as unsupported claims, wrong attribution, citation mismatch, and over-specific additions. Nevertheless, this score still in-dicates strong agreement for fine-grained halluci-nation classification. Figure 2: Overview of the HalluTruthQA construction pipeline. 
+
+The multiple-choice answer key achieved 97.9% agreement, indicating that the correct option was generally unambiguous. For span-level annota-tion, the character-level F1 of 0.89 and IoU of 0.84 show that the reviewers largely identified the same erroneous content as the original expert annota-tions. Remaining differences were mainly due to span-boundary variation, such as whether only the minimal erroneous entity, date, or reference was marked, or whether surrounding explanatory con-text was also included. Overall, these results confirm that the annotations are robust. They also show that response-level hallucination detection is the most stable annota-tion task, whereas micro-type classification and exact span localization are more challenging but still highly reliable. 
+
+C Hallucination Taxonomy 
+
+Figure 3 presents the hierarchical taxonomy of hal-lucination types used in HalluTruthQA. The tax-onomy was designed to describe the erroneous spans observed during annotation. It contains five macro-types: Factual Contradiction , Con-text Inconsistency , Logical Inconsistency , Fac-tual Fabrication , and Nonsensical / Irrelevant Re-sponse . Each macro-type is further divided into fine-grained micro-types that describe the specific form of the error. 
+
+Purpose of the taxonomy. The goal of the tax-onomy is to move beyond a binary distinction be-tween hallucinated and non-hallucinated answers. In Arabic question answering, an answer can be fluent and relevant but still contain a small factual error, a wrong source attribution, an unsupported explanation, or a fabricated reference. For this rea-son, each hallucinated answer in HalluTruthQA is annotated not only with a response-level label, but also with character-level erroneous spans, expla-nations, and hallucination types. 
+
+Macro- and micro-types. Table 4 defines the macro-types and their corresponding micro-types. The macro-types capture the main ways in which a model answer can fail, while the micro-types pro-vide a more precise description of the erroneous span. For example, a factual contradiction may in-volve an entity, date, numeric, or definition error, whereas a context inconsistency may involve a ci-tation mismatch or a wrong source attribution. 
+
+D Representative Hallucination Examples 
+
+To make the taxonomy easier to interpret, we pro-vide examples for the hallucination micro-types observed in HalluTruthQA. Each example is la-beled with its hallucination type and includes the question, the model prediction, the verified an-swer, and a short explanation of the error. These examples illustrate how different hallucina-tion types appear in Arabic question answering. Some cases involve direct factual contradictions, such as wrong entities, dates, numbers, or loca-tions. Other cases involve context inconsistency, where the answer remains related to the question Hallucination 
+
+1. Factual Contradiction 
+
+2. Context Inconsistency 
+
+3. Logical Inconsistency 
+
+4. Factual Fabrication 
+
+5. Nonsensical / Irrelevant Response 
+
+Entity Error 1
+
+Date / Temporal Error 
+
+> 2
+
+Numeric Error 3
+
+Location / Spatial Error 
+
+> 4
+
+Role / Status Error 5
+
+Event Error 6
+
+Causal Error 7
+
+Definition / Concept Error 
+
+> 8
+
+Unsupported Claim 9
+
+Citation Mismatch 10 
+
+Wrong Source Attribution 
+
+> 11
+
+Over-specific Addition 
+
+> 12
+
+Invalid Inference 13 
+
+Self-Contradiction 14 
+
+False Negation 15 
+
+Fabricated Entity 16 
+
+Fabricated Source 17 
+
+Fabricated Event 18 
+
+Fabricated Explanation 
+
+> 19
+
+Irrelevant Response 
+
+> 20
+
+Unintelligible Output 
+
+> 21
+
+Truncated Answer 22 
+
+Figure 3: Hierarchical taxonomy of hallucination macro-types and observed micro-types. 
+
+but the supporting evidence, citation, or source at-tribution is incorrect. We also include examples of logical inconsistency, factual fabrication, and non-sensical or irrelevant responses. 
+
+1 Factual Contradiction – Entity Error 
+
+Question 
+
+݆݁۱ ިﺍܳݱ༲؇ሒᇀ ﺍᄳᄟﻱ ﺩ༟؇ ᄩᄟ ﺍܳٷม฀ ݬআॻ ﺍ༟ Մ៰Ղܹ٭ ۬ﻭݿ޺޾ ًگިᄩᄟ: ﺍ۳ይዧ ܾڣگ۳ ሒᇭ۬ ﺍદઊᄴᄟ؟ 
+
+Who was the Companion for whom the Prophet, peace be upon him, supplicated: “O Allah, grant him understanding of the religion”? 
+
+Prediction ۬݁أ؇ﺫ દઑ ۏٴܭ ﺭ๴ཚ ﺍՄ៰Ղٷ 
+
+Muadh ibn Jabal, may Allah be pleased with him. 
+
+Gold answer 
+
+Abdullah Ibn Abbas ﺍ྾ང৖৑ ۱ިٴڎ ﺍદઑ Մ៰Ղٴ؇ﺱ 
+
+Comment 
+
+The model predicts the wrong Companion instead of Abdullah Ibn Ab-bas. 
+
+2 Factual Contradiction – Date / Temporal Error 
+
+Question 
+
+ሒᇭ ﺃﻱ ༟؇ﻡ ቕቆ ّިۋ٭ڎ ﺃਃ಻؇ৎ৊؇؟ 
+
+In which year was Germany unified? 
+
+Prediction 
+
+.1871 ﺍܳأ؇ﻡ ሒᇭ ؇ਃ಻؇ৎ৊ّިۋ٭ڎ ﺃ ቕቆ 
+
+Germany was unified in the year 1871. 
+
+Gold answer 
+
+1990 
+
+Comment 
+
+Although the German Empire was founded in 1871, the term “German unification” in contemporary contexts refers to the reunification of East and West Germany in 1990. Macro-type Micro-type Definition Factual Contradiction 
+
+Wrong factual value 
+
+Entity Error The response gives an incorrect person, country, organization, object, or named entity instead of the verified answer. Date / Temporal Error The response gives an incorrect date, year, period, duration, chronological order, or temporal relation. Numeric Error The response gives an incorrect number, quantity, percentage, distance, length, count, or measurement. Location / Spatial Error The response gives an incorrect place, region, country, spatial relation, or geographical location. Role / Status Error The response assigns an incorrect role, title, status, function, affiliation, or relation to an entity. Event Error The response describes a real or expected event incorrectly, assigns it to the wrong actor, time, place, or outcome, or confuses it with another event. Causal Error The response gives an incorrect cause, effect, motivation, or explanatory relation between facts. Definition / Concept Error The response confuses related concepts or gives a definition that contradicts the verified answer. 
+
+Context Inconsistency 
+
+Wrong evidence or grounding 
+
+Unsupported Claim The response adds a claim that remains related to the question but is not supported by the verified evidence. Citation Mismatch The response links a claim to the wrong citation, verse, hadith, book, source, or evidential reference. Wrong Source Attribution The response attributes a statement to a source, scholar, text, or authority that does not support that statement. Over-specific Addition The response adds details that are more specific than what the verified evidence allows, without necessarily inventing a new source or event. 
+
+Logical Inconsistency 
+
+Wrong reasoning 
+
+Invalid Inference The response uses related information but draws a conclusion that does not logically follow from it. Self-Contradiction The response contains two or more claims that are mutually incompatible within the same answer. False Negation The response incorrectly denies a true relation or states the opposite of the verified answer. 
+
+Factual Fabrication 
+
+Invented factual content 
+
+Fabricated Entity The response introduces a non-attested entity and presents it as factual. Fabricated Source The response invents a source, citation, reference, verse, hadith, book, or authority that does not exist or is not verified. Fabricated Event The response describes an event that is not supported by the verified sources and appears to be invented. Fabricated Explanation The response gives an explanation that sounds specific or authoritative but is not grounded in the verified evidence. 
+
+Nonsensical / Irrelevant Response 
+
+No usable factual answer 
+
+Irrelevant Response The response is off-topic or does not address the question in a meaningful way. Unintelligible Output The response is too unclear, incoherent, or broken to be interpreted as a valid factual answer. Truncated Answer The response is incomplete or stops before providing a verifiable answer. 
+
+Table 4: Macro-types, micro-types, and definitions in the HalluTruthQA hallucination taxonomy. The macro-level cues clarify the main distinction between wrong factual values, wrong grounding, wrong reasoning, invented factual content, and unusable responses. 
+
+3 Factual Contradiction – Numeric Error 
+
+Question 
+
+݁؇ ﺍܳޚިﻝ ﺍܳٺگݠॷॖद ܳዛዊݠ ݿ؇೑಻ ܳިﺭﺍྵฺ، ﻭ ݆݁ﺃﻱ ଫଃ᛻ොໍາﺓྡྷ཯ ٴؕ؟ 
+
+What is the approximate length of the Saint Lawrence River, and from which lake does it originate? 
+
+Prediction ݆ؕ݁ . ﻭ۱ ިྡྷ཯ٴ (1,900 ݁٭ܭ) ଫଐߺࠊ݁ভ঒ 3,058 ዛኡݠ ݿ؇೑಻ ܳިﺭﺍ ஓ୷ྵฺٺڎ ّگݠਊಱً؇ ܳـ ଫଃ᛻ොໍາﺓ ﺃﻭਐ಻؇ﺭ لި، ﺍܳሒሃ มฆ ﻭﺍ༡ڎﺓ ݆݁ﺍܳٴଫଃ༲ﺍﺕ ﺍܳـܝଫଊﻯሒᇭ  ﺃਵਦلႤၽ ﺍܳލ݄؇ܳ٭۰. 
+
+The Saint Lawrence River extends for approximately 3,058 kilometers (1,900 miles). It originates from Lake Ontario, which is one of the Great Lakes of North America. 
+
+Gold answer 
+
+.ﺭ لި؇ਐ಻ﺃﻭ ﺓଫଃ᛻ොໍາ݆ؕ݁ ٴྡྷ཯ﻭ ،ቕመ 1,197ި ොຶ 
+
+Approximately 1,197 km, and it originates from Lake Ontario. 
+
+Explanation 
+
+ாண ޗިﻝ ොේ ଫଃ༚٭ں ܳዛዊݠ ݿ؇೑಻ ܳިﺭﺍྵฺ. ڣޚިﻝ ﺍܳዛዊݠ ݆݁ଫଃ᛻ොໍາﺓ ۰ً ۱ ިﺫ؇༥৕৑ﺍ ሒᇭ ؊ޚ੅ﺍࠍ ྵฺﺃﻭਐ಻؇ﺭ ل ިۋปฆ ﺍৎ৊ݱص ༠ ሒᇭܹ٭ھ ݿ؇೑಻ ܳިﺭﺍ ොຶྵฺ ިቕመ 1,197، ﻭܳ྘ݴ 3,058 ﻭڢڎ ଫଃ૰૏ ﺍීෂڢ ܾቕመ 3,058 ﺇሌᇿ ݁ٷޙި݁۰ ﺍܳٴଫଃ༲ﺍﺕ ﺍܳأޙ݄ް-ݿ؇೑಻ ܳިﺭﺍ .ቕመ .َ۬ڰފ ݠዛዊﺍܳ ሌᇿﺇ ৖৑ ،؇۳დაႰ؊ً 
+
+The error is the incorrect length given for the Saint Lawrence River. The river’s length from Lake Ontario to its mouth in the Gulf of Saint Lawrence is approximately 1,197 km, not 3,058 km. The figure 3,058 km may refer to the entire Great Lakes–Saint Lawrence system, not to the river itself.  
+
+> 4
+
+Factual Contradiction – Location / Spatial Error 
+
+Question 
+
+݁؇ ﺍৎ৊ڎ۰਍ಱ ﺍܳ૭૜ มฆ ݄ް'݁ڎ۰਍ಱ ﺍৎ৊ިሒᇭ 'ሌᇆ ݁๤ཡ؟ 
+
+Which place is called the “City of the Dead” in Egypt? 
+
+Prediction ݆݁ . ﻭܳـܝ݆، ݁ڎ۰਍ಱ ﺍ৙৑ڢ๤ཡ ሒሃ ๤ཡ݁ ሒᇭ ''ሌᇆިৎ৊ﺍ ۰਍ಱ݁ڎ`` ྾ང؇ً ُّأݠﻑ มฆﺍܳ ۰਍ಱڎৎ৊ﺍ ாண ﺃﻥ ۱ڍﺍ ﺍ྾ང৖৑ ܳ྘ݴ ﺭᆙᆊ٭؇ ًﻭڢڎ لܝިﻥ ݁ފٺ༱ڎ݁؇ ଫଃ༚ ႟ၽ૰૖ً ﺭᆙᆊ޶ྟ૭૖ ص ﺍࠍ੊ڎߌߵ ً؇ᄳᄟ ﺍܳൠശ؇ڣ۰ ﺍܳأ؇ܳ٭۰ గጻዧިﺍڢ ؕﺍ৙৑ߜߵ ل۰ ﻭﺍৎ৊ڎﺍڣ ݆ﺍܳگڎ۰ஓ୷ ڣዛዀ؇. 
+
+The place known as the “City of the Dead” in Egypt is Luxor. However, it should be noted that this name is not official and may be used informally because of the high density of archaeological sites and ancient tombs there. 
+
+Gold answer 
+
+ﺍܳگݠﺍڣ۰ ሒሃ ݁ڎ۰਍ಱ ﺍৎ৊ިሒᇭ ሌᇆ ڢܹص ﺍܳگ؇۱ݠﺓ ﺍ৚৑ﻥ. 
+
+Al-Qarafa is the City of the Dead, located today in the heart of Cairo. 
+
+Explanation 
+
+The error is identifying Luxor as the “City of the Dead” in Egypt. This name refers to Al-Qarafa, the historic cemetery district in Cairo, not to the city of Luxor. 5 Factual Contradiction – Role / Status Error 
+
+Question 
+
+݆݁۱ ިﺍܳگ؇ࢱ ࣖﺍᄳᄟﻱරඞ ﺭ ﺍࠍ੊ݞﺍ߉ߵ ݆݁ﺍ৖৑ݿٺأ݄؇ﺭ ﺍܳڰݠ๴๎ฺ ݿ٭؇ݿ٭ً؇؟ 
+
+Who was the leader who politically liberated Algeria from French colo-nialism? 
+
+Prediction 
+
+ّިሌᇿ ݆݁ﺍ৖৑ݿٺأ݄؇ﺭ ﺍܳڰݠ๴๎ฺ ݿ٭؇ݿ٭ً؇ ۱ ިﺃᆇᅵڎᄭᄥً દઑ . ﺍܳگ؇ࢱ ࣖﺍᄳᄟﻱරඞ ﺭ ﺍࠍ੊ݞﺍ߉ߵ ﺭف؇ݿ۰ ﺍࠍ੆ܝި݁۰ ﺍৎ৊ޝڢٺ۰ ࠯࠵࠾݄۳ިﺭ ل۰ ﺍࠍ੊ݞﺍ߉ߵ ل۰ ༟ ሒᇭ؇ﻡ 1962 ًأڎ ݁ڰ؇ﻭݪ؇ﺕ ﺇلڰ٭؇ﻥ ﺍܳมฆ ﺃﺩﺕ ﺇሌᇿ ﺍݿٺگఈఃﻝ ﺍܳٴఈఃﺩ ݆ڣݠ૭૙؇. 
+
+The leader who politically liberated Algeria from French colonialism was Ahmed Ben Bella. He headed the Provisional Government of the Algerian Republic in 1962 after the Evian negotiations that led to Alge-ria’s independence from France. 
+
+Gold answer 
+
+Benyoucef Benkhedda. لިݿژ ༠ દઑڎﺓ 
+
+Comment The model incorrectly attributes the presidency of the Pro-visional Government of the Algerian Republic during the Evian period to Ahmed Ben Bella. Ben Bella was imprisoned during the Evian nego-tiations, while Benyoucef Benkhedda headed the GPRA at that stage. 
+
+6 Factual Contradiction – Event Error 
+
+Question 
+
+ᄎც ﺍܳ༡ มฆڎદઑ ঌॻ༟ ඔ൹ً ೑ು ﺃሒᇀ ޗ؇ܳص ﻭඔ൹ً ﺍࠍ੅ިﺍﺭﺝ؟ ݁؇ ﺍৎ৊أݠ 
+
+Which battle took place between Ali ibn Abi Talib and the Kharijites? 
+
+Prediction ݆ﻭܳـܝ . ᄎც ﺍܳ༡ มฆڎદઑ ঌॻ༟ ඔ൹ً ೑ು ﺃሒᇀ ޗ؇ܳص ﻭﺍࠍ੅ިﺍﺭﺝ أݠৎ৊ﺍ ሒሃ ܭ৵৩ৠﺍ ᄎც ݁أݠ ًܭ ،ً ﺍࣖࢴڎොູ ᄎც ෠ຬص ﺍܳٺٷ ިل ۬ﺇሌᇿ ﺃﻥ ﺍࠍ੅ިﺍﺭﺝ ቕረ لܝިَިﺍ ۊݱިﻡ ሒᇭ ঌॻ༟ ۱ڍﻩ ﺍৎ৊أݠ ᄎც ، ྘ྲྀٷ݄؇ ೑಻Ⴄ၍ ݁أݠ ܭ৵৩ৠﺍ ᄎც ݁أ؇ﻭ ل۰ દઑ ﺃሒᇀ ݿڰ٭؇ﻥ ۱ ިﺍࠍ྾ཡ੅ ﺍሒᇭ ๴ཏ྘ཬීෂ ݁أݠ ೑಻Ⴄ၍ ᄎც ﺍܳมฆ ﺩﺍﺭﺕ દઑ ঌॻ༟ ඔ൹ً ﺃሒᇀ ޗ؇ܳص ﻭﺍࠍ੅ިﺍﺭﺝ. ܳـܝ ݆ﺇﺫﺍ ܋ٷب ﺍܳዛዊݠﻭﺍﻥ ሒሃ ﺍৎ৊أݠ ᄎც ﺍܳዛዊݠﻭﺍﻥ ሒሃ ﺍ৙৑܋ዝཇ ଫ଒ݠﺓ. ঌॻ༟ ඔ൹ً ᄎც ﻭﺍࠍ੅ިﺍﺭﺝ، ڣ؆ﻥ ݁أݠ ّگݱڎ ﺃﻱ ݁أݠ 
+
+The Battle of the Camel was the battle that took place between Ali ibn Abi Talib and the Kharijites. However, it should be noted that the Kharijites were not Ali’s opponents in this specific battle; rather, Muawiya ibn Abi Sufyan was the main opponent in the Battle of the Camel, whereas the Battle of Nahrawan was the battle that took place between Ali ibn Abi Talib and the Kharijites. But if you mean any battle between Ali and the Kharijites, then the Battle of Nahrawan is the most famous. 
+
+Gold answer 
+
+ᄎც ﺍܳዛዊݠﻭﺍﻥ ༟؇ﻡ 38 ᄎც ﺍܳ༡ มฆڎદઑ ঌॻ༟ ඔ൹ً ೑ು ﺃሒᇀ ޗ؇ܳص ﻭﺍࠍ੅ިﺍﺭﺝ ሒሃ ݁أݠ ﺍৎ৊أݠ ۱ـ. 
+
+The battle that took place between Ali ibn Abi Talib and the Kharijites was the Battle of Nahrawan in 38 AH. 
+
+Explanation 
+
+The first error is identifying the Battle of the Camel as the battle between Ali ibn Abi Talib and the Kharijites, whereas the correct battle is the Battle of Nahrawan. The statement that Muawiya ibn Abi Sufyan was the main opponent in the Battle of the Camel is also incorrect; Muawiya is mainly associated with the Battle of Siffin, not the Battle of the Camel. 
+
+7 Factual Contradiction – Causal Error 
+
+Question 
+
+ৎ৊؇ﺫﺍ ਍ಱݱں ﺍৎ৊ݠﺃﺓ ﺍৎ৊ݠݪ ًؕأڎﻡ ਍ಾ؇ﻭﻝ ﺍܳـܝۜިﻝ؟ 
+
+Why is a breastfeeding woman advised not to consume alcohol? 
+
+Prediction 
+
+૭ُ૏݄ں ً؇ܳـܝۜިﻝ ﺃ਍ು؇ﺀ ﺍීෂݪᆇᅀً ۰༟؇٭؇ﺕ ݁أٺڎ๤๎ُะَ۬ ৙৑ ᄭᄟّﻉ ﺍ݁ٺݱ؇ﺹ ﺍࠍ੆ڎࢴ ሒᇭࣖ ﺍࠍ੆ܹ٭ص ﻭ৖৑ لݱܭ ይዧݠݪ٭ؕ. 
+
+Alcohol is allowed during breastfeeding in moderate amounts because it accelerates iron absorption in breast milk and does not reach the infant. 
+
+Gold answer 
+
+਍ಱݱں ﺍৎ৊ݠﺃﺓ ﺍৎ৊ݠݪ ًؕأڎﻡ ਍ಾ؇ﻭﻝ ﺍܳـܝۜިﻝ ৙৑ﻥ ﺍܳـܝۜިﻝ ஓ୷ܝ ݆ﺃﻥ ྡྷ཯ٺگܭ ﺇ༡ ሌᇿܹ٭ص ﺍ৙৑ﻡ ﻭ لݱܭ ﺇሌᇿ ﺍීෂݪ٭ؕ، ﻭڢڎ لޝߜߵ ොේ ሒᇭٺ ۬ﻭஓ஁ިﻩ ﻭஓ஁ޔ َި݁۬. 
+
+A breastfeeding woman is advised not to consume alcohol because alco-hol can pass into breast milk and reach the infant, potentially affecting the infant’s health, development, and sleep patterns. 
+
+Explanation 
+
+The error lies in giving a false causal justification for alcohol consump-tion during breastfeeding. Alcohol is not recommended because it does not accelerate iron absorption in breast milk, and the claim that it does not reach the infant is incorrect; alcohol can pass into breast milk and expose the infant.  
+
+> 8
+
+Factual Contradiction – Definition / Concept Error 
+
+Question 
+
+݁؇ ሒሃ ﺍৎ৊٭ٺ۰ ﺍࠍఈః੆ﻝ ﻭﺍᄴᄟﻡ ﺍࠍఈః੆ﻝ؟ 
+
+What are the lawful dead animals and the lawful blood in Islamic law? 
+
+Prediction 
+
+ﺍৎ৊٭ٺ۰ ﺍࠍ੆ݠﺍﻡ ሒሃ ݁؇ ݁؇ﺕ ً؞ଫଃ ﺫႤ၍ﺓ๤ཇ ٭۰، ﺃ݁؇ ﺍৎ৊٭ٺ۰ ﺍࠍఈః੆ﻝ ڣ۳޶ ݁؇ ݁؇೑ಾ ﺫႤ၍ﺓ ๤ཇ٭۰. ﺃ݁؇ ﺍᄴᄟﻡ ﺍࠍ੆ݠﺍﻡ ڣ۳ ިﺍᄴᄟﻡ ﺍᄳᄟﻱ෠ຬ ৖৑ ިﺯ ﺃᄩႍ၍، ݁ټܭ ﺩﻡ ﺍࠍ੆٭ިﺍَ؇ﺕ ﺍৎ৊٭ٺ۰ ﺃﻭ ﺍܳොේ ႟ၽ૰૖ ༃ຊࣕࣁ ቕረ มฆ٭ں، ྘ྲྀٷ݄؇ ﺍᄴᄟﻡ ﺍࠍఈః੆ﻝ ۱ ިﺩﻡ ﺍࠍ੆٭ިﺍَ؇ﺕ ﺍܳมฆ ﺫොໍາب ًޚݠ لگ۰ ๤ཇ٭۰. ﻭܳـܝ ݆෠ຬص ﺍܳٺٷ ިل ۬ﺇሌᇿ ﺃﻥ ﺍ৕৑ݿఈఃﻡොຬ ݠﻡ ਍ಾ؇ﻭﻝ ﺍᄴᄟﻡ༟ ႟ၽ૰૖ ؇ﻡ، ݿިﺍﺀ Ⴄ၍ﻥ ݆݁ۋ٭ިﺍﻥ ݁ڍًިﺡ ොේ ႟ၽ૰૖٭ں ﺃﻡ ৖৑. 
+
+Forbidden carrion is what dies without lawful slaughter, whereas lawful carrion is what dies through lawful slaughter. Forbidden blood is blood that may not be consumed, such as the blood of dead animals or ani-mals not slaughtered properly, whereas lawful blood is the blood of ani-mals slaughtered according to Islamic law. However, it should be noted that Islam generally forbids consuming blood, whether from a properly slaughtered animal or not. 
+
+Gold answer 
+
+ﺍৎ৊٭ٺ۰ ﺍࠍఈః੆ﻝሒሃ  ﺍܳފ݄۹ ﻭﺍࠍ੊ݠﺍﺩ، ﻭﺍᄴᄟﻡ ﺍࠍఈః੆ﻝ ۱ ިﺍܳـܝٴڎ ﻭﺍܳޚ༲؇ﻝ. 
+
+The lawful dead animals are fish and locusts, and the lawful blood refers to the liver and spleen. 
+
+Explanation 
+
+The error lies in giving an incorrect definition of lawful carrion and law-ful blood. Lawful carrion does not mean an animal that died through lawful slaughter; rather, it refers to the recognized exceptions: fish and locusts. Similarly, lawful blood does not mean the blood of a properly slaughtered animal, but refers to the liver and spleen. 9 Context Inconsistency – Unsupported Claim 
+
+Question 
+
+݁؇ ሒሃ ﺃ܋ඹජ ଫଊߌߵﺓ ሒᇭ ﺍܳأ؇ቕረ؟ 
+
+What is the largest island in the world? 
+
+Prediction 
+
+،ዻዧﻭ ݁ؕﺫ .ًؕਵਦ ଫଐߺࠊ݁ভ঒ 2,166,086 ሒᇿܹؐۋިﺍ ਊಾ ۰༡؇ފஓ୾ ଫଊ܋৙৑ﺍ ሒሃࣖ ࢾఈః਍ಱරජ لأٺ݄ڎ ۱ڍﺍ আॻ༟ ܋٭ڰ٭۰ ّأݠ لژ ``ﺍࠍ੊ݞﺭ'' -- ੊਼ݠࣖ ࢾఈః਍ಱّأٺଫଊ ﺃۋ٭؇َ؇ ًނٴ ඹජ۬ߌߵﺓ ྟ૭૖ص ﺍّݱ؇ୖ୒؇ ﺍܳگ؇ﺭﻱ ݁ؕ܋ٷڎﺍ ଫଊ༟ ݁ݯ٭ݑ ﺩஓ஁؇ﺭﻙ ﺍܳݱ؞ଫଃ. 
+
+Greenland is the largest island, with an area of about 2,166,086 square kilometers. However, this depends on how “islands” are defined – Greenland is sometimes considered a peninsula because of its continen-tal connection with Canada through the narrow Denmark Strait. 
+
+Gold answer ࣖࢾఈః਍ಱਵؗ 
+
+Greenland. 
+
+Explanation 
+
+The model gives the correct main answer, but then adds an unsupported claim about Greenland being sometimes considered a peninsula because of a supposed continental connection with Canada. This extra claim is not supported by the question or the reference answer and introduces unnecessary, ungrounded information.  
+
+> 10
+
+Factual Contradiction – Location / Spatial Error 
+
+Question 
+
+݆݁ﺃ܋ଫଊ ݁؇ ﺍ྾ང ﺍܳٴଫଃ༲ﺓ ﺍܳިﺍڢأ۰ ༡ আॻ༟ڎﻭﺩ ﺯஓ୷ٴ؇ًިﻱ ﻭﺯﺍ݁ٴ٭؇ ﻭﺍৎ৊أݠﻭڣ۰ ً؊ዛኡ؇ ﺍܳٴଫଃ༲ﺍﺕ ﺍ৖৑ݬޚٷ؇٭۰؟ 
+
+What is the name of the lake located on the border between Zimbabwe and Zambia, known as one of the largest artificial lakes? 
+
+Prediction 
+
+ﺍܳٴଫଃ༲ﺓ ﺍܳଫଃ૰૜ มฆ ﺇଫଃ᛻ොໍາ ሒሃ ሌᇿﺓႤ၍ ﺭਊಱ؇، ﻭሒሃ ّگ আॻ༟ؕ ﺍࠍ੆ڎﻭﺩ ඔ൹ً ﺯஓ୷ٴ؇ًިﻱ ﻭﺯﺍ݁ٴ٭؇، ﻭዛው૰૜ݠ ًިۏިﺩ ނ৖৑ఈఃﺕ ڣ٭ܝٺިﺭ ل؇ ﺍܳଫଃዝདྷﺓ. 
+
+The lake referred to is Lake Kariba, located on the bor-der between Zimbabwe and Zambia, and it is famous for the presence of Victoria Falls. 
+
+Gold answer 
+
+(Lake Kariba) ؇ਊಱﺭႤ၍ ﺓଫଃ᛻ොໍາ۱ ި ྾ང৖৑ﺍ 
+
+Error. The model identifies the correct lake, but adds a false geographical association with Victoria Falls. 
+
+11 Factual Contradiction – Citation Mismatch 
+
+Question 
+
+۱ܭ ݿ ّ݆ﺍܳٷม฀ ݬআॻ ﺍ༟ Մ៰Ղܹ٭ ۬ﻭݿ޺޾ ﺍ๤ང৕৑ﺍﻉ ଩ଃ۳౯౜భ ﺍৎ৊٭ب ﺃﻡ ﺍ৕৑ًޚ؇ﺀ ً۬؟ 
+
+Did the Prophet, peace be upon him, prescribe hastening the preparation of the deceased or delaying it? 
+
+Prediction 
+
+૭૏ ቕረ ݆ﺍܳٷม฀ ݬআॻ ﺍ༟ Մ៰Ղܹ٭ ۬ﻭݿ޺޾ ﺍ๤ང৕৑ﺍﻉ ﺃﻭ ﺍ৕৑ًޚ؇ﺀ ༠ ႟ၽ૰૖؇ﺹ ଩ଃ۳౯౜భ ﺍৎ৊٭ب، ﻭܳـܝ ݆لُڰݯܭ ﺍ๤ང৕৑ﺍﻉ ଩ଃ۳෠ູ ሒᇭﻩ ﺩﻭﻥ ّ؊ଫଃ༠ ޗ ިلܭ، ﻭﺫৎ৊ ዻዧ؇ ﺭﻭﻱ ݆༟؇۰૰ૌ ُﺭ๴ཚ ﺍዛዊՄ៰Ղ؇ ﺃዛኡ؇ ڢ؇ܳب: Ⴄ၍ﻥ ﺭݿިﻝ ﺍՄ៰Ղ ݬআॻ ﺍ༟ Մ៰Ղܹ٭ ۬ﻭݿ޺޾ ﺇﺫﺍ ۋ๤ཟ ّ۬ﺍܳިڣ؇ﺓ ُިﺫ ᕚ ً݆݁ﺍܳଫଐﺍﺏ ڣ٭݄ފ༲ ً۬ިۏ۳ ۬ﻭ لگިﻝ: ྾ْ๎ِื ِﺍՃՂّ֟Մ ِﻭًَِأِݞّ֟ﺓ ِﺍՃՂّ֟Մِ، ﻭَﺃ ۏأܭٷڎﻩ ނ྘٪؇ .ِ Մّ֟ՃՂ؇ِ࿓ 
+
+The Prophet, peace be upon him, did not specifically prescribe either hastening or delaying the preparation of the deceased; however, it is preferable to prepare the deceased quickly without long delay, based on a report attributed to Aisha, may Allah be pleased with her, stating that when the Prophet was near death, he would place some dust near him, wipe his face with it, and say: In the name of Allah and by the might of Allah, and I seek refuge in Allah from.... 
+
+Gold answer 
+
+ݿ ّ݆ﺍܳٷม฀ ݬআॻ ﺍ༟ Մ៰Ղܹ٭ ۬ﻭݿ޺޾ ﺍ๤ང৕৑ﺍﻉ ଩ଃ۳౯౜భ ﺍৎ৊٭ب ﻭﺩڣٷ۬، ﻭ༟ڎﻡ ّ؊ଫଃ༠ﻩ༡ ఈఃً ؇۰༥. 
+
+The Prophet, peace be upon him, prescribed hastening the preparation and burial of the deceased, and not delaying it without need. 
+
+Explanation 
+
+ﺍࠍ੅ޚ؊ ﺍ৙৑ﻭﻝ ۱ ިَࠕ ࠫﻭۏިﺩ ݿٷ۰ ༠؇ݬ۰ ً؇๤ང৕৑ﺍﻉ ଩ଃ۳෠ູ ሒᇭ ﺍৎ৊٭ب، ྘ྲྀٷ݄؇ ﺍܳފٷ۰ ሒሃ ﺍ๤ང৕৑ﺍﻉ ଩ଃ۳౯౜భﻩ ﻭﺩڣٷ ۬ﻭ༟ڎﻡ ّ؊ଫଃ༠ﻩ༡ ఈఃً ؇۰༥. ﺃ݁؇ ﺍࠍ੅ޚ؊ ﺍܳټ؇ሒᇃ ڣ۳ ިﺍ৖৑ݿٺڎ৖৑ﻝ ߓߵﻭﺍل۰ ଫଃ༚ ݁ٷ؇ݿٴ۰ ࣁ ৖৑ ܾࣖﺍࠍુ ળ੆ﺍৎ৊ٺأ଩ଃ۳౯౜భ ੯੩ ﺍৎ৊٭ب. 
+
+The first error is denying that there is a specific prophetic practice of has-tening the preparation of the deceased, whereas the Sunnah is to prepare and bury the deceased promptly without unnecessary delay. The second error is the use of an inappropriate and incomplete narration that does not support the ruling about preparing the deceased.  
+
+> 12
+
+Context Inconsistency – Wrong Source Attribution 
+
+Question 
+
+ﺃނ؇ﺭ ﺍܳگݠﺁﻥ ﺍܳـቕሹ୍ଲ ﺇ༟ ሌᇿڎﺓ ዛᔻ ݆೑಻Ⴄ၍ ߙ߳ﺍﻭﻝ ሒᇭ ﺍ৙৑ ܾ݁ﺍܳފ؇ًگ۰، ݁ዛᔻ ؇ዛዊٷ۰ ਍ಸ؇ﺀ ﺍܳފڰ݆، ᆇᅫ؇ ﺍ৚৑ل؇ﺕ ﺍܳมฆ ﺃނ؇ﺭﺕ ﺇሌᇿ ۱ڍﻩ ﺍ۳ৎ৊ٷ۰؟ ﻭ ݆݁۱ ިﺍܳٷม฀ ﺍᄳᄟﻱ ﺯﺍﻭﻝ ۱ڍﻩ ﺍ۳ৎ৊ٷ۰؟ 
+
+Prediction 
+
+݆݁ݿިﺭﺓ ۱ިﺩ؛ ݁ި༟ ๮ངܹ٭ ۬ﺍܳފఈఃﻡႤ၍ ﻥ ߌ߳ﺍﻭﻝ ዛᔻٷ۰ ਍ಸ؇ﺀ ﺍܳފڰ݆؛ ﺍ৚৑ل۰ ݆ﺍ৚৑ل۰ 14 41 ݆݁ݿިﺭﺓ ﺍྟཹ৙৑٭؇ﺀ؛ ﺍ৚৑ل۰ 40 ݆݁ݿިﺭﺓ ۱ިﺩ؛ ﺍܳٷม฀ ﺍᄳᄟﻱ ﺯﺍﻭﻝ ዛᔻٷ۰ ਍ಸ؇ﺀ ﺍܳފڰ ۱ ި݁ި༟ ๮ངܹ٭ ۬ﺍܳފఈఃﻡ 
+
+Gold answer 
+
+۱ިﺩ: 37، 38؛ َިﺡ ༟ܹ٭ ۬ﺍܳފఈఃﻡ 
+
+Error. The answer provides wrong Qur’anic references and assigns the action to the wrong prophet. 13 Logical Inconsistency – Invalid Inference 
+
+Question 
+
+> ݁؇ ﺍܳ๤ཏ ل۰ ﺍܳมฆ ﺃﺭݿܭ ڣዛዀ؇ ݿٴأިﻥ ݆݁ﺍܳݱ༲؇۰ً ڣگُٺܭ ﺃ܋۱ଫ଒ܾٷڎ ଫ଀ً ݁أި۰َ؟
+
+Prediction 
+
+> ๤ང ل۰ ﺍࠍ੅ݠﺍﺭ؛ ًگ٭؇ﺩﺓٴڎ ﺍරඞ દઑ Մ៰Ղﺍﻡ؛ ﺃ܋ଫ଒ ݆݁ݿٴأඔ൹
+
+Gold answer 
+
+> ๤ང ل۰ ଫ଀ً ݁أި۰َ، ﻭ૭૜ ݄ްﺃلݯ؇ ๤ངً ل۰ ﺍܳگݠﺍﺀ.
+
+Error. The answer gives unsupported details and an in-correct inference.  
+
+> 14
+
+Factual Fabrication – Fabricated Entity 
+
+Question 
+
+> ݁؇ ﺍ྾ང ﺍࠍ੆ިﺽ ﺍᄳᄟﻱ ل྾ཟ ﺃᆇᅦݑ َگޚ۰ ොໍາ ሒᇭݠ ً؇ڣᆙᆍ ඔ൹؇ﻝ ܋ٷڎﺍ، ﻭ݁؇ ᆇᅦگ ۬ﺍܳٺگݠॷॖद؟
+
+Prediction 
+
+> ۋިﺽ ਃ಻ܹފިﻥ، ﻭᆇᅦگ ۬ﺍܳٺگݠॷॖद ۋިﺍሒᇿ 1,450 ݁ଫଐ
+
+Gold answer 
+
+> ۋިﺽ ً؇ڣඔ൹ ًأ݄ݑ ොຶ ި2,400 ﻡ
+
+Error. The model introduces an incorrect or fabricated basin name.  
+
+> 15
+
+Factual Fabrication – Fabricated Source / Quote 
+
+Question 
+
+> ாணُ ﺍሒᇭ۬ ᆙᆊ ﺍܳگݠﺁﻥ ﺍܳـቕሹ୍ଲ؟ ݁؇ ﺍܳٴᄴᄥ ﺍᄳᄟﻱ ﺫ
+
+Which country is mentioned by name in the Qur’an? 
+
+Prediction   
+
+> ாணُ ﺍሒᇭ۬ ᆙᆊ ﺍܳگݠﺁﻥ ﺍܳـቕሹ୍ଲ ﻭ۱ ި݁๤ཡ، ﻭﺫሒᇭ ዻዧ ݿިﺭﺓ لިݿژ ﺍ৚৑ل۰ ᄴᄥً ﻭﺍ༡ڎ ڣگޔ ﺫ ِﻱᄳِᄟ ؇َُ݁ ᄩْᄟ ᕚ ؊ْﺭ۹ًَِّ َڣَފ ሌَᇿّ֟ݿُިﻝ ُڢَ؇ﻝ َﺍﺭْۏِــ ْؕﺇ ֣ී ෂَ؇ﺀ َﻩ ُﺍ༥ ؇ّ֟గَఒًَِِ۬ڣ ሒِ ᇃُިਐْಮُﺍ ጥِ጑َညْ৊ﻭَڢَ؇ﻝ َﺍ :47ُ ﺍܳټّ֟ڎْلඔْ൹َ ِﺇ֣ﻥ ّ֟ڢَڎ ْޖగَఒَْب
+
+Only one country is mentioned by name in the Qur’an, namely Egypt, in Surah Yusuf, verse 47: “And the king said: Bring him to me. Then, when the messenger came to him, he said: Return to your lord and ask him about what belongs to the two breasts...” 
+
+Gold answer 
+
+> ݁๤ཡ
+
+Egypt. 
+
+Error. The model gives the correct short answer, but fab-ricates a Qur’anic-style quotation and falsely attributes it to Surah Yusuf, verse 47.  
+
+> 16
+
+Nonsensical Response – Irrelevant / Broken Output 
+
+Question 
+
+> ݆݁۱ ިﺍጥ጑ৎ৊ ﺍᆙᆍ؇ୖ୒޶ ﺍᄳᄟﻱ لأݠﻑ ًܹگص ﺍጥ጑ৎ৊ ﺍৎ৊ޝݿݴ؟
+
+Prediction 
+
+> ﺍܳأݠﺍඔ൹ਃಸ
+
+Gold answer 
+
+> ﺍጥ጑ৎ৊ٴڎﺍᄩፁዧ ﺍ৙৑ﻭﻝ
+
+Error. The output is malformed and does not answer the question.  
+
+> 17
+
+Factual Fabrication – Date / Temporal Error 
+
+Question 
+
+> ݁؇ ﺍৎ৊ڎ۰਍ಱ ﺍܳ૭૜ มฆ ݄ް``༟؇۰ᆙᆗ ﺍܳټگ؇ڣ۰ ﺍܳأݠ۰ਃಸ 2024''؟
+
+Prediction 
+
+> ݁ڎ۰਍ಱ ݿޚ٭ژ ﺍࠍ੊ݞﺍ߉ߵ ل۰
+
+Gold answer 
+
+> ﺍৎ৊ڎ۰਍ಱ ﺍܳᆇᅵ มฆܹب ܳگص `༟؇۰ᆙᆗ ﺍܳټگ؇ڣ۰ ﺍܳأݠ۰ਃಸ ܳأ؇ﻡ ሒሃ ''2024 ݁ڎ۰਍ಱ ޗݠﺍًܹݴ ﺍይዧٴٷ؇೑಻Ⴄ၍ .۰ਃ಻ ݁گݠﺭﺓ ﺃݬఈః ًܳأ؇ﻡ 2023، ܳـܝ༥؊ّ ؇ዛዊّܹب ྟ૭૖ص ﺍ৙৑ﺯ݁۰ ﺍ৖৑ڢٺݱ؇ﺩل۰ ﺍይዧٴٷ؇۰ਃ಻. ﺃ݁؇ ݁ڎ۰਍ಱ ݿޚ٭ژ ﺍࠍ੊ݞﺍ߉ߵ ل۰ ڣگڎ ᆇᅵܹب ܳگص `༟؇۰ᆙᆗ ﺍܳټگ؇ڣ۰ ﺍܳأݠሒᇭ ''۰ਃಸ .2007 ﻡ؇༟
+
+Error. The model fabricates the selected city by answer-ing Setif, Algeria, whereas the correct city for 2024 is Tripoli, Lebanon. Setif was previously designated as the Arab Capital of Culture in 2007. 
+
+E Explanation Evaluation Prompt 
+
+Prompt for Explanation Evaluation 
+
+We evaluate the quality of the model expla-nation for hallucinated answers. This prompt is used only when both the gold label and the predicted label are hallucination .The evaluation is based on two dimensions: 1. Error Identification (0–1) The explanation should identify the hal-lucinated span or claim and clearly ex-plain why it is incorrect. 2. Factual Correction (0–1) The explanation should provide the cor-rect factual information or a valid correc-tion of the hallucinated content. Each dimension is scored independently on a continuous scale from 0 to 1, where 0 means completely incorrect or missing, and 1
+
+means fully correct and complete. The scor-ing should be consistent across examples: ex-planations with similar quality should receive similar scores. The evaluator must return JSON only: 
+
+{"error_identification": float, "factual_correction": float, "reason": "short justification" }
