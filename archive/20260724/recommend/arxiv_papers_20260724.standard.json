@@ -1,0 +1,282 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-24T21:04:11.351426+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 5,
+    "deep_cap": 6,
+    "deep_selected": 5,
+    "quick_candidates": 2,
+    "quick_skim_target": 11,
+    "quick_selected": 2
+  },
+  "deep_dive": [
+    {
+      "id": "2607.21085v1",
+      "source": "arxiv",
+      "title": "Geo3R: Mitigating Spatial Reasoning Hallucination in Multimodal Large Language Models",
+      "abstract": "Despite remarkable progress in visual understanding, Multimodal Large Language Models (MLLMs) remain prone to hallucinations when reasoning about spatial relationships, often producing judgments that contradict the true 3D structure of the scene. Though several existing works have proposed to mitigate hallucinations, our analysis indicates that they show limited effectiveness in spatial reasoning, as they fail to bridge the fundamental gap between 2D visual representations and 3D spatial reality. Based on this finding, we define hallucinations arising from insufficient spatial structure modeling as spatial reasoning hallucination, a subcategory of relation hallucination that existing mitigation methods fail to address. We further identify three typical scenarios where such hallucinations frequently occur: perspective effects, object orientation, and viewpoint changes. To this end, we propose Geo3R, a training-free, plug-and-play framework that incorporates geometric evidence and structured 3D reasoning to mitigate spatial reasoning hallucination. Experiments on three benchmarks, covering 18 tasks across all three scenarios, show that Geo3R substantially reduces spatial reasoning hallucination across diverse MLLMs without additional training, outperforming existing models and methods.",
+      "authors": [
+        "Mingyu Wang",
+        "Weilin Jin",
+        "Wenbo Li",
+        "Haoyang Huang",
+        "Tong Jia",
+        "Ying Li"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-07-23T09:15:08+00:00",
+      "link": "https://arxiv.org/pdf/2607.21085v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Mitigating spatial reasoning hallucination in multimodal LLMs",
+      "llm_evidence_cn": "缓解多模态大语言模型中的空间推理幻觉",
+      "llm_evidence": "缓解多模态大语言模型中的空间推理幻觉",
+      "canonical_evidence": "缓解多模态大语言模型中的空间推理幻觉",
+      "llm_tldr_en": "Identifies spatial reasoning hallucination in MLLMs caused by insufficient 3D structure modeling and proposes Geo3R to mitigate it by bridging the gap between 2D visual representations and 3D spatial reality, improving spatial judgment accuracy and reducing hallucinations in multimodal generation.",
+      "llm_tldr_cn": "多模态大语言模型在视觉理解上取得了显著进展，但在推理空间关系时极易产生与真实3D结构矛盾的幻觉。现有缓解幻觉的方法在空间推理上效果有限，未能弥合2D视觉表示与3D空间现实的根本差距。本文将因空间结构建模不足导致的幻觉定义为空间推理幻觉，并提出Geo3R方法，通过引入3D空间结构建模来缓解此类幻觉。实验表明该方法有效提升了模型对3D空间结构的判断准确性，显著减少了空间推理幻觉。",
+      "llm_tldr": "多模态大语言模型在视觉理解上取得了显著进展，但在推理空间关系时极易产生与真实3D结构矛盾的幻觉。现有缓解幻觉的方法在空间推理上效果有限，未能弥合2D视觉表示与3D空间现实的根本差距。本文将因空间结构建模不足导致的幻觉定义为空间推理幻觉，并提出Geo3R方法，通过引入3D空间结构建模来缓解此类幻觉。实验表明该方法有效提升了模型对3D空间结构的判断准确性，显著减少了空间推理幻觉。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.21105v1",
+      "source": "arxiv",
+      "title": "HalluScope: Fine-grained Hallucination Diagnosis for Multimodal Large Language Models",
+      "abstract": "Although Multimodal Large Language Models have achieved strong performance across a wide range of vision-language tasks, they still suffer from hallucinations, where model outputs become inconsistent with the visual content, textual context, or commonsense knowledge. Existing studies primarily address this problem through coarse-grained detection. However, these approaches often provide insufficient diagnostic information for understanding hallucination types and supporting downstream hallucination mitigation. To bridge this gap, we propose fine-grained hallucination diagnosis for MLLMs, a new unified task that jointly performs hallucination detection, classification, and interpretable explanation generation. We develop an automated data generation pipeline and construct HalluScope-30K, a large-scale diagnostic dataset covering eight sources and five task categories. Based on this dataset, we design a multi-granular joint reward function and train two diagnosis models, HalluScope-4B and HalluScope-8B, which achieve state-of-the-art performance on both the MHALO benchmark and our fine-grained hallucination classification benchmark. Notably, detection and classification are mutually beneficial under joint optimization. Furthermore, diagnosis-driven feedback experiments show that the fine-grained diagnostic explanations produced by our model effectively guide target models to correct their hallucinations, with full diagnosis substantially outperforming all baselines on both Qwen3-VL-8B-Instruct and LLaVA-1.5-7B.",
+      "authors": [
+        "Weilin Jin",
+        "Mingyu Wang",
+        "Wenbo Li",
+        "Haoyang Huang",
+        "Yifan Wu",
+        "Ying Li",
+        "Gang Huang",
+        "Zhonghai Wu"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-07-23T09:35:32+00:00",
+      "link": "https://arxiv.org/pdf/2607.21105v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Fine-grained hallucination detection and diagnosis",
+      "llm_evidence_cn": "细粒度幻觉检测与诊断",
+      "llm_evidence": "细粒度幻觉检测与诊断",
+      "canonical_evidence": "细粒度幻觉检测与诊断",
+      "llm_tldr_en": "Addressing the lack of diagnostic information in coarse-grained detection, this paper proposes fine-grained hallucination diagnosis for MLLMs, jointly performing detection, classification, and explanation generation to support mitigation.",
+      "llm_tldr_cn": "针对现有多模态大模型幻觉检测方法诊断信息不足的问题，本文提出了细粒度幻觉诊断任务。该方法联合执行幻觉检测、分类和可解释性说明生成，为理解幻觉类型及下游缓解措施提供了更丰富的诊断信息。",
+      "llm_tldr": "针对现有多模态大模型幻觉检测方法诊断信息不足的问题，本文提出了细粒度幻觉诊断任务。该方法联合执行幻觉检测、分类和可解释性说明生成，为理解幻觉类型及下游缓解措施提供了更丰富的诊断信息。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.20560v1",
+      "source": "arxiv",
+      "title": "Chronofy: A Temporal-Logical Decay Architecture for Information Validity in Time-Aware Retrieval-Augmented Generation",
+      "abstract": "Retrieval-Augmented Generation (RAG) systems retrieve and integrate external knowledge to ground large language model (LLM) outputs. However, current RAG architectures treat all retrieved facts as equally valid regardless of temporal provenance, leading to temporal hallucination, where plausible but obsolete facts corrupt the output. A clinical lab reading from yesterday is actionable; the same reading from six months ago is noise. We present Chronofy, a three-layer neuro-symbolic framework implementing the Temporal-Logical Decay Architecture (TLDA) that embeds temporal validity directly into the representation, retrieval, and reasoning layers of RAG systems. Layer 1 reserves a dedicated temporal subspace within Matryoshka embeddings to make fact age structurally irremovable from the representation. Layer 2 integrates learnable exponential decay functions into graph-based retrieval, where the decay coefficient $β_j$ is grounded in Bayesian decision theory as an approximation of twice the latent process mean-reversion rate. Layer 3 applies Signal Temporal Logic (STL) robustness functions to evaluate the temporal validity of retrieved knowledge, not LLM output confidence, and enforces the possibilistic weakest-link principle to bound output confidence by the most decayed evidence in the reasoning chain. We evaluate Chronofy on temporal knowledge graph forecasting benchmarks, the TimE temporal QA benchmark, and a domain-specific sensitivity analysis, demonstrating that explicit temporal decay modeling improves retrieval precision, reduces temporal hallucination, and enables principled data re-acquisition triggers when temporal context is insufficient.",
+      "authors": [
+        "Muntaser Syed",
+        "Marius Silaghi",
+        "Sheikh Abujar",
+        "Sharun Akter"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-07-17T23:20:24+00:00",
+      "link": "https://arxiv.org/pdf/2607.20560v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Mitigating temporal hallucination in RAG",
+      "llm_evidence_cn": "缓解RAG中的时序幻觉",
+      "llm_evidence": "缓解RAG中的时序幻觉",
+      "canonical_evidence": "缓解RAG中的时序幻觉",
+      "llm_tldr_en": "To mitigate temporal hallucination in RAG systems where obsolete facts corrupt outputs, this paper presents Chronofy, a neuro-symbolic framework embedding temporal validity into representation, retrieval, and reasoning layers.",
+      "llm_tldr_cn": "针对检索增强生成系统因忽略时间来源而导致时序幻觉的问题，本文提出了Chronofy框架。该框架通过时序逻辑衰减架构将时间有效性直接嵌入RAG系统的表示、检索和推理层，有效过滤过时事实，从而缓解大模型幻觉。",
+      "llm_tldr": "针对检索增强生成系统因忽略时间来源而导致时序幻觉的问题，本文提出了Chronofy框架。该框架通过时序逻辑衰减架构将时间有效性直接嵌入RAG系统的表示、检索和推理层，有效过滤过时事实，从而缓解大模型幻觉。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.20891v1",
+      "source": "arxiv",
+      "title": "Is Deep Research Reliable? Misleading Knowledge Induces False Conclusions",
+      "abstract": "Deep Research agents extend LLM-based assistants into long-horizon workflows involving planning, retrieval, evidence synthesis, and report generation, yet their reliability in open information environments remains underexplored. A key concern is whether apparently credible but factually misleading knowledge encountered in such environments can propagate through these workflows and be adopted as false conclusions in final reports. To study this failure mode, we introduce MisKnow-Agent, a framework for constructing and validating misleading knowledge for Deep Research tasks. MisKnow-Agent generates misleading instances with controllable authority levels and styles, yielding 5,933 quality-controlled instances built on DeepResearch Benchmark tasks. Extensive experiments across open-source and closed-source Deep Research agents show that even limited exposure to misleading knowledge can induce false-conclusion adoption in final reports, revealing a broad reliability vulnerability in current Deep Research agents. Although search-enabled verifier models consistently identify the retained instances as misleading during focused corpus validation, the same instances can still be adopted during long-horizon research, revealing a disconnect between focused verification and workflow-level evidence use. Finally, we evaluate pre- and post-research defenses, both individually and in combination, finding that all three configurations mitigate but do not fully prevent false-conclusion adoption. Our findings suggest that reliable Deep Research requires evidence verification and correction capabilities at both the model and framework levels, beyond improvements in planning, retrieval, evidence integration, or report-generation abilities.",
+      "authors": [
+        "Pengyu Zhu",
+        "Lijun Li",
+        "Longju Yang",
+        "Sen Su"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-23T03:28:08+00:00",
+      "link": "https://arxiv.org/pdf/2607.20891v1",
+      "tags": [
+        "keyword:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Misleading knowledge induces false conclusions (hallucinations) in long-horizon LLM workflows",
+      "llm_evidence_cn": "误导性知识在长周期LLM工作流中引发错误结论（幻觉）",
+      "llm_evidence": "误导性知识在长周期LLM工作流中引发错误结论（幻觉）",
+      "canonical_evidence": "误导性知识在长周期LLM工作流中引发错误结论（幻觉）",
+      "llm_tldr_en": "Deep Research LLM agents synthesize long reports but risk adopting misleading knowledge as false conclusions. MisKnow-Agent constructs misleading instances to study how factual inconsistencies and hallucinations propagate in long-context generation workflows.",
+      "llm_tldr_cn": "深度研究代理在长周期工作流中综合信息并生成报告，但在开放信息环境中极易将看似可信的误导性知识采纳为错误结论，引发长文本生成中的事实不一致与幻觉。本文引入MisKnow-Agent框架，系统构建了具有可控权威级别和风格的误导性知识实例，深入研究了在长上下文语言模型工作流中事实不一致性和幻觉的传播机制。实验揭示了误导信息如何穿透工作流并导致最终报告的幻觉，为检测和缓解长文本生成幻觉提供了重要基准。",
+      "llm_tldr": "深度研究代理在长周期工作流中综合信息并生成报告，但在开放信息环境中极易将看似可信的误导性知识采纳为错误结论，引发长文本生成中的事实不一致与幻觉。本文引入MisKnow-Agent框架，系统构建了具有可控权威级别和风格的误导性知识实例，深入研究了在长上下文语言模型工作流中事实不一致性和幻觉的传播机制。实验揭示了误导信息如何穿透工作流并导致最终报告的幻觉，为检测和缓解长文本生成幻觉提供了重要基准。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "factual inconsistency and hallucination in long context language models",
+      "matched_requirement_id": "req-9",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.21022v1",
+      "source": "arxiv",
+      "title": "ProCap: Prominence-guided Object Rectification for Faithful and Comprehensive Video Captioning",
+      "abstract": "Improving video captioning quality typically demands retraining large vision-language models, an expensive and often impractical requirement. Existing training-free alternatives instead ground captions in detected objects to curb hallucination, but apply only a single, fixed correction pass without prioritizing which objects matter most, leaving semantically significant content omitted. We propose a prominence-aware, iterative post-hoc rectification framework that overcomes both limitations without modifying the underlying captioning model's parameters: a lightweight scoring mechanism ranks detected objects by spatial saliency, temporal persistence, and relational dynamics, and an iterative, prompt-driven refinement loop uses this ranking to progressively inject missing yet contextually relevant objects into the caption over multiple rounds. We validate the framework on MSVD and MSR-VTT using object-grounded automatic metrics, a 110-participant human study, and qualitative comparison against ChatGPT and Gemini; in human evaluation, the framework raises perceived completeness by up to 48% and reduces hallucination by up to 45% relative to a strong pretrained captioning baseline, all without retraining or reference captions. These results position prominence-guided iterative rectification as a lightweight, scalable, and model-agnostic route to more complete and trustworthy video captioning, with direct relevance to accessibility, retrieval, and other multimedia understanding applications.",
+      "authors": [
+        "Debjyoti Das Adhikary",
+        "Aritra Hazra",
+        "Partha Pratim Chakrabarti"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-07-23T08:06:55+00:00",
+      "link": "https://arxiv.org/pdf/2607.21022v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Mitigating hallucination in video captioning via iterative rectification",
+      "llm_evidence_cn": "通过迭代纠正缓解视频描述中的幻觉",
+      "llm_evidence": "通过迭代纠正缓解视频描述中的幻觉",
+      "canonical_evidence": "通过迭代纠正缓解视频描述中的幻觉",
+      "llm_tldr_en": "Existing training-free methods to curb hallucination in video captioning lack prioritization of important objects. ProCap proposes a prominence-aware, iterative post-hoc rectification framework that ranks detected objects by saliency and persistence, and uses prompt-driven refinement to mitigate hallucination without retraining, improving faithfulness.",
+      "llm_tldr_cn": "现有的免训练视频描述方法通过检测对象来抑制幻觉，但仅进行单次固定纠正且缺乏对重要对象的优先级排序，导致关键语义内容遗漏。ProCap提出了一种显著性感知的迭代事后纠正框架，通过轻量级评分机制对检测对象按空间显著性、时间持久性等维度排序，并利用提示驱动的迭代细化循环来缓解幻觉。该方法无需修改底层模型参数，实验证明有效提升了视频描述的忠实度与全面性，为免训练幻觉缓解提供了新范式。",
+      "llm_tldr": "现有的免训练视频描述方法通过检测对象来抑制幻觉，但仅进行单次固定纠正且缺乏对重要对象的优先级排序，导致关键语义内容遗漏。ProCap提出了一种显著性感知的迭代事后纠正框架，通过轻量级评分机制对检测对象按空间显著性、时间持久性等维度排序，并利用提示驱动的迭代细化循环来缓解幻觉。该方法无需修改底层模型参数，实验证明有效提升了视频描述的忠实度与全面性，为免训练幻觉缓解提供了新范式。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.20814v1",
+      "source": "arxiv",
+      "title": "Enhancing Explainable Cardiac Diagnosis with Guide-Grounded Multimodal LLMs",
+      "abstract": "The electrocardiogram (ECG) is a cornerstone of cardiac as- sessment, yet clinical deployment of deep learning models remains con- strained by limited interpretability and the hallucination risk of large language models (LLMs). Existing CNN+Grad-CAM+multimodal LLM frameworks can generate ECG reports, but their explanations are often only weakly grounded in established diagnostic criteria, reducing trust- worthiness and reproducibility. We propose a guide-grounded multimodal framework that explicitly anchors report generation in curated clinical knowledge. A convolutional neural network (CNN) and Grad-CAM first produce class probabilities and class-specific heatmaps from 12-lead ECG images. In parallel, authoritative ECG textbooks and guideline materials are distilled offline into a structured ECG Interpretation Guide, which is injected as a fixed knowledge block for every sample. Conditioned on the ECG image, Grad-CAM overlay, CNN-derived fact pack, and the in- jected guide, a multimodal LLM generates structured diagnostic reports with guideline-consistent terminology and criteria usage. Experiments on the full PTB-XL test set demonstrate that guide grounding improves se- mantic quality and perceived consistency of generated reports while pre- serving competitive classification performance. In particular, our method increases the average BERTScore of generated impressions from 0.818 to 0.953 relative to a strong CNN+Grad-CAM+MLLM baseline, indicat- ing closer alignment with reference reports. These findings suggest that injecting a distilled interpretation guide into the multimodal prompting pipeline offers a practical pathway to reduce hallucinations and enhance the clinical plausibility of LLM-based ECG explanations, bringing ex- plainable cardiac diagnosis closer to real-world deployment.",
+      "authors": [
+        "Hai-Nam Duy Vuong",
+        "Duy-Anh Bui",
+        "Trong-Nghia Nguyen",
+        "Kim-Ngan Thi Nguyen",
+        "Trang Mai Xuan",
+        "Tien-Cuong Nguyen",
+        "Van-Dem Pham",
+        "Thien Van Luong"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-23T01:00:10+00:00",
+      "link": "https://arxiv.org/pdf/2607.20814v1",
+      "tags": [
+        "keyword:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Anchoring report generation in clinical knowledge to mitigate LLM hallucination",
+      "llm_evidence_cn": "将报告生成锚定在临床知识中以缓解LLM幻觉",
+      "llm_evidence": "将报告生成锚定在临床知识中以缓解LLM幻觉",
+      "canonical_evidence": "将报告生成锚定在临床知识中以缓解LLM幻觉",
+      "llm_tldr_en": "Clinical deployment of multimodal LLMs for ECG diagnosis is constrained by hallucination risks and weak grounding. This paper proposes a guide-grounded framework anchoring report generation in curated clinical knowledge to mitigate hallucinations and enhance factual consistency.",
+      "llm_tldr_cn": "多模态大语言模型在心电图诊断的临床部署中受限于有限的解释性和严重的幻觉风险，现有框架生成的报告往往缺乏事实一致性。本文提出一种引导 grounded 的多模态框架，通过将报告生成过程明确锚定在权威的临床教科书和指南知识中，结合CNN与Grad-CAM的视觉解释。该方法有效缓解了LLM在医疗文本生成中的幻觉风险，显著提升了生成报告的事实一致性、可信度与可重现性，为缓解领域特定幻觉提供了参考。",
+      "llm_tldr": "多模态大语言模型在心电图诊断的临床部署中受限于有限的解释性和严重的幻觉风险，现有框架生成的报告往往缺乏事实一致性。本文提出一种引导 grounded 的多模态框架，通过将报告生成过程明确锚定在权威的临床教科书和指南知识中，结合CNN与Grad-CAM的视觉解释。该方法有效缓解了LLM在医疗文本生成中的幻觉风险，显著提升了生成报告的事实一致性、可信度与可重现性，为缓解领域特定幻觉提供了参考。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.21340v1",
+      "source": "arxiv",
+      "title": "Capital Markets LLM Reliability Score (CM-LRS): From Plausible to Bankable",
+      "abstract": "In capital-markets workflows the question is rarely whether a large language model can produce a fluent draft, but whether the draft is bankable: defensible in front of a counter-party or a regulator, with the documents in hand. Existing methods address parts of that gap: open-domain QA benchmarks reward surface accuracy, and finance benchmarks (FinanceBench, FinQA, ConvFinQA) advance document-grounded and numerical QA but evaluate at the question-answer layer rather than the workflow outputs practitioners defend.   We introduce CM-LRS, a Capital Markets LLM Reliability Score, evaluating outputs at the workflow-output layer across seven dimensions: factual accuracy, evidence traceability, numerical consistency, workflow completeness, source discipline, decision usefulness, and reviewability/auditability. Each is scored 0-5 against a rubric anchored on signals reviewers in regulated settings use; the aggregate is tunable to the workflow.   We demonstrate CM-LRS on five workflows (DCM transaction-terms extraction, precedent retrieval, issuer profile synthesis, M&A transaction-comparable reasoning, ECM transaction-terms extraction) over public SEC EDGAR filings, a public UK takeover release, and fictional synthetic supplements, scoring four models against four independent LLM judges spanning three model families.   Three findings. First, the frontier closed-source models cluster within 0.22 points on four-judge averaged CM-LRS (Sonnet 4.6 = 4.31, Opus 4.7 = 4.30, GPT-5.5 = 4.09); all four judges place the open-weights baseline (Llama 3.3 70B = 3.15) last. Second, that gap concentrates on retrieval (2.23) and synthesis (2.15), not extraction (0.84). Third, Decision Usefulness shows the widest cross-model dispersion of any dimension (4.0 points on issuer profiling) and top-tier inter-judge agreement (mean r = 0.52).   Plausibility is cheap. Bankability is the bar.",
+      "authors": [
+        "Prerit Ahuja"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-07-23T14:10:58+00:00",
+      "link": "https://arxiv.org/pdf/2607.21340v1",
+      "tags": [
+        "keyword:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Evaluating factual accuracy and consistency in LLM outputs",
+      "llm_evidence_cn": "评估大语言模型输出的事实准确性与一致性",
+      "llm_evidence": "评估大语言模型输出的事实准确性与一致性",
+      "canonical_evidence": "评估大语言模型输出的事实准确性与一致性",
+      "llm_tldr_en": "Introduces CM-LRS, a Capital Markets LLM Reliability Score evaluating workflow outputs across seven dimensions including factual accuracy, evidence traceability, and numerical consistency to bridge the gap between plausible drafts and bankable documents.",
+      "llm_tldr_cn": "针对大语言模型在资本市场工作流中生成的草稿缺乏可辩护性和可靠性的问题，本文提出了资本市场大语言模型可靠性评分（CM-LRS）。该方法在七个维度上评估工作流输出层，包括事实准确性、证据可追溯性、数值一致性、工作流完整性和来源纪律等，超越了传统的问答层评估。实验结果表明，CM-LRS能够有效区分表面流畅与实际可用的文档，为评估大模型在专业领域的事实一致性与可靠性提供了系统化的新框架，具有重要的实践价值。",
+      "llm_tldr": "针对大语言模型在资本市场工作流中生成的草稿缺乏可辩护性和可靠性的问题，本文提出了资本市场大语言模型可靠性评分（CM-LRS）。该方法在七个维度上评估工作流输出层，包括事实准确性、证据可追溯性、数值一致性、工作流完整性和来源纪律等，超越了传统的问答层评估。实验结果表明，CM-LRS能够有效区分表面流畅与实际可用的文档，为评估大模型在专业领域的事实一致性与可靠性提供了系统化的新框架，具有重要的实践价值。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "factual consistency in text generation",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}
