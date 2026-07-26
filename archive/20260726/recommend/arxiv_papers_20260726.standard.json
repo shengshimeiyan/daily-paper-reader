@@ -1,0 +1,209 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-26T21:02:43.357683+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 2,
+    "deep_cap": 6,
+    "deep_selected": 2,
+    "quick_candidates": 3,
+    "quick_skim_target": 11,
+    "quick_selected": 3
+  },
+  "deep_dive": [
+    {
+      "id": "2607.17524v1",
+      "source": "arxiv",
+      "title": "Token-Level Off-Policy Learning for Faithful Generation Under Distribution Shift",
+      "abstract": "We propose Token-Level Off-Policy Labeling (TOPL), an off-policy training paradigm that reframes post-training as a token-level correctness prediction task. Our key intuition is that by training the model to distinguish good and bad tokens in a response, we naturally guide the model towards generating good tokens, while avoiding the pitfalls that come with directly training the model to generate off-policy tokens. Experiments on document summarization tasks show that TOPL achieves strong out-of-distribution generalization across 11 datasets against a diverse set of sequence-level and token-level baselines. We further demonstrate that TOPL transfers effectively to machine translation, suggesting that its benefits generalize across different faithful generation tasks. Through ablation studies, we confirm that our token-level learning signal is critical to good performance; sequence-level analogues do not confer similar benefits. Finally, we show that TOPL induces interpretable model updates: the LoRA adapters learned through TOPL function as linear classification heads and steering vectors.",
+      "authors": [
+        "Zitong Huang",
+        "Gustavo Lucas Carvalho",
+        "Deqing Fu",
+        "Robin Jia"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.LG"
+      ],
+      "published": "2026-07-20T03:57:22+00:00",
+      "link": "https://arxiv.org/pdf/2607.17524v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Token-level off-policy learning for faithful generation",
+      "llm_evidence_cn": "用于忠实生成的令牌级离策略学习",
+      "llm_evidence": "用于忠实生成的令牌级离策略学习",
+      "canonical_evidence": "用于忠实生成的令牌级离策略学习",
+      "llm_tldr_en": "Proposes TOPL, an off-policy training paradigm reframing post-training as token-level correctness prediction, guiding models to generate good tokens by distinguishing them from bad ones, achieving strong OOD generalization for faithful generation.",
+      "llm_tldr_cn": "直接训练模型生成离策略令牌存在缺陷，难以保证生成内容的忠实性和分布外泛化能力。为了解决这一问题，本文提出令牌级离策略标注（TOPL），这是一种离策略训练范式，将后训练重构为令牌级正确性预测任务。其核心直觉是，通过训练模型区分响应中的好坏令牌，可以自然地引导模型生成优质令牌，同时避免直接训练模型生成离策略令牌带来的陷阱。在文档摘要任务上的实验表明，TOPL在十一个数据集上针对多种序列级和令牌级基线实现了强大的分布外泛化。进一步证明TOPL能有效迁移到机器翻译，表明其优势在不同忠实生成任务中具有普适性。",
+      "llm_tldr": "直接训练模型生成离策略令牌存在缺陷，难以保证生成内容的忠实性和分布外泛化能力。为了解决这一问题，本文提出令牌级离策略标注（TOPL），这是一种离策略训练范式，将后训练重构为令牌级正确性预测任务。其核心直觉是，通过训练模型区分响应中的好坏令牌，可以自然地引导模型生成优质令牌，同时避免直接训练模型生成离策略令牌带来的陷阱。在文档摘要任务上的实验表明，TOPL在十一个数据集上针对多种序列级和令牌级基线实现了强大的分布外泛化。进一步证明TOPL能有效迁移到机器翻译，表明其优势在不同忠实生成任务中具有普适性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "factual consistency in text generation",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.18366v1",
+      "source": "arxiv",
+      "title": "Operational Hallucination and Safety Drift in AI Agents",
+      "abstract": "Large language models (LLMs) serving as planners in tool-using autonomous agents introduce dynamic reliability risks in multi-turn execution. While single-turn safety mechanisms are relatively mature, extended interactions reveal structural vulnerabilities where initial alignment degrades over time. This paper empirically characterizes two observed failure modes across multiple state-of-the-art LLMs: Safety Drift, the gradual erosion of declared safety intent leading to constraint-violating actions (e.g., textual refusal followed by reconnaissance and unsafe execution), and Operational Hallucination, persistent repetitive tool calls indicative of flawed state perception (e.g., livelocks even in legitimate tasks). Through controlled multi-turn evaluation on high-stakes ethical dilemmas, malicious requests, and benign controls, we quantify these phenomena using declaration-action gap and livelock metrics, demonstrating their cross-model prevalence under direct execution protocols. Root-cause analysis attributes the instabilities to the decoupling of reasoning context from execution state in current agent loops. We propose an Action-Aware Supervision Layer - a lightweight, plug-and-play architectural blueprint incorporating intent-action consistency checks, runtime state tracking, and forced termination primitives. Post-hoc simulation on captured failure trajectories shows the layer can intercept observed violations without false positives on benign cases. This work advances agent reliability by shifting focus from linguistic safeguards to enforceable architectural mechanisms for responsible agentic AI.",
+      "authors": [
+        "Shasha Yu",
+        "Fiona Carroll",
+        "Barry L. Bentley"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CL",
+        "cs.CY"
+      ],
+      "published": "2026-07-20T17:01:50+00:00",
+      "link": "https://arxiv.org/pdf/2607.18366v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Characterizing operational hallucination and safety drift in LLM-based agents",
+      "llm_evidence_cn": "刻画基于大语言模型智能体中的操作性幻觉和安全漂移",
+      "llm_evidence": "刻画基于大语言模型智能体中的操作性幻觉和安全漂移",
+      "canonical_evidence": "刻画基于大语言模型智能体中的操作性幻觉和安全漂移",
+      "llm_tldr_en": "Empirically characterizes operational hallucination and safety drift in LLM-based autonomous agents during multi-turn execution, revealing structural vulnerabilities where initial alignment degrades over time in extended interactions.",
+      "llm_tldr_cn": "大语言模型作为工具使用自主智能体的规划器时，在多轮执行中引入了动态的可靠性风险。虽然单轮安全机制已经相对成熟，但扩展的交互揭示了结构脆弱性，即初始的对齐会随着时间的推移而退化。本文实证刻画了在多个最先进大语言模型中观察到的两种失效模式：安全漂移，即声明的安全意图逐渐侵蚀，导致违反约束的行动；以及操作性幻觉，即持续重复的工具调用，表明有缺陷的状态感知。通过在高压场景下进行受控的多轮评估，本文揭示了长交互中初始对齐退化的结构脆弱性，为理解和缓解智能体中的幻觉与安全风险提供了重要见解。",
+      "llm_tldr": "大语言模型作为工具使用自主智能体的规划器时，在多轮执行中引入了动态的可靠性风险。虽然单轮安全机制已经相对成熟，但扩展的交互揭示了结构脆弱性，即初始的对齐会随着时间的推移而退化。本文实证刻画了在多个最先进大语言模型中观察到的两种失效模式：安全漂移，即声明的安全意图逐渐侵蚀，导致违反约束的行动；以及操作性幻觉，即持续重复的工具调用，表明有缺陷的状态感知。通过在高压场景下进行受控的多轮评估，本文揭示了长交互中初始对齐退化的结构脆弱性，为理解和缓解智能体中的幻觉与安全风险提供了重要见解。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "hallucination in large language models",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.17535v1",
+      "source": "arxiv",
+      "title": "Salience Induction against Multi-Hop RAG Agents: Threat and Defense",
+      "abstract": "Agentic retrieval-augmented generation (RAG) systems increasingly retrieve external evidence and orchestrate tools for knowledge-intensive applications. In Multi-Hop question answering, agents chain facts across documents. Existing defenses focus on content poisoning, which injects false facts, and prompt injection, which embeds directives. We identify a third attack surface: the salience channel, through which fact position, emphasis, framing, and semantic proximity can redirect reasoning even when all retrieved claims are true and no instructions are present. We formalize Salience Induction as truth-preserving edits that redirect Multi-Hop attribute binding while leaving the retrieval trace semantically intact. We define six Salience-Editing operator classes and build an iterative proposer-verifier pipeline under factual and stealth constraints. We also introduce SalientWiki-MH, a decoy-annotated Multi-Hop benchmark. Evaluations across five frontier model families (GPT, Claude, Gemini, DeepSeek, and Qwen) and three agent architectures (ReAct, Reflexion, and tool-calling) show broad generalization. Under a 30% edit budget, Salience Induction achieves an 83.3% attack success rate; the strongest evaluated baseline defense leaves 75.7% post-defense ASR. Untargeted rewriting further reduces attacks only by degrading neutral task success. Our lightweight input-side defense, Salience Normalization, reduces attack success to 15.3% under standard attacks and 23.6% under an adaptive attack. These results show that truthfulness and instruction filtering alone are insufficient: robust agentic RAG also requires defenses against salience-relevance decoupling.",
+      "authors": [
+        "Xingfu Zhou",
+        "Pengfei Wang",
+        "Yuan Zhou",
+        "Wei Xie",
+        "Xu Zhou"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.CL"
+      ],
+      "published": "2026-07-20T04:27:50+00:00",
+      "link": "https://arxiv.org/pdf/2607.17535v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Factual inconsistency in RAG agents via salience induction",
+      "llm_evidence_cn": "RAG代理中通过显著性诱导产生的事实不一致",
+      "llm_evidence": "RAG代理中通过显著性诱导产生的事实不一致",
+      "canonical_evidence": "RAG代理中通过显著性诱导产生的事实不一致",
+      "llm_tldr_en": "This paper identifies a new attack surface in multi-hop RAG agents called the salience channel, where truth-preserving edits redirect reasoning and cause factual inconsistency, and proposes defense mechanisms against it.",
+      "llm_tldr_cn": "本文识别了多跳RAG代理中一种名为显著性通道的新攻击面，该攻击面通过保留真实性的编辑来重定向推理并导致事实不一致。作者形式化了显著性诱导，定义了六种显著性编辑算子，并提出了相应的防御机制，以增强RAG系统的事实一致性。",
+      "llm_tldr": "本文识别了多跳RAG代理中一种名为显著性通道的新攻击面，该攻击面通过保留真实性的编辑来重定向推理并导致事实不一致。作者形式化了显著性诱导，定义了六种显著性编辑算子，并提出了相应的防御机制，以增强RAG系统的事实一致性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "factual consistency in text generation",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.18454v1",
+      "source": "arxiv",
+      "title": "Estimating Rare Events in Language Models with Proper Evaluation",
+      "abstract": "Quantifying the risk of rare failures in language models, such as those triggered by adversarial distribution shifts or very large-scale deployments, requires estimating probabilities far too small for random sampling. While recent work has formalized Low Probability Estimation, existing pipelines remain fragile in the rarest regimes: estimators can suffer zero-estimate collapse or systematic bias, and standard evaluation losses can become unstable or poorly matched to asymmetric safety costs. In this work, we introduce Gradient Activation Adaptive Multi-Level Splitting (GA-AMLS), which adapts rare-event Monte Carlo methods to the continuous activation space of language models. Specifically, GA-AMLS uses a gradient-based MCMC kernel to navigate activation space, eliminating the zero-estimate collapse of input-space search and replacing the independence assumptions of prior activation-space estimators with conditional sampling under an explicit, heavier-tailed activation prior. We also propose the Shifted-Power Bregman (SPB) Loss, a proper scoring rule that remains finite for zero-estimates and offers tunable asymmetry between underestimation and overestimation penalties. Experiments on small transformer models reveal a bias-variance tradeoff: GA-AMLS achieves the lowest loss under symmetric evaluation, reducing average log-space squared error relative to the strongest baseline across model sizes, while methods with overestimation bias prevail under asymmetric penalties. Our findings highlight that estimator choice should be matched to deployment context. More broadly, our work establishes activation space as a tractable domain for rare-event estimation in language models, circumventing the brittleness of discrete input-space search.",
+      "authors": [
+        "Nikita Y. Parulekar",
+        "Anqi Liu"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-07-20T19:07:43+00:00",
+      "link": "https://arxiv.org/pdf/2607.18454v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Estimating probabilities of rare failures in LMs",
+      "llm_evidence_cn": "估计语言模型中罕见失败的概率",
+      "llm_evidence": "估计语言模型中罕见失败的概率",
+      "canonical_evidence": "估计语言模型中罕见失败的概率",
+      "llm_tldr_en": "This paper introduces GA-AMLS, a gradient-based rare-event Monte Carlo method adapted to the continuous activation space of language models, to properly estimate the probabilities of rare failures like hallucinations under adversarial shifts.",
+      "llm_tldr_cn": "量化语言模型中罕见失败（如对抗性分布偏移引发的幻觉）的风险需要估计极小的概率。本文引入了梯度激活自适应多层分裂法（GA-AMLS），将罕见事件蒙特卡洛方法适配到语言模型的连续激活空间。该方法使用基于梯度的MCMC核来导航激活空间，为检测和评估语言模型罕见失败风险提供了新工具。",
+      "llm_tldr": "量化语言模型中罕见失败（如对抗性分布偏移引发的幻觉）的风险需要估计极小的概率。本文引入了梯度激活自适应多层分裂法（GA-AMLS），将罕见事件蒙特卡洛方法适配到语言模型的连续激活空间。该方法使用基于梯度的MCMC核来导航激活空间，为检测和评估语言模型罕见失败风险提供了新工具。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.21010v1",
+      "source": "arxiv",
+      "title": "Reexamining zero-shot summarization: Empirical investigation of trustworthiness of LLM-summarizers",
+      "abstract": "Zero-shot summarization using Large Language Models (LLMs) has significantly advanced the abstractive summarization task by producing coherent and fluent summaries. However, underlying stochasticity of the large language models raises concerns about the stability and trustworthiness of the LLM-generated summaries. This issue has become increasingly important due to proliferation of LLM-generated summaries in educational settings, where students and researchers summarize complex academic materials in zero-shot manner.   We propose a novel two-level diagnostic protocol for benchmarking LLM-summarizers based on the stability of the generated summaries. At the lower level, document-level stability analysis is performed over multiple LLM-summaries generated under controlled environment, and the stability coefficient is computed. Each generated summary is scored for semantic and factual alignment with the original document, enabling estimation of stability along more than one dimensions. At the next level, observations from a stratified sample of documents drawn from the corpus are consolidated to estimate the stability index of the LLM-summarizer, which is the proxy for its trustworthiness.   Our empirical investigation of three LLM-summarizers across three genres of documents reveals statistically significant differences in the generation-level variability among LLMs across summary evaluation metrics. This study advances the LLM-summarization research by evidential recognition of the stability problem in LLM-summaries and motivates further research towards development of robust, reliable and trustworthy LLM-summarizers.",
+      "authors": [
+        "Vasudha Bhatnagar",
+        "Purnima Bindal",
+        "Vikas Kumar",
+        "Raj Kumari Bahl"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-23T07:48:20+00:00",
+      "link": "https://arxiv.org/pdf/2607.21010v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Trustworthiness and stability of LLM summarizers",
+      "llm_evidence_cn": "LLM摘要生成器的可信度与稳定性",
+      "llm_evidence": "LLM摘要生成器的可信度与稳定性",
+      "canonical_evidence": "LLM摘要生成器的可信度与稳定性",
+      "llm_tldr_en": "Zero-shot summarization using LLMs raises concerns about the stability and trustworthiness of generated summaries. We propose a two-level diagnostic protocol to benchmark LLM-summarizers based on stability, revealing significant issues in the factual consistency and reliability of long-form generated text.",
+      "llm_tldr_cn": "零样本大语言模型摘要生成器的底层随机性引发了对其生成摘要的稳定性和可信度的担忧。针对该问题，本文提出了一种新颖的两级诊断协议，基于生成摘要的稳定性对LLM摘要生成器进行基准测试。实验在文档级和系统级进行了稳定性分析，揭示了LLM生成摘要的可信度问题，为评估长文本生成中的事实一致性提供了重要工具。",
+      "llm_tldr": "零样本大语言模型摘要生成器的底层随机性引发了对其生成摘要的稳定性和可信度的担忧。针对该问题，本文提出了一种新颖的两级诊断协议，基于生成摘要的稳定性对LLM摘要生成器进行基准测试。实验在文档级和系统级进行了稳定性分析，揭示了LLM生成摘要的可信度问题，为评估长文本生成中的事实一致性提供了重要工具。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "factual consistency in text generation",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}
