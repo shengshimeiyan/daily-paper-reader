@@ -1,0 +1,92 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-27T21:44:07.980929+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 2,
+    "deep_cap": 6,
+    "deep_selected": 2,
+    "quick_candidates": 0,
+    "quick_skim_target": 11,
+    "quick_selected": 0
+  },
+  "deep_dive": [
+    {
+      "id": "2607.21961v1",
+      "source": "arxiv",
+      "title": "On Improving Faithfulness of Podcasts from Documents",
+      "abstract": "Large language models (LLMs) are increasingly used to generate long-form conversational content such as podcasts from textual sources. While these systems produce fluent and engaging narratives, they often introduce ungrounded information. In this work, we present the first systematic study of faithfulness in document-grounded podcast generation, where grounding must be maintained across conversational turns in long-form, multi-speaker transcripts. We construct a dataset of over 1500 documents spanning five domains and generate podcast transcripts using multiple LLMs. We introduce a turn-level LLM-as-a-judge framework for evaluating whether conversational turns are supported by the source document, and validate its reliability through human studies. Our analysis shows that even state-of-the-art models, including GPT-4o, frequently generate ungrounded content. To mitigate this issue, we propose catch-n-repair, a model-agnostic framework that detects and rewrites unfaithful conversational turns while preserving conversational flow. Experiments demonstrate consistent improvements in faithfulness across both in-domain and out-of-domain settings.",
+      "authors": [
+        "Soumya Dutta",
+        "Tejas Indulal Dhamecha",
+        "Pannaga Shivaswamy"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-07-24T04:17:56+00:00",
+      "link": "https://arxiv.org/pdf/2607.21961v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Faithfulness in long-form podcast generation",
+      "llm_evidence_cn": "长文本播客生成的事实一致性",
+      "llm_evidence": "长文本播客生成的事实一致性",
+      "canonical_evidence": "长文本播客生成的事实一致性",
+      "llm_tldr_en": "Presents the first systematic study of faithfulness in document-grounded long-form podcast generation, introducing a turn-level LLM-as-a-judge framework to detect ungrounded information and analyzing mitigation strategies.",
+      "llm_tldr_cn": "针对大语言模型在生成长篇多轮对话内容（如播客）时经常引入无根据信息的问题，本文首次系统性地研究了文档驱动的长文本播客生成中的事实一致性。研究构建了跨越五个领域的数据集，并提出了回合级 LLM-as-a-judge 评估框架，用于检测对话回合是否受源文档支持。实验验证了该评估框架的可靠性，分析揭示了现有模型在长文本生成中存在的严重不忠实问题，为长文本幻觉的检测与缓解提供了重要工具。",
+      "llm_tldr": "针对大语言模型在生成长篇多轮对话内容（如播客）时经常引入无根据信息的问题，本文首次系统性地研究了文档驱动的长文本播客生成中的事实一致性。研究构建了跨越五个领域的数据集，并提出了回合级 LLM-as-a-judge 评估框架，用于检测对话回合是否受源文档支持。实验验证了该评估框架的可靠性，分析揭示了现有模型在长文本生成中存在的严重不忠实问题，为长文本幻觉的检测与缓解提供了重要工具。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "how to detect and mitigate hallucinations in long form text generation",
+      "matched_requirement_id": "req-8",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.22098v1",
+      "source": "arxiv",
+      "title": "Reasoning Denoiser: Denoising Reasoning Traces for Hallucination Detection in Large Reasoning Models",
+      "abstract": "Large reasoning models (LRMs) generate long reasoning traces before producing final answers. While these traces may contain useful signals for hallucination detection, harnessing them is non-trivial because long trajectories often include noisy steps that obscure the cues relevant to truthfulness assessment. In this paper, we identify two prevalent forms of reasoning noises, i.e., irrelevant steps and repetitive steps, and show that both substantially degrade hallucination detection performance. Existing confidence-based scores and naive embedding-based filtering fail to reliably separate noisy from informative steps. To address this challenge, we propose REDE, a novel learning framework for denoising reasoning traces for hallucination detection. Specifically, REDE leverages final-answer attention as an automatic supervision signal to shape the step-level representation space, yielding refined embeddings in which noisy steps can be reliably identified and filtered. REDE can be readily plugged into diverse hallucination detectors by operating on the filtered reasoning trajectory after removing noisy steps. Extensive experiments on multiple reasoning benchmarks show that REDE consistently improves detection performance over competitive baselines.",
+      "authors": [
+        "Junlin Fang",
+        "Do Nguyen-Thanh",
+        "Xiaogang Xu",
+        "Zhen Fang",
+        "Sean Du"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-07-24T08:48:17+00:00",
+      "link": "https://arxiv.org/pdf/2607.22098v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Hallucination detection in long reasoning traces",
+      "llm_evidence_cn": "长推理轨迹中的幻觉检测",
+      "llm_evidence": "长推理轨迹中的幻觉检测",
+      "canonical_evidence": "长推理轨迹中的幻觉检测",
+      "llm_tldr_en": "Long reasoning traces in large reasoning models contain noisy steps that obscure hallucination detection. This paper proposes REDE, a learning framework that denoises reasoning traces by filtering irrelevant and repetitive steps, significantly improving hallucination detection performance over existing methods.",
+      "llm_tldr_cn": "大型推理模型生成的长推理轨迹常包含无关和重复的噪声步骤，严重阻碍了幻觉检测。本文提出REDE学习框架，通过去噪推理轨迹来提升幻觉检测性能。实验表明，该方法能有效分离噪声与信息步骤，显著优于现有的基于置信度和嵌入的过滤方法。",
+      "llm_tldr": "大型推理模型生成的长推理轨迹常包含无关和重复的噪声步骤，严重阻碍了幻觉检测。本文提出REDE学习框架，通过去噪推理轨迹来提升幻觉检测性能。实验表明，该方法能有效分离噪声与信息步骤，显著优于现有的基于置信度和嵌入的过滤方法。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": []
+}

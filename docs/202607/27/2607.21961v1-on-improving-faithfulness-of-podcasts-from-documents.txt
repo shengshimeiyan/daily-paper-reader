@@ -1,0 +1,445 @@
+Title: On Improving Faithfulness of Podcasts from Documents
+
+URL Source: https://arxiv.org/pdf/2607.21961v1
+
+Published Time: Mon, 27 Jul 2026 00:23:05 GMT
+
+Number of Pages: 13
+
+Markdown Content:
+# On Improving Faithfulness of Podcasts from Documents 
+
+Soumya Dutta 1,2 , Tejas Indulal Dhamecha 2, Pannaga Shivaswamy 2
+
+> 1
+
+Indian Institute of Science, 2Adobe Research 
+
+soumyad@adobe.com 
+
+Abstract 
+
+Large language models (LLMs) are increas-ingly used to generate long-form conversational content such as podcasts from textual sources. While these systems produce fluent and engag-ing narratives, they often introduce ungrounded information. In this work, we present the first systematic study of faithfulness in document-grounded podcast generation, where grounding must be maintained across conversational turns in long-form, multi-speaker transcripts. We construct a dataset of over 1,500 documents spanning five domains and generate podcast transcripts using multiple LLMs. We intro-duce a turn-level LLM-as-a-judge framework for evaluating whether conversational turns are supported by the source document, and validate its reliability through human studies. Our analysis shows that even state-of-the-art models, including GPT-4o , frequently gener-ate ungrounded content. To mitigate this issue, we propose catch-n-repair , a model-agnostic framework that detects and rewrites unfaithful conversational turns while preserving conver-sational flow. Experiments demonstrate consis-tent improvements in faithfulness across both in-domain and out-of-domain settings. 
+
+1 Introduction 
+
+Podcasts have emerged as one of the most popular means of sharing information, spanning domains such as news reporting, education, entertainment, and lifestyle. A recent Pew Research Center report highlights this growth: while only 12% of Amer-icans aged 12 and older listened to a podcast in a typical month in 2013 , the proportion rose to 42% 
+
+by 2023 (Pew Research Center, 2023). This surge in adoption reflects not only the familiarity of audi-ences with the medium but also the increasing trust placed in podcasts as a source of information. Until recently, however, podcasting largely remained a medium of consumption, where listeners tuned in to content created and curated by human hosts. The We are analysing just a single  
+
+> source, but one that really truly
+> changed the world of technology. I
+> mean, if you use ChatGPT; if you
+> have ever relied on Google Translate
+> you are interacting with the direct
+> legacy of this paper.
+
+Figure 1: Example of unfaithfulness in generated pod-cast transcripts. The transcript generated from ‘Atten-tion Is All You Need’ paper mentions ChatGPT which did not exist in 2017. 
+
+paradigm is now shifting with the advent of gener-ative AI systems, such as Google’s NotebookLM 1,which can produce podcast-style narratives directly from source materials. This shift opens up the pos-sibility of personalized podcast creation at scale, where individuals and organizations can generate podcasts tailored to their own needs and interests. This development builds on a broader line of work in generative AI applications such as sum-marization (Zhang et al., 2024; Kim and Kim, 2025; Liu et al., 2025a) and question answering (QA)(Zaib et al., 2022; Hu et al., 2025; Zhang et al., 2025), where models transform source mate-rial into more accessible forms. A central challenge in these tasks is faithfulness —ensuring that gener-ated outputs remain grounded in the source without introducing distortions or hallucinations (Chiesurin et al., 2023; Jia et al., 2023; Ming et al., 2024). While AI-generated podcasts inherit these con-cerns, they introduce a distinct set of challenges. Unlike summaries or answers, podcasts are typ-ically long-form, narrative-driven, and multi-speaker, requiring models to maintain coherence and factual accuracy across extended spans (Xiao et al., 2025). Moreover, faithfulness in this setting must be preserved at the level of individual turns, where hallucinations can be localized yet propagate through the narrative. Despite recent efforts in pod-cast generation (Ju et al., 2025; Xiao et al., 2025; 
+
+> 1
+
+https://notebooklm.google.com/ arXiv:2607.21961v1 [cs.CL] 24 Jul 2026 Peng et al., 2026), prior work has primarily focused on fluency, structure, and audio delivery, leaving the question of grounding to the source document largely unexplored. To illustrate this challenge, consider the example in Figure 1. The source is the Attention Is All You Need paper 2 . NotebookLM generated a transcript mentioning ChatGPT as part of the paper’s legacy; while true in hindsight, ChatGPT did not exist in 2017 and there is no mention of ChatGPT in the source paper making this an unfaithful statement. This example highlights a subtle but critical distinc-tion between factual correctness and faithfulness to the provided context. Motivated by this observation, we undertake the first systematic study of faithfulness in document-grounded podcast generation . In contrast to prior work, we focus on long-form, multi-speaker tran-scripts and analyze faithfulness at the level of indi-vidual conversational turns. To enable this study, we collect a dataset of 1520 documents spanning five domains and generate corresponding podcast transcripts using multiple large language models (LLMs). We introduce a turn-level LLM-as-a-judge evaluation protocol that assesses the degree to which each conversational turn is supported by the source document. This approach captures nu-anced cases such as partial grounding and subtle hallucinations, which are common in long-form generation. We further validate the reliability of this evaluation framework through human studies. Building on this evaluation framework, we pro-pose catch-n-repair , a simple yet effective, model-agnostic mitigation strategy. Our approach operates at the level of individual conversational turns: it detects unfaithful generations using a lightweight classifier and rewrites them to ensure grounding in the source document while preserving conversa-tional flow. Importantly, catch-n-repair can be ap-plied to both open-source and closed-source LLMs, making it broadly applicable in practical settings. Our contributions are summarized as follows: • Evaluation protocol: We introduce a turn-level LLM-as-a-judge framework for measur-ing faithfulness in long-form, multi-speaker podcast transcripts. The protocol captures fine-grained grounding at the level of indi-vidual conversational turns and is validated against human annotations. 
+
+> 2https://arxiv.org/pdf/1706.03762
+
+• Benchmarking and analysis: We conduct a systematic empirical study across multiple LLMs and domains, providing the first analy-sis of faithfulness in document-grounded pod-cast generation. • Mitigation method: We propose catch-n-repair , a model-agnostic strategy that detects unfaithful conversational turns and rewrites them to ensure grounding in the source docu-ment, improving faithfulness while preserving conversational flow. 
+
+2 Related Work 
+
+Generation of Podcasts from Documents : The task of generating podcasts directly from source documents has received relatively little attention in the research community. Ju et al. (2025) pro-posed Mooncast, which leverages existing podcast scripts to produce long-form, engaging audio con-tent. Xiao et al. (2025) proposed PodAgent, an LLM agent that generates podcast scripts based on a user-specified topic, without relying on a source document. In contrast, our work focuses on 
+
+document-grounded podcast generation and sys-tematically studies the faithfulness of generated transcripts to the underlying source material. 
+
+Faithfulness in LLM Generation : Ensuring that model outputs remain faithful to the provided con-text has been widely studied in tasks such as summarization and question answering (Chiesurin et al., 2023; Jia et al., 2023; Ming et al., 2024). Existing metrics, including token-overlap mea-sures such as Knowledge-F1 (Shuster et al., 2021), and learned evaluators such as FaithCritic (Dziri et al., 2022), have been proposed to detect hallu-cinations. More recently, LLM-as-a-judge frame-works (Zheng et al., 2023; Adlakha et al., 2024) have demonstrated strong performance in evaluat-ing correctness and faithfulness. However, prior work has largely focused on short-form generation, where outputs are typically single-turn and con-cise. In contrast, podcast transcripts are long-form, multi-speaker, and narrative-driven, requiring faith-fulness to be maintained at the level of individual conversational turns. Our work extends the study of faithfulness to this more complex setting. 
+
+Evaluation of Podcast Transcripts : Recent work has begun to explore the evaluation of podcast-style outputs generated by LLMs, often using LLM-as-a-judge frameworks to assess properties such as coherence, fluency, and engagement (Xiao et al., Document     
+
+> Content
+> Alex: Hi!
+> Welcome to our
+> podcast today.
+> Jamie: We will
+> talk about ….
+> …
+> Given the {podcast
+> transcript} and the
+> {document
+> content} , rate each
+> podcast turn on a
+> scale of 1 -5 based
+> on the faithfulness
+> of the turn to the
+> document
+> LLM -as -judge
+> Turn1: 2
+> Turn2: 3
+> Turn3: 1
+> Turn4: 5
+> …
+> Grounding
+> scores catch -n-repair
+> Turn1:...
+> Turn2:…
+> Turn3:…
+> Turn4:…
+> …
+> Podcast
+> Transcript
+> Faithfulness evaluation Mitigation
+
+Figure 2: Faithfulness evaluation : Once these transcripts are generated, LLM-as-a-judge ( GPT4o ) evaluation is used to classify each turn of the podcast on a scale of 1 to 5 based on its faithfulness to the source document. 
+
+Mitigation : The proposed mitigation strategy - catch-n-repair - is used in conjunction with the LLM to generate transcripts that are faithful to the source document. 
+
+2025; Xu et al., 2026). However, these approaches primarily operate at the level of the entire transcript and do not explicitly evaluate grounding with re-spect to a source document. As a result, they are not designed to detect unfaithful content that may arise during generation. In contrast, our work fo-cuses on faithfulness to the source document as a primary evaluation objective and introduces a turn-level evaluation protocol that enables fine-grained assessment of grounding within long-form, multi-speaker transcripts. 
+
+Mitigating Ungroundedness in LLMs : A wide range of approaches have been proposed to mitigate hallucinations in LLM outputs, where models gen-erate content that is either factually incorrect or not grounded in the provided context. In this work, we focus on the latter— ungroundedness with respect to a source document. Notably, ungrounded state-ments may be factually correct in the real world but remain unsupported by the input document, making them particularly challenging to detect in long-form generation. Existing approaches mitigate hallucinations from open-weight LLMs through several directions. Decoding-based approaches adjust token proba-bilities to reduce ungrounded generations (Shi et al., 2024; Huang et al., 2025). Other meth-ods perform post-hoc correction using auxiliary models or knowledge graphs (Dziri et al., 2021; Ji et al., 2023a). However, many of these ap-proaches require access to model internals (e.g., logits), limiting their applicability in black-box set-tings. For such settings, prior work has largely relied on external knowledge or self-consistency signals. For instance, Ji et al. (Ji et al., 2023b) for-mulate validation as a question-answering task over domain-specific knowledge bases, while Manakul et al. (Manakul et al., 2023) detect hallucinations through inconsistencies across multiple sampled generations. Gao et al. (Gao et al., 2023) further propose correcting outputs by retrieving supporting evidence from the web. In contrast, our proposed catch-n-repair framework is model-agnostic and operates at the level of indi-vidual conversational turns, enabling faithful gen-eration without requiring access to model internals or external retrieval systems. 
+
+3 Problem Statement 
+
+3.1 Problem Setup 
+
+Let D = d1, d 2, . . . , d n denote a collection of source documents. For each document di ∈ D ,a large language model (LLM), denoted by Lgen ,generates a podcast-style conversational transcript: 
+
+[Ti = ti1, t i2, . . . , t im i ] where each tij represents the jth conversational turn in the transcript. Our objective is to evaluate and improve the faithfulness of generated podcast transcripts with respect to their source documents. To this end, we define a faithfulness evaluation function Feval that assigns a faithfulness score to each conversational turn tij conditioned on the source document di.The overall faithfulness score fi for transcript Ti is obtained by averaging across its mi turns: 
+
+fi = 1
+
+mimiX
+
+> j=1
+
+Feval (tij , d i). (1) Unlike prior settings that evaluate grounding at the response or document level, we formulate faith-fulness at the level of individual conversational turns. This granularity is particularly important in long-form podcast generation, where ungrounded content is often localized to specific turns while the remainder of the transcript remains faithful to the source. Moreover, turn-level assessment enables targeted mitigation without requiring regeneration of the entire transcript. Our goal is to design a mitigation method, catch-n-repair , which can be applied to the generating model Lgen in order to increase the faithfulness score; i.e. to obtain improved transcript T ′ 
+
+> i
+
+such that the corresponding faithfulness score improves 
+
+f ′ 
+
+> i
+
+> f i. An overview of the proposed framework is shown in Figure 2. 
+
+3.2 Creation of Podcast Transcripts 
+
+We consider a podcast generation setup in which transcripts are generated sequentially in a turn-by-turn manner. Specifically, we focus on a two-speaker conversational structure commonly ob-served in real-world podcasts, where a host guides the discussion and an expert provides detailed, document-grounded responses. The host turns are expected to contain natural and engaging questions that facilitate conversational flow, while the expert turns are expected to remain faithful to the source document. The transcript generation process is driven by an LLM Lgen , whose sequential nature enables turn-level monitoring and intervention dur-ing generation. 
+
+3.3 Evaluating Faithfulness of Generated Podcast Transcripts 
+
+Designing the faithfulness scoring function Feval is non-trivial due to two key challenges. First, con-versational turns often express information through paraphrasing, making lexical overlap insufficient for evaluating grounding. Pure token-overlap met-rics may therefore incorrectly penalize semanti-cally faithful generations. Second, the LLM Lgen ,may introduce content drawn from its parametric memory rather than from di itself. Such halluci-nated statements can be factually correct in the real world yet remain ungrounded with respect to the provided document. To address these challenges, we adopt an LLM-as-a-judge framework for computing Feval . Given a source document di and a transcript turn tij , an LLM evaluator model Leval is prompted to assess the degree to which the factual content of tij is supported by di. Rather than issuing a binary verdict, Leval assigns a Likert-style score rij ∈{1, 2, 3, 4, 5}, where 1 indicates that the turn is entirely unfaithful and 5 indicates a faithful genera-tion. This score directly defines Feval (tij , d i) = rij ,and the document-level faithfulness fi is computed as the mean of the turn-level scores (see Eq. 1). Us-ing a graded scale allows the evaluator to capture nuanced cases, such as partially faithful turns or minor omissions, while remaining sensitive to hal-lucinated content. The evaluation prompt instructs the model to assess whether the response is explic-itly grounded in the provided context, penalizing plausible but unsupported claims. 
+
+Coverage Score : While faithfulness captures the reliability of generated transcripts, podcast usabil-ity also depends on how comprehensively the tran-script reflects the key content of the source docu-ment. We therefore additionally evaluate coverage ,which measures the extent to which important in-formation from di is represented in Ti. Unlike faithfulness, which is evaluated at the level of indi-vidual turns, coverage is assessed at the transcript level. The evaluator model Leval is prompted to assign a score indicating how comprehensively the generated transcript covers the major points con-tained in the source document. Although we report coverage scores for completeness, improving cov-erage is not the primary focus of this work and is left as an important direction for future research. 
+
+4 Catch-n-Repair 
+
+We now present catch-n-repair , our proposed method for mitigating unfaithful generations in podcast transcripts. The design of this strategy is guided by two key goals: ( i) applicability to both open-source and closed-source models, and (ii ) improvement of the faithfulness score fi with minimal impact on the coverage score, as evaluated by Leval (Sec. 3.3). To achieve these goals, we train an auxiliary model that approximates the judgment of Leval and deploy it during transcript generation to identify unfaithful conversational turns. 
+
+4.1 Training Data 
+
+To train the detection component of catch-n-repair ,we construct a synthetic dataset of grounded and ungrounded conversational turns. For this stage, we employ the LLaMA-3.1-70B model as both the generation and evaluation model. Using an open-Generate   
+
+> unfaithful
+> podcast
+> Podcast
+> turns
+> Positive (Faithfulness
+> score >=4)
+> Negative (Faithfulness
+> score <=3)
+> 1. Creation of
+> Training data
+> Positive Turns
+> Negative
+> Turns
+> catch
+> model
+> Faithful/
+> Unfaithful Current
+> Transcrip t
+> Unfaithful
+> Faithful catch
+> model
+> Append
+> to
+> transcript
+> 3. Mitigation strategy
+> 2. LoRA FT
+
+Figure 3: Step 1 : Using an LLM to create training data for the catch model. Step 2 : Training another LLM for predicting faithful/unfaithful given any podcast turn. Step 3 : The catch-n-repair mechanism for mitigating the unfaithful generations. The catch model flags each generation as faithful or unfaithful. The unfaithful generations are replaced by the same LLM with the old unfaithful generation as a negative example. 
+
+weight model ensures reproducibility and avoids practical and legal restrictions associated with cre-ating supervision data using proprietary APIs. Im-portantly, the resulting mitigation framework is evaluated using a different evaluator model. To generate ungrounded examples, we modify the generation instructions to explicitly encourage the model to introduce information beyond the source document. Specifically, the model is encouraged to draw from general world knowledge, make tan-gential associations, and introduce plausible but unsupported details. The resulting transcript T hallu  
+
+> i
+
+is then evaluated us-ing the Likert-scale protocol described in Sec. 3.3. Turns receiving a faithfulness score ≥ 4 are labeled 
+
+faithful (grounded), while all others are labeled un-faithful (ungrounded), yielding a binary classifica-tion dataset for training the detection component of catch-n-repair . This results in 17 , 561 faithful 
+
+turns and 9, 436 unfaithful turns. 
+
+4.2 Training the catch model 
+
+With the synthetic dataset constructed in Sec. 4.1, we now describe how to train the model that detects unfaithful generations from Lgen . Each training instance is a tuple (thallu  
+
+> ij
+
+, d i, l ij ), where thallu  
+
+> ij
+
+is a hallucinated turn, di is the source document, and 
+
+lij ∈ { 0, 1} denotes whether the turn is faithful. Because this is a binary classification task, we initially considered encoder-only architec-tures. However, modern encoders such as Modern-BERT (Warner et al., 2025) still have a maximum context length of only 8192 tokens, while many source documents di in our dataset are substantially longer. To accommodate these long contexts, we instead perform instruction fine-tuning of a large language model, specifically LLaMA-3.1-8B , using LoRA (Hu et al., 2022) to predict either “faith-ful” or “unfaithful.” The model is trained with an instruction format that presents the context docu-ment and the conversational response, then asks whether the response is faithful to the provided context. For efficiency, the context document di is truncated so that the complete instruction does not exceed 32 ,768 tokens. We further balance the train-ing dataset between the two classes while training the catch model. Once trained, this model can be seamlessly integrated into the generation pipeline to flag unfaithful turns. 
+
+4.3 Repair Strategy 
+
+We now describe the repair component of catch-n-repair . Our goal is to correct unfaithful generations while maintaining applicability to both open-source and black-box LLMs. This requirement rules out approaches that depend on access to model inter-nals, such as activation steering (Turner et al., 2023; Rimsky et al., 2024) or confidence-based decoding strategies (Bi et al., 2025; Liu et al., 2025b). While the catch model is trained to predict whether each generated turn is faithful, our repair mechanism follows a simple but effective strategy. Whenever a conversational turn tij is flagged as unfaithful, Lgen is re-prompted to revise tij to pro-duce a corrected turn that is semantically faithful to the provided context while preserving conversa-tional flow. The regeneration prompt instructs the model to rewrite the turn tij using only facts ex-plicitly stated in the source document, while main-taining natural conversational flow. Importantly, the repair process is integrated into the sequential generation pipeline, allowing unfaithful turns to be corrected before subsequent turns are generated. This reduces propagation of ungrounded content across the conversation. The repaired turn is then appended directly to the transcript. The final tran-script produced by Lgen under the catch-n-repair 
+
+mitigation strategy is denoted by T faith  
+
+> i
+
+. The work-flow is shown in Fig. 3. 
+
+5 Experiments 
+
+5.1 Doc-to-Podcast 
+
+We collected a total of 1500 documents to create our Doc-to-Podcast dataset. The corpus spans five domains— academic , legal , policy , financial , and 
+
+medical —with 300 documents sampled from each domain.Further details are in Appendix A.1. To capture a broad range of input complexities, we deliberately varied the length of the collected documents. The distribution of document sizes across domains is shown in Appendix Fig. 6; all documents contain between 2 and 50 pages. The dataset serves two purposes: (i) it is used to evalu-ate the faithfulness of podcasts generated by multi-ple LLMs ( Lgen ), and (ii) it provides training and validation material for our proposed catch model. For testing the catch-n-repair mitigation strategy, we use 40 held-out documents. Of these, 20 are from the Doc-to-Podcast dataset ( 4 per domain), forming the in-domain test set. The remaining 
+
+20 documents originate from unrelated areas such as exam evaluations and business practices , and constitute the out-of-domain test set. 
+
+5.2 Faithfulness across LLMs 
+
+Figure 4 shows the average faithfulness scores across all documents in each domain for differ-1        
+
+> 2
+> 3
+> 4
+> 5
+> Academic Policy Legal Financial Medical
+> GPT4o LLaMA-3.3-70B Qwen-2.5-72B Qwen-2.5-32B Qwen-2.5-14B
+
+Figure 4: The average faithfulness score as evaluated with Leval set as GPT-4o . The scores for different Lgen 
+
+are shown for the different domains. 
+
+ent generating LLMs. All podcast turns are eval-uated by GPT-4o acting as the judge LLM. For transcript generation, we use three variants from the Qwen2.5 family ( 14 B, 32 B, and 72 B), the 70 Bmodel from the LLaMA3.3 family, and GPT-4o it-self. The LLaMA-3.1-70B model is not used in this case in order to avoid overlap with the training paradigm of the catch model (Sec. 4.1). • GPT-4o achieves the highest faithfulness :Among all models, transcripts generated by 
+
+GPT-4o receive the highest average faithful-ness score of 3.89 on the Likert scale, fol-lowed by Qwen2.5-32B with a score of 3.75 .Notably, even the strongest model fails to consistently achieve fully grounded genera-tion, indicating that maintaining faithfulness remains challenging in long-form conversa-tional settings despite substantial advances in LLM capabilities. • Bigger open models aren’t automatically more faithful : While increasing size gener-ally helps, our results show diminishing re-turns beyond the mid-scale range. For in-stance, LLaMA3.3-70B performs on par with 
+
+Qwen2.5-72B and Qwen2.5-32B , while the smaller Qwen2.5-14B lags behind at 3.55 .• Faithfulness varies by domain : Scores are not uniform across domains. The academic domain records the lowest average faithful-ness ( 3.38 across all models), while the policy domain achieves the highest ( 4.05 ). This sug-gests that the intrinsic knowledge distribution of LLMs influences their ability to remain faithful to the document. • Cross-LLM agreement alleviates bias con-cerns : To further assess evaluator reliabil-ity, we additionally replace GPT-4o with 1      
+
+> 2
+> 3
+> 4
+> 5
+> Academic Policy Legal Financial Medical
+> GPT4o-gen-GPT-4o-eval GPT4o-gen-Qwen-eval
+> Qwen-gen-GPT-4o-eval Qwen-gen-Qwen-eval
+
+Figure 5: The average faithfulness score as evaluated with the Qwen model when the generating LLM is either Qwen or GPT-4o. The evaluations with GPT-4o model are also shown for reference. 
+
+Qwen2.5-72B as the evaluator model. The results mirrored those of GPT-4o : Qwen also rated GPT-4o ’s generations as more faithful than its own (Fig. 5). This agreement across independent evaluator models reduces con-cerns regarding model-specific judge bias. We present the coverage scores and observations from them in Appendix A.3. 
+
+5.3 Reliability of the Evaluator 
+
+In order to assess the reliability of our evaluator, we conduct a human annotation study using 30 ran-domly selected documents ( 6 from each domain) from the Doc-to-Podcast dataset and annotate a total of 328 conversational turns. The annotations were collected from 10 annotators (Sec. A.8). We measure inter-annotator agreement using Krippen-dorff’s α, obtaining a value of 0.69 , indicating substantial agreement. We compare the scores as-signed by our evaluator model ( GPT-4o ) against human ratings, and also benchmark the evalua-tor against existing automatic faithfulness metrics. K-Prec., K-Rec., and K-F1 compute lexical over-lap between the podcast turn and the source doc-ument (Shuster et al., 2021), while K-BERTs-F1 and K-BERTs-Prec. extend this approach using BERTScore-based semantic similarity (Adlakha et al., 2024; Zhang et al., 2019). The Pearson correlations for each domain are shown in Table 1. GPT-4o achieves the highest correlation with human judgments across all do-mains, with an average correlation of 0.63 . In con-trast, existing automatic faithfulness metrics exhibit substantially weaker alignment. These results sug-gest that LLM-based evaluation provides a more reliable proxy for human assessment in long-form conversational generation. Interestingly, model-                                                
+
+> Metric Acad. Legal Fin. Policy Med. Avg.
+> K-Prec. 0.44 0.48 0.24 0.54 0.47 0.43
+> K-Rec. 0.11 0.18 0.13 0.10 0.19 0.14
+> K-F1 0.11 0.18 0.13 0.10 0.19 0.14
+> K-BERTs-F1 0.02 0.19 0.26 0.42 0.53 0.28
+> K-BERTs-Prec. −0.13 0.02 0.20 0.19 0.51 0.16
+> FaithCritic 0.10 0.19 0.16 0.02 0.29 0.15
+> GPT-4o 0.65 0.61 0.59 0.68 0.64 0.63
+
+Table 1: Pearson correlation with human faithfulness scores across domains. GPT-4o shows consistently higher alignment than existing metrics. 
+
+free lexical grounding metrics such as K-Precision consistently outperform learned evaluators such as 
+
+FaithCritic , with the exception of GPT-4o . This ob-servation is consistent with prior findings reported by Adlakha et al. (Adlakha et al., 2024). Notably, these correlations are obtained in a more challeng-ing setting than conventional short-form evaluation. 
+
+5.4 Training and Evaluation of the catch 
+
+Model Implementation Details : We fine-tune a
+
+LLaMA-3.1-8B model to classify each transcript turn as faithful or unfaithful given the source document as context. To respect computational limits, each document is truncated so that the combined input remains below 32 , 768 tokens. Fine-tuning is performed with a batch size of 8
+
+and gradient accumulation of 8 using LoRA (Hu et al., 2022) (rank = 8, α = 16 , dropout = 0.05 ). Training uses 90% of the documents from the synthetic dataset (Sec. 4.1), while turns from the remaining 10% form the validation set. 
+
+Performance : The validation split contains 
+
+3,039 turns, including 1,973 faithful and 1,066 
+
+unfaithful examples. The trained catch model achieves F1-scores of 79 .9% and 67 .3% on the faithful and unfaithful classes, respectively. The lower performance on unfaithful examples reflects the difficulty of detecting subtle yet plausible ungrounded content. Despite being substantially smaller than the original evaluator (LLaMA-3.1-70B ), the resulting 8B model remains lightweight and suitable for runtime deployment. 
+
+5.5 Effectiveness of catch-n-repair 
+
+Table 3 presents the faithfulness scores for both in-domain (ID) and out-of-domain (OOD) settings, Source Document Summary Vanilla Generation After catch-n-repair 
+
+The source document is an environmental science coursework handout focused on topics such as BPA exposure, recycling, environmental health, and sus-tainability. It contains educational explanations, reflective discussion prompts, and assessment-style questions intended to encourage students to think critically about environmental risks and personal choices related to health and pollution. Environmental science educa-tion seems like such a critical topic these days. Can you ex-plain why understanding hu-man impacts on the environ-ment is so important? 
+
+I’ve been reading about environ-mental science education focus-ing on human impacts. It’s fas-cinating how it integrates assess-ments and activities related to pollutants and toxic chemicals. Could you share more about the types of assessments or activi-ties mentioned in the document? 
+
+Table 2: Example of correcting an ungrounded conversational turn using catch-n-repair .                                           
+
+> Lgen
+> ID OOD Avg. ∆
+> Van. CnR ∆Van. CnR ∆
+> Qwen2.5-14B 4.1±0.54.2±0.6+0 .13.7±0.74.1±0.5+0 .4+0 .25
+> Qwen2.5-32B 4.1±0.54.4±0.5+0 .34.0±0.64.2±0.5+0 .2+0 .25
+> Qwen2.5-72B 4.0±0.44.3±0.4+0 .33.9±0.34.3±0.4+0 .4+0.35
+> LLaMA3.3-70B 4.2±0.54.3±0.5+0 .13.9±0.54.4±0.4+0 .5+0 .30
+> GPT-4o 4.2±0.34.4±0.3+0 .24.0±0.44.4±0.3+0 .4+0 .30
+
+Table 3: Faithfulness scores for in-domain (ID) and out-of-domain (OOD) test sets. Van. denotes vanilla prompting (Sec. 3.2), CnR indicates the catch-n-repair 
+
+strategy, ∆ represents the absolute improvement, and Avg. ∆ is the mean improvement across ID and OOD. 
+
+comparing vanilla generation with our catch-n-repair (CnR) strategy. • catch-n-repair consistently boosts faithful-ness : Across all models and both ID and OOD settings, CnR improves faithfulness scores. The largest relative gain for the ID test set is seen for the Qwen2.5-32B and Qwen2.5-72B 
+
+models ( ∼ 7.5% ). For the OOD test set, the largest gain of 12 .8% is seen for the 
+
+LLaMA-3.3-70B model. • Robust to domain shift : Faithfulness gains hold for the OOD test set. On average, across all models, the relative increase in faithfulness scores are more for the OOD set ( ∼ 10% )versus the ID set ( ∼ 5% ). • GPT-4o remains the overall leader : GPT-4o 
+
+achieves the highest faithfulness in both ID and OOD settings, with an average relative increase of 7.4% after the mitigation strategy. The consistent gains obtained from catch-n-repair indicate that even state-of-the-art pro-prietary models continue to benefit from ex-plicit turn-level grounding interventions. 
+
+Qualitative Analysis: Table 2 presents an exam-ple of conversational turns before and after apply-ing catch-n-repair . The source document primarily consists of environmental science coursework and assessment instructions related to BPA exposure, recycling, and environmental health. In the vanilla generation setting, the conversation deviates from discussing the specific content in the document to broader discussions about the importance of assess-ing the impact that humans have on the environ-ment. While these additions are plausible, they are not explicitly grounded in the source document. Af-ter applying catch-n-repair , the generated response adheres more closely to the scope and content of the original document. The performance of CnR with Qwen-2.5-72B 
+
+as judge is shown in Appendex A.2. The impact of CnR on coverage is shown in Appendix A.4. The performance of the catch model with a text classifier instead of a LLM is shown in Sec. A.5. 
+
+6 Conclusion 
+
+We present the first study of faithfulness in document-grounded podcast generation, which involves long-form, multi-speaker conversations. Our analysis across multiple LLMs and domains shows that even state-of-the-art models frequently generate ungrounded content, highlighting the dif-ficulty of maintaining faithfulness in long-form conversational generation. To address this, we introduce a turn-level LLM-as-a-judge evaluation framework and validate its reliability against hu-man judgments. We further propose catch-n-repair ,a model-agnostic mitigation strategy that detects and corrects unfaithful conversational turns. Ex-periments demonstrate consistent improvements in faithfulness across both in-domain and out-of-domain settings. Overall, our work highlights faith-fulness as an important challenge in AI-generated podcasts and demonstrates the effectiveness of turn-level grounding mechanisms for trustworthy con-versation generation systems. 7 Limitations 
+
+While our work provides a first benchmark for faith-fulness in document-to-podcast generation, several limitations remain. First, our evaluation relies pri-marily on English-language documents; extending the dataset to multilingual and culturally diverse sources is an important future step. Second, al-though our catch-n-repair method improves faith-fulness, it depends on the accuracy of the catch 
+
+classifier, which may occasionally mislabel subtle paraphrases as unfaithful. Third, our faithfulness assessment is based on prompts that were designed for this task. Different prompts might result in dif-ferent results. Another limitation of our work is the potential misuse, even after our attempts some un-grounded generations may still occur. Finally, the podcasts in our dataset are text-based transcripts rather than full audio renderings — future work could explore faithfulness in end-to-end audio gen-eration pipelines, where prosody and delivery inter-act with factual grounding. 
+
+References 
+
+Vaibhav Adlakha, Parishad BehnamGhader, Xing Han Lu, Nicholas Meade, and Siva Reddy. 2024. Eval-uating correctness and faithfulness of instruction-following models for question answering. Trans-actions of the Association for Computational Linguis-tics , 12:681–699. Baolong Bi, Shenghua Liu, Yiwei Wang, Yilong Xu, Junfeng Fang, Lingrui Mei, and Xueqi Cheng. 2025. Parameters vs. context: Fine-grained control of knowledge reliance in language models. arXiv preprint arXiv:2503.15888 .Sabrina Chiesurin, Dimitris Dimakopoulos, Marco An-tonio Sobrevilla Cabezudo, Arash Eshghi, Ioannis Papaioannou, Verena Rieser, and Ioannis Konstas. 2023. The dangers of trusting stochastic parrots: Faithfulness and trust in open-domain conversational question answering. In Findings of the Association for Computational Linguistics: ACL 2023 , pages 947–959. Nouha Dziri, Ehsan Kamalloo, Sivan Milton, Osmar Za-iane, Mo Yu, Edoardo M Ponti, and Siva Reddy. 2022. Faithdial: A faithful benchmark for information-seeking dialogue. Transactions of the Association for Computational Linguistics , 10:1473–1490. Nouha Dziri, Andrea Madotto, Osmar R Zaiane, and Avishek Joey Bose. 2021. Neural path hunter: Re-ducing hallucination in dialogue systems via path grounding. In Proceedings of the 2021 Conference on Empirical Methods in Natural Language Process-ing , pages 2197–2214. Luyu Gao, Zhuyun Dai, Panupong Pasupat, Anthony Chen, Arun Tejasvi Chaganty, Yicheng Fan, Vincent Zhao, Ni Lao, Hongrae Lee, Da-Cheng Juan, and 1 others. 2023. Rarr: Researching and revising what language models say, using language models. In 
+
+Proceedings of the 61st Annual Meeting of the As-sociation for Computational Linguistics (Volume 1: Long Papers) , pages 16477–16508. Edward J Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu Wang, Weizhu Chen, and 1 others. 2022. Lora: Low-rank adaptation of large language models. ICLR , 1(2):3. Zhanghao Hu, Hanqi Yan, Qinglin Zhu, Zhenyi Shen, Yulan He, and Lin Gui. 2025. Beyond prompting: An efficient embedding framework for open-domain question answering. In Proceedings of the 63rd An-nual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 19975– 19990, Vienna, Austria. Association for Computa-tional Linguistics. Yanwen Huang, Yong Zhang, Ning Cheng, Zhitao Li, Shaojun Wang, and Jing Xiao. 2025. Dynamic attention-guided context decoding for mitigating con-text faithfulness hallucinations in large language mod-els. In Findings of the Association for Computational Linguistics: ACL 2025 , pages 5174–5193, Vienna, Austria. Association for Computational Linguistics. Ziwei Ji, Zihan Liu, Nayeon Lee, Tiezheng Yu, Bryan Wilie, Min Zeng, and Pascale Fung. 2023a. Rho: Re-ducing hallucination in open-domain dialogues with knowledge grounding. In Findings of the Associa-tion for Computational Linguistics: ACL 2023 , pages 4504–4522. Ziwei Ji, Tiezheng Yu, Yan Xu, Nayeon Lee, Etsuko Ishii, and Pascale Fung. 2023b. Towards mitigat-ing llm hallucination via self reflection. In Find-ings of the Association for Computational Linguis-tics: EMNLP 2023 , pages 1827–1843. Qi Jia, Siyu Ren, Yizhu Liu, and Kenny Zhu. 2023. Zero-shot faithfulness evaluation for text summariza-tion with foundation language model. In Proceedings of the 2023 Conference on Empirical Methods in Nat-ural Language Processing , pages 11017–11031. Zeqian Ju, Dongchao Yang, Jianwei Yu, Kai Shen, Yi-chong Leng, Zhengtao Wang, Xu Tan, Xinyu Zhou, Tao Qin, and Xiangyang Li. 2025. Mooncast: High-quality zero-shot podcast generation. arXiv preprint arXiv:2503.14345 .Hyuntak Kim and Byung-Hak Kim. 2025. Nexus-Sum: Hierarchical LLM agents for long-form narra-tive summarization. In Proceedings of the 63rd An-nual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 10120– 10157, Vienna, Austria. Association for Computa-tional Linguistics. Nayu Liu, Junnan Zhu, Yiming Ma, Zhicong Lu, Wen-lei Xu, Yong Yang, Jiang Zhong, and Kaiwen Wei. 2025a. SARA: Salience-Aware Reinforced Adaptive Decoding for Large Language Models in Abstrac-tive Summarization. In Proceedings of the 63rd An-nual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 25450– 25463. Zhining Liu, Rana Ali Amjad, Ravinarayana Adkathi-mar, Tianxin Wei, and Hanghang Tong. 2025b. Selfelicit: Your language model secretly knows where is the relevant evidence. arXiv preprint arXiv:2502.08767 .Potsawee Manakul, Adian Liusie, and Mark Gales. 2023. Selfcheckgpt: Zero-resource black-box hallucination detection for generative large language models. In 
+
+Proceedings of the 2023 conference on empirical methods in natural language processing , pages 9004– 9017. Yifei Ming, Senthil Purushwalkam, Shrey Pandit, Zixuan Ke, Xuan-Phi Nguyen, Caiming Xiong, and Shafiq Joty. 2024. Faitheval: Can your lan-guage model stay faithful to context, even if" the moon is made of marshmallows". arXiv preprint arXiv:2410.03727 .Zhiliang Peng, Jianwei Yu, Wenhui Wang, Yaoyao Chang, Yutao Sun, Li Dong, Yi Zhu, Weijiang Xu, Hangbo Bao, Zehua Wang, and 1 others. 2026. Vibevoice: Expressive podcast generation with next-token diffusion. In The Fourteenth International Con-ference on Learning Representations .Pew Research Center. 2023. Audio and podcasting fact sheet. Accessed: 2025-09-02. Nina Rimsky, Nick Gabrieli, Julian Schulz, Meg Tong, Evan Hubinger, and Alexander Turner. 2024. Steer-ing llama 2 via contrastive activation addition. In 
+
+Proceedings of the 62nd Annual Meeting of the As-sociation for Computational Linguistics (Volume 1: Long Papers) , pages 15504–15522. Weijia Shi, Xiaochuang Han, Mike Lewis, Yulia Tsvetkov, Luke Zettlemoyer, and Wen-tau Yih. 2024. Trusting your evidence: Hallucinate less with context-aware decoding. In Proceedings of the 2024 Confer-ence of the North American Chapter of the Associ-ation for Computational Linguistics: Human Lan-guage Technologies (Volume 2: Short Papers) , pages 783–791, Mexico City, Mexico. Association for Com-putational Linguistics. Kurt Shuster, Spencer Poff, Moya Chen, Douwe Kiela, and Jason Weston. 2021. Retrieval augmentation reduces hallucination in conversation. In Findings of the Association for Computational Linguistics: EMNLP 2021 , pages 3784–3803. Alexander Matt Turner, Lisa Thiergart, Gavin Leech, David Udell, Juan J Vazquez, Ulisse Mini, and Monte MacDiarmid. 2023. Steering language mod-els with activation engineering. arXiv preprint arXiv:2308.10248 .Benjamin Warner, Antoine Chaffin, Benjamin Clavié, Orion Weller, Oskar Hallström, Said Taghadouini, Alexis Gallagher, Raja Biswas, Faisal Ladhak, Tom Aarsen, Griffin Thomas Adams, Jeremy Howard, and Iacopo Poli. 2025. Smarter, better, faster, longer: A modern bidirectional encoder for fast, memory efficient, and long context finetuning and inference. In Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , pages 2526–2547, Vienna, Austria. Association for Computational Linguistics. Yujia Xiao, Lei He, Haohan Guo, Feng-Long Xie, and Tan Lee. 2025. PodAgent: A comprehensive frame-work for podcast generation. In Findings of the As-sociation for Computational Linguistics: ACL 2025 ,pages 23923–23937, Vienna, Austria. Association for Computational Linguistics. Chenning Xu, Mao Zheng, Mingyu Zheng, and Mingyang Song. 2026. Podbench: A compre-hensive benchmark for instruction-aware audio-oriented podcast script generation. arXiv preprint arXiv:2601.14903 .Munazza Zaib, Wei Emma Zhang, Quan Z Sheng, Ad-nan Mahmood, and Yang Zhang. 2022. Conversa-tional question answering: A survey. Knowledge and Information Systems , 64(12):3151–3195. Taolin Zhang, Dongyang Li, Qizhou Chen, Chengyu Wang, and Xiaofeng He. 2025. BELLE: A bi-level multi-agent reasoning framework for multi-hop ques-tion answering. In Proceedings of the 63rd Annual Meeting of the Association for Computational Lin-guistics (Volume 1: Long Papers) , pages 4184–4202, Vienna, Austria. Association for Computational Lin-guistics. Tianyi Zhang, Varsha Kishore, Felix Wu, Kilian Q Weinberger, and Yoav Artzi. 2019. Bertscore: Eval-uating text generation with bert. arXiv preprint arXiv:1904.09675 .Tianyi Zhang, Faisal Ladhak, Esin Durmus, Percy Liang, Kathleen McKeown, and Tatsunori B Hashimoto. 2024. Benchmarking large language models for news summarization. Transactions of the Association for Computational Linguistics , 12:39–57. Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao Zhuang, Zi Lin, Zhuohan Li, Dacheng Li, Eric Xing, and 1 others. 2023. Judging llm-as-a-judge with mt-bench and chatbot arena. Advances in neural information pro-cessing systems , 36:46595–46623. A Appendix 
+
+A.1 Dataset details 0        
+
+> 50
+> 100
+> 150
+> 200
+> Academic Policy Legal Financial Medical
+> 2-10 pages 11-20 pages 21-30 pages 31-40 pages 41-50 pages
+
+Figure 6: The number of documents in each page range for the different domains. 
+
+We provide the links from which the documents are collected for each of the domains below: • Academic: https://arxiv.org/ 
+
+• Policy: https://gov-report-data. github.io/ 
+
+• Legal: https://indiankanoon.org/ 
+
+• Financial: https://www.annualreports. com/Companies?ind=i5 
+
+• Medical: https://pmc.ncbi.nlm.nih. gov/ 
+
+A.2 Evaluator Robustness Across Judge Models 
+
+One potential concern in LLM-as-a-judge evalu-ation is whether the observed improvements are specific to a particular evaluator model. To assess the robustness of our findings, we repeat the evalu-ation of catch-n-repair using Qwen2.5-72B as the evaluator in place of GPT-4o .The resulting faithfulness scores are shown in Ta-ble 4. Across all generator models and both in-domain (ID) and out-of-domain (OOD) settings, 
+
+catch-n-repair continues to improve faithfulness scores relative to vanilla generation. Moreover, the overall ranking of generator models remains broadly consistent across evaluators. While the absolute scores differ slightly between evaluators, the qualitative trends remain stable. In particular, both evaluators consistently identify im-provements in faithfulness after applying catch-n-repair , suggesting that the observed gains are not artifacts of a specific judge model. These results re-duce concerns regarding evaluator-specific bias and support the robustness of our conclusions across independent LLM evaluators.                                            
+
+> Lgen
+> ID OOD Avg. ∆
+> Van. CnR ∆Van. CnR ∆
+> Qwen2.5-14B 3.9±0.34.2±0.3+0 .33.5±0.54.0±0.4+0 .4+0 .35
+> Qwen2.5-32B 4.0±0.24.3±0.4+0 .33.8±0.44.1±0.4+0 .2+0 .25
+> Qwen2.5-72B 3.8±0.54.3±0.3+0 .54.0±0.44.2±0.3+0 .4+0 .45
+> LLaMA3.3-70B 3.9±0.34.2±0.2+0 .33.7±0.44.3±0.3+0 .6+0 .45
+> GPT-4o 4.1±0.24.5±0.4+0 .43.9±0.34.4±0.3+0 .5+0 .45
+
+Table 4: Faithfulness scores for in-domain (ID) and out-of-domain (OOD) test sets. Van. denotes vanilla prompting (Sec. 3.2), CnR indicates the catch-n-repair 
+
+strategy, ∆ represents the absolute improvement, and Avg. ∆ is the mean improvement across ID and OOD. The judge is Qwen-2.5-72B .
+
+A.3 Evaluating Coverage in Doc-to-Podcast 1        
+
+> 2
+> 3
+> 4
+> 5
+> Academic Policy Legal Financial Medical
+> GPT4o LLaMA-3.3-70B Qwen-2.5-72B Qwen-2.5-32B Qwen-2.5-14B
+
+Figure 7: The average coverage score as evaluated with 
+
+Leval set as GPT-4o . The scores for different Lgen are shown for the different domains. 
+
+The coverage scores for the different domains and the different generating LLMs are shown in Fig. 7. • GPT-4o achieves the highest coverage :Among all models, transcripts generated by 
+
+GPT-4o receive the highest average coverage score of 4.81 on the Likert scale, followed by 
+
+Qwen2.5-72B with a score of 4.37 .• Coverage scores of LLaMA are strikingly low : The coverage scores assigned to LLaMA 
+
+are strikingly low at 2.75 . The similar sized 
+
+Qwen2.5-72B gets a score of 4.37 . This high-lights a potential issue with using LLaMA as the generating LLM. • Bigger models are better in the Qwen family : As the model size increases in the 
+
+Qwen2.5 family, the coverage score increases. While the 14 B model has an average coverage score of 3.5, the 32 B model is much better at 
+
+3.97 . The 72 B model is the best of the three, with an average coverage score of 4.37 .• Coverage varies by domain : Like faithful-ness, the coverage score also varies according Lgen 
+
+In-Domain (ID) Out-of-Domain (OOD) Faithfulness Coverage Faithfulness Coverage Van. CnR Van. CnR Van. CnR Van. CnR 
+
+Qwen2.5-14B 4.1±0.5 4.2±0.6 3.8±0.4 3.5±0.7 3.7±0.7 4.1±0.5 3.4±0.5 3.3±0.5
+
+Qwen2.5-32B 4.1±0.5 4.4±0.5 4.0±0.6 4.0±0.5 4.0±0.6 4.2±0.5 4.0±0.4 4.0±0.5
+
+Qwen2.5-72B 4.0±0.4 4.3±0.4 4.3±0.6 4.1±0.7 3.9±0.3 4.3±0.4 4.3±0.4 4.1±0.7
+
+LLaMA3.3-70B 4.2±0.5 4.3±0.5 2.8±0.6 3.1±0.4 3.9±0.5 4.4±0.4 2.5±0.5 2.8±0.6
+
+GPT-4o 4.2±0.3 4.4±0.3 4.9±0.4 4.8±0.4 4.0±0.4 4.4±0.3 4.7±0.5 4.6±0.5  
+
+> Table 5: Faithfulness and coverage for in-domain (ID) and out-of-domain (OOD) test sets. Van. stands when the LLMs are prompted as described in Sec. 3.2, while CnR represents the scores when unfaithfulness is mitigated using the catch-n-repair strategy.
+
+to the domain. It is highest for the medical domain ( 4.13 ) and lowest for the legal domain (3.67 )
+
+A.4 Impact of catch-n-repair on Coverage 
+
+The results for faithfulness and coverage are shown in Table 5. The following are the key takeaways. • Minimal impact on coverage : Coverage re-mains largely unchanged, with only small de-creases ( ≤ 0.2 in most cases), indicating that the mitigation strategy does not significantly reduce transcript completeness. • GPT-4o is the best model for faithfulness and coverage : GPT-4o re-mains the best model in terms of balancing faithfulness and coverage in the generated podcasts. 
+
+A.5 Are LLMs really required for the catch 
+
+model? 
+
+The catch component can be viewed as a text clas-sification problem: given a podcast turn and its cor-responding source document, the model predicts whether the turn is faithful or unfaithful . An atten-tive reader might question the need for using an LLM for this classification objective. To investigate this, we replace the LLaMA-3.1-8B backbone with the encoder-based ModernBERT model (Warner et al., 2025). We observe that the F1-score on faith-ful validation examples decreases from 79 .9% to 
+
+76 .1% , while performance on unfaithful examples drops more substantially from 67 .3% to 60 .9% .These results suggest that long-context LLMs pro-vide a significant advantage for detecting subtle forms of ungroundedness in long-form conversa-tional generation. In particular, identifying unsup-ported yet factually plausible statements often re-quires reasoning over large portions of the source document, which remains challenging for shorter-context encoder architectures. Since the effective-ness of the catch-n-repair pipeline depends crit-ically on accurately identifying unfaithful turns, stronger long-context reasoning substantially im-proves the reliability of downstream repair. 
+
+A.6 License 
+
+• Qwen2.5 models - Apache license (https://huggingface.co/Qwen/Qwen2. 5-14B-Instruct/blob/main/LICENSE )• LLaMA models - LLaMA license ( https:// www.llama.com/llama3/license/ )
+
+A.7 Use of LLMs 
+
+LLMs were used for polishing the writing and also for help during coding. 
+
+A.8 Human annotation setup 
+
+The human evaluation study was conducted using 
+
+10 student annotators recruited from the univer-sity community. Annotators were presented with a source document and a generated podcast turns from the system described in Sec. 3.2, and were asked to rate the faithfulness of the podcast turns with respect to the source document on a Likert scale from 1 to 5.Annotators were specifically instructed to evalu-ate whether the information in the conversational turn was supported by the source document, rather than whether the content was factually plausible in general. In particular, they were asked to pe-nalize unsupported extrapolations, policy-oriented additions, or conversational embellishments not grounded in the document. Each example was in-dependently annotated by multiple annotators, and the final score was obtained by averaging the col-lected ratings. Annotators were financially com-pensated in accordance with local standards. The instruction for the human annotation is shown here. 
+
+Instruction to humans: Please go through the PDF. Grounding means explicit support from the context. Plausible or theoretically possible claims that are not mentioned in the context should be penalized. Please assign a score from 1–5 us-ing the following guidelines: (1) 5(Completely Grounded): ALL claims/questions are explicitly supported by the context. No speculation or ex-trapolation beyond what is directly stated. (2) 4(Mostly Grounded): Core claims are explicitly supported, with only very minor inferences that stay within the scope of the provided material. (3) 3(Partially Grounded): Some connection to context but includes unsupported claims, applications, or examples not mentioned in the source material. (4) 2(Mostly Ungrounded): Relates to the context but makes several significant unsupported claims or extrapolations beyond what is stated, even if plau-sible. (5) 1(Completely Ungrounded): Contradicts the context directly OR is completely unrelated/ir-relevant to the source material.

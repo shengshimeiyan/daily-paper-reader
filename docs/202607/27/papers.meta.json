@@ -1,0 +1,39 @@
+{
+  "label": "2026-07-27",
+  "date": "2026-07-27",
+  "generated_at": "2026-07-27T21:48:58",
+  "count": 2,
+  "papers": [
+    {
+      "paper_id": "202607/27/2607.21961v1-on-improving-faithfulness-of-podcasts-from-documents",
+      "section": "deep",
+      "title_en": "On Improving Faithfulness of Podcasts from Documents",
+      "authors": "Soumya Dutta, Tejas Indulal Dhamecha, Pannaga Shivaswamy",
+      "date": "2026-07-24",
+      "pdf": "https://arxiv.org/pdf/2607.21961v1",
+      "score": "9.0",
+      "evidence": "长文本播客生成的事实一致性",
+      "tldr": "LLMs常被用于从文档生成长篇幅播客内容，但极易引入无根据的幻觉信息。本文首次系统研究该任务的忠实度问题，构建了跨5个领域的1500+文档数据集，并提出回合级LLM-as-a-judge评估框架。针对GPT-4o等先进模型仍频繁产生不忠实内容的现象，提出模型无关的catch-n-repair框架来检测并重写不忠实回合。实验表明该方法在保持对话流畅度的同时，显著提升了同领域及跨领域设置的生成忠实度。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Large language models (LLMs) are increasingly used to generate long-form conversational content such as podcasts from textual sources. While these systems produce fluent and engaging narratives, they often introduce ungrounded information. In this work, we present the first systematic study of faithfulness in document-grounded podcast generation, where grounding must be maintained across conversational turns in long-form, multi-speaker transcripts. We construct a dataset of over 1500 documents spanning five domains and generate podcast transcripts using multiple LLMs. We introduce a turn-level LLM-as-a-judge framework for evaluating whether conversational turns are supported by the source document, and validate its reliability through human studies. Our analysis shows that even state-of-the-art models, including GPT-4o, frequently generate ungrounded content. To mitigate this issue, we propose catch-n-repair, a model-agnostic framework that detects and rewrites unfaithful conversational turns while preserving conversational flow. Experiments demonstrate consistent improvements in faithfulness across both in-domain and out-of-domain settings.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/27/2607.22098v1-reasoning-denoiser-denoising-reasoning-traces-for-hallucination-detection-in-large-reasoning-models",
+      "section": "deep",
+      "title_en": "Reasoning Denoiser: Denoising Reasoning Traces for Hallucination Detection in Large Reasoning Models",
+      "authors": "Junlin Fang, Do Nguyen-Thanh, Xiaogang Xu, Zhen Fang, Sean Du",
+      "date": "2026-07-24",
+      "pdf": "https://arxiv.org/pdf/2607.22098v1",
+      "score": "9.0",
+      "evidence": "长推理轨迹中的幻觉检测",
+      "tldr": "大型推理模型生成的长推理轨迹包含幻觉检测的有用信号，但常被无关和重复的噪声步骤掩盖，导致现有检测方法性能下降。为此，本文提出REDE框架，利用最终答案注意力作为自动监督信号来塑造步骤级表示空间，从而精准识别并过滤噪声步骤。在多个推理基准上的广泛实验表明，REDE能持续提升幻觉检测性能，优于多种竞争基线。该工作有效解决了推理轨迹去噪难题，显著增强了大型推理模型的可信度与安全性。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Large reasoning models (LRMs) generate long reasoning traces before producing final answers. While these traces may contain useful signals for hallucination detection, harnessing them is non-trivial because long trajectories often include noisy steps that obscure the cues relevant to truthfulness assessment. In this paper, we identify two prevalent forms of reasoning noises, i.e., irrelevant steps and repetitive steps, and show that both substantially degrade hallucination detection performance. Existing confidence-based scores and naive embedding-based filtering fail to reliably separate noisy from informative steps. To address this challenge, we propose REDE, a novel learning framework for denoising reasoning traces for hallucination detection. Specifically, REDE leverages final-answer attention as an automatic supervision signal to shape the step-level representation space, yielding refined embeddings in which noisy steps can be reliably identified and filtered. REDE can be readily plugged into diverse hallucination detectors by operating on the filtered reasoning trajectory after removing noisy steps. Extensive experiments on multiple reasoning benchmarks show that REDE consistently improves detection performance over competitive baselines.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "errors": []
+}
