@@ -1,0 +1,392 @@
+Title: DeepFaith: Evidence-Grounded LLMs for Faithful Incident Reporting in Multi-Stage APT Defense
+
+URL Source: https://arxiv.org/pdf/2607.24348v1
+
+Published Time: Tue, 28 Jul 2026 01:55:49 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# DeepFaith: Evidence-Grounded LLMs for Faithful Incident Reporting in Multi-Stage APT Defense 
+
+Trung V. Phan †, Tri Gia Nguyen § and Thomas Bauschert ††Chair of Communication Networks, Technische Universit¨ at Chemnitz, 09126 Chemnitz, Germany 
+
+§Department of Information Assurance, FPT University, Da Nang 50509, Vietnam Email: trung.phan-van@etit.tu-chemnitz.de, tri@ieee.org, thomas.bauschert@etit.tu-chemnitz.de 
+
+Abstract —Advanced Persistent Threats (APTs) are difficult to detect and interpret due to their multi-stage and stealthy nature. While recent autonomous defense systems leverage provenance graphs and learning-based models for detection and mitigation, their outputs remain largely machine-oriented and difficult for analysts to interpret. Large language models (LLMs) offer a promising interface for report generation, but often produce hal-lucinated or weakly grounded content. In this paper, we propose DeepFaith, an evidence-grounded framework for faithful incident reporting in multi-stage APT defense. DeepFaith transforms structured outputs from autonomous defense and explainability modules into natural-language reports that are explicitly aligned with underlying system evidence. The framework integrates a unified evidence representation, evidence-grounded prompting, faithfulness-aware generation, and post-generation verification to ensure that all generated statements are supported. Experiments in a realistic enterprise testbed demonstrate that DeepFaith improves faithfulness from 0.68 to 0.92, reduces unsupported claims from 0.32 to 0.08, and increases temporal consistency from 0.6 to 0.88, while maintaining concise reports and lower error rates than existing template-based and LLM-based solutions. These results show that evidence-grounded generation enables reliable, interpretable, and actionable reporting for security operations centers. 
+
+Index Terms —Advanced Persistent Threat (APT), Autonomous Cyber Defense, Explainable AI (XAI), Large Language Models (LLMs), Security Operations Centers (SOCs). 
+
+I. I NTRODUCTION 
+
+Advanced Persistent Threats (APTs) [1] represent one of the most challenging classes of cyber attacks due to their stealthy, multi-stage, and long-term nature. Unlike conventional attacks, APTs unfold over extended periods, traverse multiple hosts, and progress through stages such as reconnaissance, initial compromise, lateral movement, and data exfiltration. Detecting and mitigating such attacks requires not only analyzing large volumes of heterogeneous telemetry data, but also reasoning over complex causal dependencies and temporal evolution across the system [2]. Recent research has therefore shifted toward provenance-based and learning-driven approaches that model system behavior as structured graphs and leverage deep learning for detection [3]. Building on these advances, autonomous cyber defense frameworks have been proposed to perform adaptive mitiga-tion in real time [4]. In particular, our prior stage-aware system 
+
+DeepStage [5] combines graph neural networks (GNNs) with reinforcement learning (RL) to infer attack progression and select defense actions. In addition, our prior complementary work DeepXplain [6] introduces explainability mechanisms that extract structural, temporal, and decision-level evidence from these models. While these approaches improve detection accuracy and policy effectiveness, their outputs remain largely machine-centric, consisting of latent embeddings, probability distributions, and explanation signals. As a result, human ana-lysts in security operations centers (SOCs) must still manually interpret and synthesize this information, slowing response. At the same time, large language models (LLMs) have emerged as a promising tool for assisting SOC workflows, including alert triage, log analysis, and incident reporting [7], [8]. However, recent studies show that unconstrained LLMs often produce hallucinated or unverifiable content, especially in complex and safety-critical domains [9]. In the context of cyber defense, such errors can lead to incorrect conclusions and inappropriate mitigation actions. This limitation suggests that LLMs should not be used as standalone reasoning engines, but rather as communication layers that translate verified evidence into human-readable outputs. These observations reveal a fundamental gap: while up-stream systems can detect, explain, and respond to APT attacks, there is no principled mechanism to convert their outputs into concise, faithful, and analyst-friendly reports. Existing reporting approaches are either template-based, which lack flexibility, or LLM-based, which lack grounding and reliability [10], [11]. Bridging this gap is critical for enabling effective human–AI collaboration in SOC environments. To address this challenge, we propose DeepFaith, a frame-work for evidence-grounded incident report generation. Deep-Faith takes structured outputs from autonomous defense and explainability modules and transforms them into natural-language reports that are both informative and verifiably sup-ported by evidence. The key idea is to treat report generation as a constrained conditional generation problem, where the language model is guided by structured evidence and explicitly evaluated for faithfulness. DeepFaith introduces three main contributions. First , we define a unified evidence representation that integrates stage estimation, provenance structure, temporal information, and action rationale into a common interface. Second , we pro-pose a faithfulness-aware generation framework incorporat-ing evidence-grounded prompting, faithfulness regularization, temporal consistency constraints, and confidence-aware ex-pression. Third , we design a verification and regeneration arXiv:2607.24348v1 [cs.CR] 27 Jul 2026 mechanism that evaluates reports against underlying evidence and filters unsupported outputs. We evaluate DeepFaith in a realistic enterprise testbed building on our prior DeepStage [5] and DeepXplain [6] frameworks, using multi-stage APT sce-narios generated via an adversarial emulation framework [12]. Results show that DeepFaith significantly improves faithful-ness, reduces hallucination, and enhances temporal alignment compared to template-based and LLM-based baselines. II. R ELATED WORK 
+
+A. Autonomous APT Detection and Defense 
+
+Advanced Persistent Threats (APTs) are difficult to detect due to their long duration, multi-host propagation, and weak local indicators. As a result, research has moved beyond signature-based methods toward graph-based and learning-driven approaches that capture causal dependencies and tem-poral evolution. Surveys highlight that modern APT defense increasingly relies on integrated telemetry, attack-stage reason-ing, and adaptive response [2], [13]. Provenance graphs have emerged as a powerful representa-tion for modeling system behavior, preserving both structural and temporal relationships among entities. Systems such as FLASH demonstrate that graph representation learning over provenance data can significantly improve intrusion detection performance in enterprise environments [1]. However, prac-tical deployment remains challenging due to scalability and attribution limitations [14]. Reinforcement learning (RL) has been widely explored for adaptive cyber defense, enabling sequential decision-making under uncertainty in dynamic environments [15], [16]. Recent work incorporates risk-aware or entity-centric state repre-sentations for effective mitigation planning [17], [18]. More recently, our prior stage-aware framework DeepStage [5] inte-grates provenance graphs with attack-stage estimation to guide hierarchical RL policies. While these approaches improve defense effectiveness, their outputs remain largely machine-oriented, limiting direct usability for human analysts. 
+
+B. Explainability for Reinforcement Learning and Graph-Based Security 
+
+Interpretability in sequential decision-making has moti-vated increasing interest in explainable reinforcement learning (XRL). Existing approaches focus on feature attribution, pol-icy summarization, and explanation generation, but are often loosely coupled with decision-making and remain domain-agnostic [19]. This limitation is critical in cyber defense, where high-impact mitigation actions require verifiable justification. Explainability for graph neural networks (GNNs) has also been extensively studied. Methods such as GNNExplainer identify important subgraphs by learning masks over nodes and edges [20], while recent surveys emphasize evaluation criteria such as correctness, robustness, and compactness [21], [22]. Although effective for static prediction tasks, these methods are less suited for dynamic, action-driven environments. To address this, our prior DeepXplain [6] integrates struc-tural, temporal, and policy-level explanations into autonomous defense through evidence alignment and confidence-aware learning. While this improves interpretability at the model level, the outputs remain machine-centric and do not directly support analyst-facing communication. 
+
+C. LLMs for Security Operations and Incident Reporting 
+
+Large language models (LLMs) are increasingly explored for SOC tasks such as alert triage, log analysis, and incident re-porting. Recent surveys highlight their potential for workflow acceleration, while emphasizing risks related to hallucination, inconsistency, and unverifiable reasoning [7], [8]. In particular, Kramer et al. show that fully autonomous LLM-based incident summaries often omit key details and introduce factual errors, whereas human-in-the-loop approaches yield more reliable results [9]. This suggests that LLMs are better suited as com-munication layers rather than standalone reasoning systems. 
+
+D. Grounded Generation from Structured Evidence 
+
+A growing body of work studies text generation from structured inputs such as databases and knowledge graphs. These approaches emphasize not only fluency, but also faith-fulness, schema adherence, and execution-grounded correct-ness [10], [11]. Such considerations are particularly important in SOC environments, where unsupported claims can lead to operational risk. However, existing grounded-generation methods are largely domain-agnostic and do not account for the specific characteristics of cyber defense outputs, such as stage distributions, provenance subgraphs, temporal evidence, and action rationales. Conversely, prior cyber-defense research focuses on detection and explanation, but not on grounded natural-language reporting. 
+
+E. Research Gap 
+
+In summary, prior work shows that ( i) provenance-based and stage-aware models, including our prior DeepStage frame-work, provide a strong foundation for APT defense [1], [5], ( ii ) explainability methods, including our prior Deep-Xplain framework, expose structural and temporal evidence but remain machine-centric [6], [19], [21], and ( iii ) LLMs are effective for analyst-facing communication only when properly grounded [7], [9]. Therefore, DeepFaith is designed at this intersection, enabling faithful and interpretable report generation from structured defense outputs. III. S YSTEM MODEL 
+
+A. Autonomous Defense and Explanation Pipeline 
+
+We build on our prior APT defense architecture Deep-Stage [5] together with our prior explainability pipeline Deep-Xplain [6]. As shown in Fig. 1, enterprise telemetry from host and network monitoring is transformed into a dynamic provenance graph 𝐺 𝑡 = (𝑉 𝑡 , 𝐸 𝑡 ) at time 𝑡 , where nodes repre-sent system entities (e.g., processes, files, sockets) and edges encode causal interactions such as execution, access, and communication. This representation preserves structural and temporal dependencies essential for modeling multi-stage APT behavior in the enterprise network environment. Fig. 1. Data and control flow of the proposed DeepFaith framework building upon the DeepStage [5] and the DeepXplain [6] solutions. 
+
+A graph neural network encodes 𝐺 𝑡 into an embedding 
+
+𝑔 𝑡 = 𝑓 GNN (𝐺 𝑡 ), summarizing system interactions in a compact latent vector. Temporal dynamics are captured by a recur-rent stage estimator, 𝑝 𝑡 = 𝑓 LSTM (𝑔 1, . . . , 𝑔 𝑡 ), where 𝑝 𝑡 ∈ R𝐾 
+
+denotes the probability distribution over 𝐾 attack stages. To handle partial observability, a belief state 𝑏 𝑡 is maintained as 𝑏 𝑡 = 𝑓 LSTM (𝑏 𝑡 −1, 𝑜 𝑡 ), 𝑜 𝑡 = [𝑔 𝑡 , 𝑝 𝑡 , 𝑎 𝑡 −1], which integrates current observations and past actions. A policy then selects a mitigation action 𝑎 𝑡 ∼ 𝜋 𝜃 (𝑎 | 𝑏 𝑡 ) for adaptive defense [5]. To improve interpretability, an explainability module [6] op-erates on the system state X𝑡 = {𝐺 𝑡 , 𝑔 𝑡 , 𝑝 𝑡 , 𝑏 𝑡 , 𝑎 𝑡 } and produces an explanation signal 𝑒 𝑡 = (𝐺 ∗ 
+
+> 𝑡
+
+, 𝐼 𝑡 , 𝐴 𝑡 ), where 𝐺 ∗ 
+
+> 𝑡
+
+is a salient subgraph capturing critical interactions, 𝐼 𝑡 identifies influential time steps, and 𝐴 𝑡 provides the rationale for action selection. These components expose structural, temporal, and decision-level evidence for downstream use. 
+
+B. Evidence Representation 
+
+The outputs of the defense and XAI modules are heteroge-neous and not directly suitable for reporting. To bridge this gap, we define a unified evidence representation: 
+
+E𝑡 = {𝑝 𝑡 , 𝑏 𝑡 , 𝑎 𝑡 , 𝐺 ∗ 
+
+> 𝑡
+
+, 𝐼 𝑡 , 𝐴 𝑡 }. (1) This representation aggregates the key information required to describe system state and defense decisions: 𝑝 𝑡 encodes stage probabilities, 𝑏 𝑡 captures latent context, 𝑎 𝑡 specifies the selected action, 𝐺 ∗ 
+
+> 𝑡
+
+provides structural evidence, 𝐼 𝑡 captures temporal progression, and 𝐴 𝑡 explains the action rationale. As such, E𝑡 serves as a structured interface between the autonomous defense system and the DeepFaith framework. IV. P ROBLEM FORMULATION 
+
+Given structured evidence E𝑡 , the goal is to generate a natural-language incident report 𝑦 𝑡 that accurately reflects the system state and defense decision: 
+
+𝑦 𝑡 ∼ 𝑃 (𝑦 | E 𝑡 ). (2) The report 𝑦 𝑡 consists of three components: ( i) an incident summary describing the attack stage and risk level, ( ii ) an 
+
+attack timeline capturing key events, and ( iii ) a mitigation rationale explaining the selected action. Unlike standard text generation, outputs must remain grounded in E𝑡 , ensuring that all statements are supported by model-derived evidence. 
+
+A. Faithfulness Constraint 
+
+To enforce grounding, we define a faithfulness function measuring alignment between 𝑦 𝑡 and E𝑡 . Let 𝜙 (𝑦 𝑡 ) extract atomic claims from the report, and let 𝜓 (E 𝑡 ) denote evidence-supported facts derived from: stage information from 𝑝 𝑡 ,events from 𝐺 ∗ 
+
+> 𝑡
+
+, timestamps from 𝐼 𝑡 , action rationale from 𝐴 𝑡 .A claim 𝑐 ∈ 𝜙 (𝑦 𝑡 ) is supported if it matches a fact in 𝜓 (E 𝑡 ).The faithfulness score is: 
+
+𝐹 (𝑦 𝑡 , E𝑡 ) = 1
+
+|𝜙 (𝑦 𝑡 )| ∑︁ 𝑐 ∈ 𝜙 ( 𝑦 𝑡 )
+
+1[𝑐 ∈ 𝜓 (E 𝑡 )] . (3) This metric captures the proportion of evidence-supported claims, penalizing unsupported content. B. Temporal Consistency 
+
+The report must preserve the temporal structure of the attack. Let 𝜋 = (𝑒 1, . . . , 𝑒 𝑛 ) denote the generated event se-quence. Temporal consistency is defined with respect to key timestamps 𝐼 𝑡 :
+
+𝐶 time = 1
+
+𝑛 
+
+> 𝑛
+
+∑︁ 
+
+> 𝑖 =1
+
+1[timestamp (𝑒 𝑖 ) ∈ 𝐼 𝑡 ]. (4) Chronological ordering must satisfy timestamp (𝑒 𝑖 ) ≤
+
+timestamp (𝑒 𝑖 +1), and stage progression should not regress over time. These constraints ensure coherent and evidence-aligned timelines. 
+
+C. Confidence-Aware Expression 
+
+Let 𝑐 𝑡 = max 𝑘 𝑝 (𝑘 ) 
+
+> 𝑡
+
+denote the stage confidence. This value regulates linguistic expression: high confidence permits as-sertive statements, while lower confidence encourages cau-tious phrasing. A mapping 𝑢 𝑡 = 𝑓 conf (𝑐 𝑡 ) is incorporated into prompting to align language with model uncertainty. 
+
+D. Optimization Objective 
+
+The objective combines generation quality with grounding constraints: 
+
+L = Lgen + 𝜆 1 (1 − 𝐹 (𝑦 𝑡 , E𝑡 )) + 𝜆 2Lcompact , (5) where 𝜆 1 and 𝜆 2 balance fluency, faithfulness, and conciseness. The generation loss is: 
+
+Lgen = −  
+
+> |𝑦 𝑡 |
+
+∑︁ 
+
+> 𝑖 =1
+
+log 𝑃 𝜃 (𝑦 𝑖 | 𝑦 <𝑖 , P𝑡 ), (6) and the compactness term penalizes excessive length: 
+
+Lcompact = max (0, |𝑦 𝑡 | − 𝐿 max ). (7) This formulation encourages reports that are accurate, in-terpretable, and concise. V. D ESIGN OF DEEP FAITH FRAMEWORK 
+
+In this section, we introduce the DeepFaith framework designed to transform structured evidence E𝑡 into a human-readable incident report 𝑦 𝑡 that is informative and faithful to the system state. As illustrated in Fig. 1, the framework acts as a module bridging machine-level outputs and analyst-facing reports. The transformation from E𝑡 to 𝑦 𝑡 is non-trivial because the input combines graph structures (𝐺 ∗ 
+
+> 𝑡
+
+), probability distributions ( 𝑝 𝑡 ), temporal indices ( 𝐼 𝑡 ), and action explanations ( 𝐴 𝑡 ). To address this heterogeneity, DeepFaith decomposes report generation into four phases:  
+
+> •
+
+Evidence serialization : which converts structured evi-dence into normalized textual fields;  
+
+> •
+
+Evidence-grounded prompt construction : which orga-nizes serialized evidence into a constrained prompt;  
+
+> •
+
+Faithfulness-aware language generation : which pro-duces an initial report while enforcing grounding and consistency constraints;  
+
+> •
+
+Verification and regeneration : which evaluates the gen-erated report against the structured evidence and regener-ates outputs that do not satisfy faithfulness requirements. 
+
+A. Evidence Serialization 
+
+The first phase converts the structured evidence E𝑡 =
+
+{𝑝 𝑡 , 𝑏 𝑡 , 𝑎 𝑡 , 𝐺 ∗ 
+
+> 𝑡
+
+, 𝐼 𝑡 , 𝐴 𝑡 } into a normalized intermediate represen-tation ˜E𝑡 = S(E 𝑡 ), where S(·) is a deterministic serialization function. The purpose of serialization is to transform hetero-geneous inputs into semantically meaningful textual fields that can be consumed by a language model. Formally, the serialized representation can be expressed as: 
+
+˜E𝑡 = {𝑠 𝑡 , 𝜏 𝑡 , 𝛾 𝑡 , 𝛼 𝑡 }, (8) where 𝑠 𝑡 , 𝜏 𝑡 , 𝛾 𝑡 , and 𝛼 𝑡 denote stage, temporal, structural, and action-level evidence fields, respectively. This step is essential because it creates a stable and inter-pretable interface between the autonomous defense model and the language model. It also ensures that prompting is based on normalized evidence rather than raw heterogeneous outputs. 
+
+B. Evidence-Grounded Prompt Construction 
+
+The serialized evidence ˜E𝑡 is then converted into a struc-tured prompt P𝑡 = P ( ˜E𝑡 ), which serves as the conditioning context for the language model. The prompt contains three main components:  
+
+> •
+
+Task instruction : which specifies that the model must generate an incident report;  
+
+> •
+
+Evidence fields : which provide the serialized stage, tem-poral, structural, and action information;  
+
+> •
+
+Grounding constraints : which explicitly instruct the model to avoid unsupported claims and remain faithful to the provided evidence. Formally, the prompt can be represented as: 
+
+P𝑡 = [I , 𝑠 𝑡 , 𝜏 𝑡 , 𝛾 𝑡 , 𝛼 𝑡 ], (9) where I denotes the instruction template. This prompt design imposes a strong inductive bias on the language model: rather than generating free-form text from loosely related context, the model is explicitly guided to produce outputs grounded in the evidence fields. 
+
+C. Faithfulness-Aware Language Generation 
+
+Given the structured prompt P𝑡 , DeepFaith generates the incident report through a conditional language model: 
+
+𝑦 𝑡 ∼ 𝑃 𝜃 (𝑦 | P 𝑡 ), (10) where 𝜃 denotes the model parameters. To align language generation with the optimization objective defined in Equation (5), DeepFaith incorporates three complementary mechanisms. 
+
+1) Faithfulness Regularization: The faithfulness loss is defined as: 
+
+Lfaith = 1 − 𝐹 (𝑦 𝑡 , E𝑡 ), (11) which penalizes claims that are not supported by the evidence. This term explicitly constrains generated text to remain con-sistent with the underlying model state. As a result, the report is encouraged to reflect actual system behavior rather than unsupported inferences. 2) Confidence-Aware Conditioning: The stage confidence score 𝑐 𝑡 = max 𝑘 𝑝 𝑡 ,𝑘 is incorporated into the prompt: 
+
+P𝑡 ← P 𝑡 ∪ { 𝑐 𝑡 }. (12) This allows the language model to calibrate its phrasing according to uncertainty. For example, high-confidence situ-ations may justify assertive wording, whereas low-confidence situations should lead to cautious descriptions. This helps align generated language with the model’s epistemic uncertainty. 
+
+3) Length Regularization: To ensure concise and actionable reports, DeepFaith employs a compactness loss, as defined in Equation (7), to penalize outputs whose length exceeds a predefined budget 𝐿 max , where |𝑦 𝑡 | denotes the length of the generated report. This constraint is particularly important in SOC environments, where analysts typically prefer short, information-dense summaries. By limiting unnecessary ver-bosity, the model is encouraged to produce focused reports that highlight only the most relevant information. 
+
+D. Verification and Regeneration 
+
+At inference time, the incident report is generated by max-imizing the conditional likelihood under the language model: 
+
+𝑦 𝑡 = arg max  
+
+> 𝑦
+
+𝑃 𝜃 (𝑦 | P 𝑡 ), (13) where P𝑡 is the evidence-grounded prompt and 𝑃 𝜃 denotes the parameterized language model. In practice, this maximization can be approximated using decoding strategies such as beam search or nucleus sampling [7]. To further improve reliability, DeepFaith incorporates a post-generation verification step that evaluates the faithfulness score 𝐹 (𝑦 𝑡 , E𝑡 ), which quantifies the extent to which the generated report is supported by the structured evidence E𝑡 .If the faithfulness score falls below a predefined threshold 
+
+𝜏 𝐹 ∈ [ 0, 1], i.e., 𝐹 (𝑦 𝑡 , E𝑡 ) < 𝜏 𝐹 , the generated report is flagged for regeneration, as indicated by the red dashed feedback loop in Fig. 1. The threshold 𝜏 𝐹 controls the strictness of the verification process and can be tuned according to application requirements. This mechanism acts as a safeguard against unsupported or hallucinated content, ensuring that only reli-able and evidence-grounded reports are presented to analysts, which is critical in safety-sensitive SOC environments. 
+
+E. Human-AI Collaboration in SOC 
+
+DeepFaith reports support SOC workflows such as triage, mitigation, and investigation. By providing structured sum-maries, timelines, and rationales, the system improves situa-tional awareness and reduces cognitive load. Confidence-aware expressions further help analysts calibrate trust, enabling ef-fective human–AI collaboration. VI. C ASE STUDY : R EALISTIC APT L ATERAL MOVEMENT 
+
+A. Attack Scenario Overview 
+
+We consider a stage space with 𝐾 = 7 discrete states, indexed as 𝑘 ∈ { 0, 1, 2, 3, 4, 5, 6}, where 𝑘 = 0 denotes the 
+
+no-attack (benign) state, and 𝑘 = 1 to 6 correspond to six APT stages [12]: reconnaissance, initial compromise, privilege escalation, lateral movement, command-and-control, and data exfiltration, respectively. In this scenario, an attacker initially compromises a user workstation in the LAN zone (Host A) through credential leakage and attempts to move laterally to a database server in the server zone (Host B). The attack leverages credential dumping and remote service execution over SMB, while benign background activities are simultaneously present. 
+
+B. Step-by-Step Attack Execution 
+
+Step 1: Initial Compromise and Credential Access. The attacker executes a credential dumping script on Host A:   
+
+> •/usr/bin/python3 cred_dump.py
+
+which accesses sensitive files such as:  
+
+> •/etc/shadow
+
+Step 2: Credential Reuse and Remote Execution. Using the extracted credentials, the attacker initiates:        
+
+> •psexec.py -target HostB -u admin -p *****
+
+This results in SMB authentication and remote execution from Host A (LAN) to Host B (server zone). 
+
+Step 3: Provenance Graph Construction. The telemetry is fused into a provenance graph 𝐺 𝑡 , where nodes represent processes ( python3 , psexec ), files ( /etc/shadow ), and network sockets, and edges encode causal interactions across hosts and network zones. 
+
+Step 4: Stage Estimation and Defense Action. The GNN encodes 𝐺 𝑡 into embedding 𝑔 𝑡 , and the stage estimator pro-duces the following probability distribution over 𝐾 = 7 stages: 
+
+𝑝 𝑡 = [0.03 , 0.04 , 0.05 , 0.06 , 0.78 , 0.03 , 0.01 ]. The confidence score is 𝑐 𝑡 = max 𝑘 𝑝 (𝑘 ) 
+
+> 𝑡
+
+= 0.78 , indicating that the system is highly confident the attack is in the lateral movement stage (𝑘 = 4). Based on the inferred belief state and the stage estimation, the DRL-based policy 𝜋 𝜃 selects a defense action 
+
+𝑎 𝑡 , which in this case corresponds to network interface isola-tion (𝑎 19 in the DeepStage [5]). This action aims to contain the compromised host and prevent further lateral propagation within the enterprise network. 
+
+Step 5: Explanation Generation. The XAI evidence mod-ule extracts: 𝐺 ∗ 
+
+> 𝑡
+
+: a critical subgraph capturing python3 →     
+
+> /etc/shadow →psexec →SMB connection
+
+, 𝐼 𝑡 : key timestamps (e.g., 10:32:15 and 10:33:02 ), 𝐴 𝑡 : rationale recommending   
+
+> network interface isolation
+
+.
+
+Step 6: Evidence-Grounded Report Generation. Deep-Faith constructs prompt P𝑡 from E𝑡 and generates:                              
+
+> [DeepFaith SOC Report] ----------------------------------------Stage: Lateral Movement (k=4) Confidence: 0.78 [Timeline] 10:32:15-Credential file access detected. 10:33:02-Remote execution to internal server. [Analysis] Credential reuse and unauthorized lateral movement detected across network zones. [Recommended Action] Isolate the affected host to prevent further spread. ----------------------------------------
+
+Step 7: Faithfulness Verification. The report is decom-posed into claims 𝜙 (𝑦 𝑡 ) and matched against evidence 𝜓 (E 𝑡 ).Suppose: 𝐹 (𝑦 𝑡 , E𝑡 ) = 0.83 . Since 𝐹 (𝑦 𝑡 , E𝑡 ) ≥ 𝜏 𝐹 = 0.8, the report is accepted. 
+
+Step 8: SOC Response. The analyst isolates Host A, blocks SMB connections, resets credentials, initiates threat hunting. Note that this behavior corresponds to the Lateral Movement tactic (TA0008) and Remote Services technique (T1021) in the MITRE ATT&CK framework [12]. VII. E VALUATION SETUP 
+
+A. Enterprise Testbed and Data Sources 
+
+Following our prior DeepStage [5], experiments are con-ducted in a realistic enterprise testbed segmented into four zones: LAN, DMZ, server, and management. This setup re-flects typical enterprise architectures and enables evaluation of multi-stage APT behavior across domains. Host telemetry is collected from endpoint monitoring tools (e.g., Auditd), while network events are captured by Zeek sensors. These data sources are normalized and fused into provenance graphs 
+
+𝐺 𝑡 , where nodes represent system entities (e.g., processes, files, sockets) and edges encode causal interactions such as execution and access. To emulate realistic APT campaigns, we use CALDERA-driven adversarial playbooks [12], covering all attack stages from reconnaissance to data exfiltration. Benign background activity is executed concurrently to introduce noise and reflect real SOC environments. The same attack-stage definitions, telemetry intervals, and graph construction settings as our prior 
+
+DeepStage are used for consistency. Results are averaged over 10 runs to account for stochastic variability. 
+
+B. APT Defense and XAI Setup 
+
+We follow the pipeline of our prior DeepStage [5] and 
+
+DeepXplain [6] frameworks. The provenance graph 𝐺 𝑡 is encoded by a GNN into embedding 𝑔 𝑡 . A recurrent estimator produces stage distributions 𝑝 𝑡 , while a DRL agent generates belief states 𝑏 𝑡 and defense actions 𝑎 𝑡 . The prior DeepXplain 
+
+module produces structured explanations (𝐺 ∗ 
+
+> 𝑡
+
+, 𝐼 𝑡 , 𝐴 𝑡 ), which are integrated into the unified evidence representation E𝑡 used by DeepFaith. 
+
+C. Language Model and Implementation 
+
+DeepFaith uses a large language model with structured prompting. We adopt LLaMA-2-13B [23] as the backbone for evidence-grounded report generation. The model is con-ditioned on serialized evidence to produce faithful and in-terpretable outputs (see Table I). The serialization module converts 𝐺 ∗ 
+
+> 𝑡
+
+into entity-relation triples and 𝐼 𝑡 into ordered timestamps, forming structured textual inputs. Confidence scores 𝑐 𝑡 are included in prompts to regulate linguistic uncer-tainty. A verification module computes 𝐹 (𝑦 𝑡 , E𝑡 ) and triggers regeneration if it falls below a threshold, ensuring outputs remain grounded in evidence. Note that in the current implementation, Eq. (5) serves as a design objective, while its components are approximated                                          
+
+> TABLE I DEEP FAITH MODEL AND MODULE CONFIGURATION
+> Module Component Setting
+> Verification Faithfulness metric 𝐹 (𝑦 𝑡 ,E𝑡 )
+> Threshold 𝜏 𝐹 =0.8
+> Module Regeneration Triggered if 𝐹 < 𝜏 𝐹
+> Language Model LLaMA-2-13B [23] Decoding Beam search ( 𝐵 =5)Model Maximum length 𝐿 max =256 tokens Prompt Prompt type Structured prompt P𝑡
+> Input fields {𝑠 𝑡 , 𝜏 𝑡 , 𝛾 𝑡 , 𝛼 𝑡 }
+> Construction Confidence input 𝑐 𝑡 appended to prompt Evidence Graph representation Entity-relation triples from 𝐺 ∗
+> 𝑡
+> Temporal encoding Ordered timestamps from 𝐼 𝑡
+> Serialization Action explanation Textual rationale from 𝐴 𝑡
+
+through structured prompting, confidence-aware conditioning, compact decoding, and post-generation verification rather than end-to-end fine-tuning. 
+
+D. Baselines 
+
+We compare the DeepFaith framework against three repre-sentative baselines that reflect common approaches for incident report generation in SOC environments. All baselines use the same underlying LLM to ensure fair comparison, differing only in input representation and prompting strategy. 
+
+1) Template-Based Reporting: This baseline implements a rule-based reporting system using predefined templates. Specifically, structured inputs from E𝑡 are directly mapped into fixed textual fields. For example, the stage is selected as ˆ𝑘 𝑡 = arg max 𝑘 𝑝 (𝑘 ) 
+
+> 𝑡
+
+, timestamps are taken from 𝐼 𝑡 , and the selected action 𝑎 𝑡 is converted into a predefined description. Similar template-based reporting is widely used in SIEM systems [24]. 
+
+2) Vanilla LLM: This baseline uses the same LLM back-bone (LLaMA-2-13B) but without structured evidence ground-ing. The model is prompted using raw or minimally processed inputs, i.e., our prior DeepXplain outputs (𝐺 ∗ 
+
+> 𝑡
+
+, 𝐼 𝑡 , 𝐴 𝑡 ). No structured serialization or grounding constraints are applied. This baseline follows standard LLM usage for text genera-tion [25]. 
+
+3) Chain-of-Thought (CoT) Prompting: This baseline ex-tends the Vanilla LLM by incorporating reasoning-oriented prompts. The model first produces a reasoning chain (e.g., identifying suspicious processes, inferring attack stage), fol-lowed by a final report. This baseline follows the chain-of-thought prompting paradigm [26]. VIII. R ESULTS AND ANALYSIS 
+
+A. Quantitative Comparison 
+
+Fig. 2 summarizes the performance of DeepFaith compared to three representative baselines across key evaluation metrics. We evaluate report quality using four complementary metrics: (i) Faithfulness (𝐹 ), defined as the proportion of claims in the generated report that are supported by structured evidence E𝑡 ;(ii ) Unsupported Claim Rate (UCR), measuring the fraction of claims not grounded in E𝑡 ; ( iii ) Temporal Consistency (𝐶 time ), capturing alignment between generated timelines and important timestamps 𝐼 𝑡 ; and ( iv ) Report Length , indicating conciseness. Together, these metrics evaluate correctness, com-pleteness, coherence, and operational usability. DeepFaith achieves the highest faithfulness (𝐹 = 0.92 ), significantly outperforming Template-Based Reporting ( 0.72 ), Vanilla LLM ( 0.68 ), and CoT Prompting ( 0.75 ). This demon-strates that conditioning generation on structured evidence 
+
+E𝑡 , combined with faithfulness-aware constraints, effectively ensures that generated reports remain aligned with model-derived information. In contrast, Vanilla LLM produces fluent but weakly grounded outputs due to reliance on implicit knowledge, while CoT Prompting improves reasoning co-herence but lacks mechanisms to enforce consistency with structured evidence. These results highlight that reasoning alone is insufficient without explicit grounding. This improvement is further reflected in the Unsupported Claim Rate (UCR), where DeepFaith achieves the lowest value (0.08 ), compared to Template ( 0.28 ), Vanilla LLM ( 0.32 ), and CoT ( 0.25 ). Since UCR directly measures hallucinated or unsupported content, this reduction confirms the effective-ness of combining structured prompting with post-generation verification. The verification mechanism acts as a safeguard that filters or regenerates outputs that deviate from E𝑡 , which is critical in safety-sensitive SOC environments. DeepFaith also achieves the highest temporal consistency (𝐶 time = 0.88 ), indicating strong alignment between generated timelines and evidence-supported timestamps 𝐼 𝑡 . In contrast, Vanilla LLM ( 0.60 ) often produces incomplete or misordered event sequences, while CoT Prompting ( 0.68 ) provides only moderate improvements without explicit temporal grounding. These results show that incorporating temporal evidence di-rectly into the generation process is essential for reconstructing coherent multi-stage attack progression. In terms of conciseness, DeepFaith produces compact re-ports (130 tokens), comparable to Template-Based Reporting (120 tokens) and substantially shorter than Vanilla LLM (180 tokens) and CoT Prompting (200 tokens). This demon-strates that the compactness constraint effectively balances informativeness and brevity. Unlike template-based methods, which limit expressiveness, DeepFaith maintains rich contex-tual information while avoiding redundancy, resulting in more information-dense outputs. 
+
+B. Error Type Analysis 
+
+To analyze limitations of generated reports, we perform error analysis across methods. For each report 𝑦 𝑡 , we extract claims 𝜙 (𝑦 𝑡 ) and compare them with evidence 𝜓 (E 𝑡 ) to identify errors affecting faithfulness, temporal consistency, and decision reliability. We define the following error categories: (i) Hallucinated Event : A claim 𝑐 ∈ 𝜙 (𝑦 𝑡 ) that cannot be matched to any fact in 𝜓 (E 𝑡 ), indicating unsupported or fabricated content; ( ii ) Temporal Error : An event whose times-tamp is inconsistent with 𝐼 𝑡 , including misordered events or missing temporal anchors; ( iii ) Stage Misclassification : The   
+
+> Fig. 2. Performance comparison across four methods.
+> Fig. 3. Error type distribution across methods (%).
+
+reported attack stage does not correspond to the maximum-probability stage in 𝑝 𝑡 ; ( iv ) Incorrect Action Rationale : The generated explanation of action 𝑎 𝑡 does not match the rationale encoded in 𝐴 𝑡 ; and ( v) Missing Critical Evidence : Key facts from 𝜓 (E 𝑡 ) (e.g., important entities or events in 𝐺 ∗ 
+
+> 𝑡
+
+) are not reflected in 𝜙 (𝑦 𝑡 ). We analyze 200 reports from multi-stage APT scenarios, compute error frequencies, and normalize them to obtain error rates. Fig. 3 summarizes the results. DeepFaith consistently reduces all error types compared to baselines. Hallucinated events drop from 21.4% (Vanilla LLM) and 15.8% (CoT) to 6.1%, confirming that evidence-grounded prompting and verification suppress unsupported claims. Temporal errors are also lower (11.2% vs. 25.8%), showing that incorporating temporal evidence 𝐼 𝑡 improves alignment. DeepFaith further achieves the lowest rate of incorrect action rationales (7.5%), indicating that structured explanations 𝐴 𝑡 guide decision-consistent reporting. Template-based reporting has low hallucination (5.2%) but high missing evidence (22.5%), reflecting limited expressiveness. Vanilla LLM produces more complete but less reliable outputs with high hallucination and temporal inconsistency, while CoT re-duces some reasoning errors but still lacks explicit grounding, leading to unsupported or incomplete outputs. Fig. 4. Temporal analysis across multi-stage APT progression. 
+
+Overall, this analysis shows that DeepFaith not only im-proves aggregate metrics such as faithfulness and temporal consistency, but also systematically reduces specific error types. These improvements directly contribute to more reliable and actionable reports for effective SOC decision-making. 
+
+C. Visualization of Temporal Metrics 
+
+To complement Fig. 2, Fig. 4 shows temporal trends of three metrics: Faithfulness (𝐹 ), the proportion of claims sup-ported by E𝑡 ; Cumulative Unsupported Claims (CUC), the accumulated number of unsupported claims over time; and 
+
+Evidence Coverage Ratio (ECR), the fraction of evidence in 
+
+𝜓 (E 𝑡 ) reflected in the generated report. DeepFaith maintains consistently high 𝐹 , indicating stable grounding as attack complexity increases, while Vanilla LLM                                                                     
+
+> TABLE II ABLATION STUDY OF DEEP FAITH
+> Method 𝐹 ↑UCR ↓𝐶 time ↑Length w/o Serialization 0.82 0.18 0.78 145 w/o Prompt 0.84 0.16 0.80 142 w/o Faithfulness 0.79 0.21 0.81 138 w/o Confidence 0.90 0.10 0.87 131 w/o Temporal 0.88 0.12 0.74 134 w/o Verification 0.86 0.14 0.84 136
+> DeepFaith 0.92 0.08 0.88 130
+> TABLE III ILLUSTRATIVE EVALUATION OF DEEP FAITH WITH COMPACT
+> OPEN -S OURCE LLM B ACKBONES
+> Backbone 𝐹 ↑UCR ↓𝐶 time ↑Length Llama-3.2-3B 0.84 0.16 0.80 122 Qwen2.5-3B 0.88 0.12 0.84 126 Gemma-3-4B-IT 0.89 0.11 0.85 124 Falcon3-7B 0.90 0.10 0.86 127 LLaMA-2-13B 0.92 0.08 0.88 130
+
+degrades and CoT shows moderate improvement. DeepFaith also slows the growth of CUC, demonstrating effective control of long-horizon error propagation. In addition, it achieves the highest ECR, capturing more complete structural, tem-poral, and action-level evidence. In contrast, Template-based reporting omits contextual details, while Vanilla LLM and CoT exhibit inconsistent evidence usage. Overall, DeepFaith provides more reliable reporting across all attack stages. 
+
+D. Ablation Study 
+
+We evaluate six ablated variants of DeepFaith by removing one component at a time while keeping the same backbone, scenarios, and decoding setup: ( i) w/o Serialization , ( ii ) w/o Prompt , ( iii ) w/o Faithfulness , ( iv ) w/o Confidence , ( v) w/o Temporal , and ( vi ) w/o Verification . The full model includes all components. Table II shows that all components contribute to performance. Removing serialization or structured prompt-ing reduces faithfulness and increases unsupported claims, highlighting the importance of normalized evidence inputs. Removing faithfulness-aware conditioning leads to the largest drop in 𝐹 and highest UCR, confirming its key role in suppressing hallucination. Temporal removal causes the largest decline in 𝐶 time , indicating the importance of temporal con-straints. Disabling verification degrades all grounding-related metrics, showing that post-generation validation is critical. Confidence-aware conditioning has a smaller but consistent effect on overall quality. Overall, the full DeepFaith model achieves the best trade-off across all metrics. 
+
+E. Evaluation with Compact Open-Source LLM Backbones 
+
+To evaluate portability, we replace the default backbone with four compact open-source models: Qwen2.5-3B-Instruct [27], Gemma-3-4B-IT [28], Llama-3.2-3B-Instruct [29], and Falcon3-7B-Instruct [30]. All models use the same DeepFaith pipeline, evidence serialization, prompt template, verification threshold, and decoding configuration with identical 𝐿 max .This setting isolates the effect of backbone capacity while keeping the grounding mechanism unchanged. Table III shows a clear scaling trend across model sizes. The LLaMA-2-13B backbone achieves the best performance ( 𝐹 =
+
+0.92 , UCR = 0.08 , 𝐶 time = 0.88 ), while compact models exhibit gradual degradation as model size decreases. Among smaller backbones, Falcon3-7B performs closest to the 13B model (𝐹 = 0.90 , UCR = 0.10 , 𝐶 time = 0.86 ), followed by Gemma-3-4B-IT and Qwen2.5-3B-Instruct with moderate drops in faithfulness ( 0.89 and 0.88 ) and slightly higher UCR. Llama-3.2-3B-Instruct shows the lowest performance (𝐹 = 0.84 ,UCR = 0.16 , 𝐶 time = 0.80 ), indicating reduced capability in maintaining grounding and temporal alignment. Nevertheless, all compact backbones maintain acceptable faithfulness and temporal consistency, suggesting that structured evidence con-ditioning reduces dependence on model scale. Overall, these results show that while larger models provide incremental gains, DeepFaith achieves reliable performance even with lightweight backbones. This makes the framework suitable for deployment in resource-constrained SOC envi-ronments, where local inference, privacy preservation, and reduced computational cost are often important requirements. IX. C ONCLUSION 
+
+This paper presented DeepFaith, an evidence-grounded framework for generating faithful and interpretable incident reports in autonomous APT defense systems. DeepFaith inte-grates structured evidence, constrained generation, and ver-ification mechanisms to align reports with model-derived information. Experimental results show that DeepFaith con-sistently achieves higher faithfulness, lower unsupported claim rate, and better temporal consistency than template-based and LLM-based baselines, while producing concise reports. Error analysis further confirms significant reductions in hallucination and temporal inconsistencies. Ablation results demonstrate that grounding, temporal constraints, and verification are key to performance. DeepFaith also maintains strong performance with compact open-source LLMs, indicating that its effective-ness largely stems from structured evidence integration rather than model scale. Overall, DeepFaith enables more reliable and efficient SOC reporting. Future work includes extending DeepFaith toward interactive human-in-the-loop SOC systems, enabling bidirectional communication between analysts and autonomous defense models. ACKNOWLEDGMENT 
+
+This work has been performed in the framework of the SUSTAINET-Advance project, funded by the German BMFTR (ID:16KIS2280). REFERENCES [1] M. U. Rehman et al. , “Flash: A comprehensive approach to intrusion detection via provenance graph representation learning,” in IEEE Sym-posium on Security and Privacy , 2024. [2] B. Zhang et al. , “A survey on advanced persistent threat detection: A unified framework, challenges, and countermeasures,” ACM Computing Surveys , vol. 57, 2024. [3] T. V. Phan et al. , “Learning the apt kill chain: Temporal reasoning over provenance data for attack stage estimation,” in IEEE International Conference on Communications (ICC) , 2026. [4] T. V. Phan et al. , “Deepair: Deep reinforcement learning for adaptive intrusion response in software-defined networks,” IEEE Transactions on Network and Service Management , vol. 19, no. 3, pp. 2207–2218, 2022. [5] T. V. Phan et al. , “Deepstage: Learning autonomous defense policies against multi-stage apt campaigns,” in IEEE International Conference on Cyber Security and Resilience (CSR) , 2026. [Accepted for Publication]. Available on https://arxiv.org/abs/2603.16969. [6] T. V. Phan et al. , “Deepxplain: Xai-guided autonomous defense against multi-stage apt campaigns,” in IEEE Global Communications Conference (GLOBECOM) , 2026. [Under Review]. Available on https://arxiv.org/abs/2603.21296. [7] A. Habibzadeh, F. Feyzi, and R. E. Atani, “Large language models for security operations centers: A comprehensive survey,” 2025. Available on https://arxiv.org/abs/2509.10858. [8] N. O. Jaffal et al. , “Large language models in cybersecurity: A survey of applications, vulnerabilities, and defenses,” AI , vol. 6, no. 9, p. 216, 2025. [9] D. Kramer et al. , “Integrating large language models into security incident response,” in Symposium on Usable Privacy and Security , 2025. [10] W. Yang et al. , “A comprehensive survey on integrating large language models with knowledge bases,” Knowledge-Based Systems , 2025. Survey on LLM and knowledge integration. [11] P. Jiang et al. , “Retrieval and structuring augmented generation with large language models,” in Proceedings of the 31st ACM SIGKDD Con-ference on Knowledge Discovery and Data Mining V.2 , p. 6032–6042, ACM, Aug. 2025. [12] T. M. Corporation, “MITRE Caldera: Automated Adversary Emulation Platform,” 2024. Open-source adversary-emulation system used for breach-and-attack simulation of APT playbooks. [13] A. Alshamrani et al. , “A survey on advanced persistent threats: Tech-niques, solutions, challenges, and research opportunities,” IEEE Com-munications Surveys & Tutorials , vol. 21, no. 2, pp. 1851–1877, 2019. [14] T. Bilot et al. , “Sometimes simpler is better: A comprehensive analysis of state-of-the-art provenance-based intrusion detection systems,” in 
+
+USENIX Security Symposium , 2025. [15] T. T. Nguyen et al. , “Deep reinforcement learning for cyber security,” 
+
+IEEE Transactions on Neural Networks and Learning Systems , vol. 34, no. 8, pp. 3779–3795, 2023. [16] S. Vyas et al. , “Towards the deployment of realistic autonomous cyber network defence: A systematic review,” ACM Computing Surveys , 2025. [17] A. T. Le et al. , “Automated apt defense using reinforcement learning and attack graph risk-based situation awareness,” in Workshop on Autonomous Cybersecurity , 2024. [18] S. Thompson et al. , “Entity-based reinforcement learning for au-tonomous cyber defence,” in Workshop on Autonomous Cybersecurity ,pp. 56–67, 2024. [19] S. Milani et al. , “Explainable reinforcement learning: A survey and comparative review,” ACM Computing Surveys , vol. 56, no. 7, 2024. [20] R. Ying et al. , “Gnnexplainer: Generating explanations for graph neural networks,” in Advances in Neural Information Processing Systems , 2019. [21] X. Li et al. , “Can graph neural networks be adequately explained? a survey,” ACM Computing Surveys , 2025. [22] E. Dai et al. , “A comprehensive survey on trustworthy graph neural networks: Privacy, robustness, fairness, and explainability,” International Journal of Automation and Computing , 2024. [23] H. Touvron et al. , “Llama 2: Open foundation and fine-tuned chat models,” 2023. Available on https://arxiv.org/abs/2307.09288. [24] A. Behl et al. , “A review of siem systems,” Journal of Information Security , 2019. [25] T. B. Brown et al. , “Language models are few-shot learners,” NeurIPS ,2020. [26] J. Wei et al. , “Chain-of-thought prompting elicits reasoning in large language models,” NeurIPS , 2022. [27] A. Yang et al. , “Qwen2.5 technical report,” 2025. Available on https://arxiv.org/abs/2412.15115. [28] G. Team et al. , “Gemma: Open models based on gemini research and technology,” 2024. Available on https://arxiv.org/abs/2403.08295. [29] A. Grattafiori et al. , “The llama 3 herd of models,” 2024. Available on https://arxiv.org/abs/2407.21783. [30] E. Almazrouei et al. , “The falcon series of open language models,” 2023. Available on https://arxiv.org/abs/2311.16867.

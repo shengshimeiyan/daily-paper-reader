@@ -6,29 +6,49 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-27
-- 运行时间：2026-07-27 21:48:24 UTC
+- 最新运行日期：2026-07-28
+- 运行时间：2026-07-28 21:30:51 UTC
 - 运行状态：成功
-- 本次总论文数：2
-- 精读区：2
-- 速读区：0
+- 本次总论文数：9
+- 精读区：6
+- 速读区：3
 
 ### 今日简报（AI）
-1) 今日精读2篇9.0分论文，直击AI生成“不忠实”与“推理幻觉”两大痛点。
-2) 核心看点：文档转播客如何避免偏离原文的“脑补”，以及大推理模型如何通过给推理过程“去噪”来精准揪出幻觉。
-3) 建议日常使用AI生成长音频或处理复杂推理时，务必交叉验证关键信息，防范AI“添油加醋”或“暗藏幻觉”。
-- 详情：[/202607/27/README](/202607/27/README)
+今日精读6篇速读3篇，重磅聚焦大模型幻觉检测与智能体记忆防污染。
+最值得关注：利用谱隐状态信号精准检测大模型幻觉（D-Score），以及通过自一致性准入控制有效防止智能体记忆污染（ConsistencyGate）。
+建议关注大模型可靠性提升方案，了解如何让AI在复杂任务中既不“胡编乱造”也不“记忆错乱”。!
+- 详情：[/202607/28/README](/202607/28/README)
 
 ### 精读区论文标签
-1. [On Improving Faithfulness of Podcasts from Documents](/202607/27/2607.21961v1-on-improving-faithfulness-of-podcasts-from-documents)  
+1. [D-Score: A Spectral Hidden-State Signal for Hallucination Detection in Large Language Models](/202607/28/2607.24586v1-d-score-a-spectral-hidden-state-signal-for-hallucination-detection-in-large-language-models)  
    标签：评分：9.0/10、query:llm-halluc
-   evidence：长文本播客生成的事实一致性
-2. [Reasoning Denoiser: Denoising Reasoning Traces for Hallucination Detection in Large Reasoning Models](/202607/27/2607.22098v1-reasoning-denoiser-denoising-reasoning-traces-for-hallucination-detection-in-large-reasoning-models)  
-   标签：评分：9.0/10、query:llm-halluc
-   evidence：长推理轨迹中的幻觉检测
+   evidence：使用隐藏激活进行大模型幻觉检测
+2. [ConsistencyGate: Preventing Memory Contamination in LLM Agents via Self-Consistency Admission Control](/202607/28/2607.22962v1-consistencygate-preventing-memory-contamination-in-llm-agents-via-self-consistency-admission-control)  
+   标签：评分：8.0/10、query:llm-halluc
+   evidence：通过自一致性准入控制缓解LLM智能体中的幻觉事实
+3. [Attention-Guided Layer Selection for Contrastive Decoding in Large Language Models](/202607/28/2607.23067v1-attention-guided-layer-selection-for-contrastive-decoding-in-large-language-models)  
+   标签：评分：8.0/10、query:llm-halluc
+   evidence：通过注意力引导的对比解码提升大模型事实性并缓解幻觉
+4. [Hallucination Rates in Language Generation](/202607/28/2607.23361v1-hallucination-rates-in-language-generation)  
+   标签：评分：8.0/10、query:llm-halluc
+   evidence：语言生成中幻觉率的形式化研究
+5. [Reality Monitoring in Large Language Models: Self-Knowledge That Transforms with Conversation Memory](/202607/28/2607.23927v1-reality-monitoring-in-large-language-models-self-knowledge-that-transforms-with-conversation-memory)  
+   标签：评分：8.0/10、query:llm-halluc
+   evidence：现实监控失败与大语言模型幻觉相关
+6. [The Cost of Knowing: A Resource-Aware Protocol for Benchmarking Hallucination Beyond Static Leaderboards](/202607/28/2607.24063v1-the-cost-of-knowing-a-resource-aware-protocol-for-benchmarking-hallucination-beyond-static-leaderboards)  
+   标签：评分：8.0/10、query:llm-halluc
+   evidence：基准测试大模型幻觉与事实性
 
 ### 速读区论文标签
-- 本次无速读推荐。
+1. [DeepFaith: Evidence-Grounded LLMs for Faithful Incident Reporting in Multi-Stage APT Defense](/202607/28/2607.24348v1-deepfaith-evidence-grounded-llms-for-faithful-incident-reporting-in-multi-stage-apt-defense)  
+   标签：评分：8.0/10、query:llm-halluc
+   evidence：通过证据对齐缓解大模型报告生成中的幻觉
+2. [DICA: Dual-Indicator Guided Contrastive Alignment in Multimodal Large Language Models](/202607/28/2607.23944v1-dica-dual-indicator-guided-contrastive-alignment-in-multimodal-large-language-models)  
+   标签：评分：6.0/10、query:llm-halluc
+   evidence：通过指标跟踪缓解多模态大语言模型中的幻觉
+3. [Evidence Attribution in Visual Document Understanding without Coordinates or Region Labels](/202607/28/2607.24651v1-evidence-attribution-in-visual-document-understanding-without-coordinates-or-region-labels)  
+   标签：评分：6.0/10、query:llm-halluc
+   evidence：研究与缓解视觉语言模型中的归因幻觉
 
 
 <div class="dpr-home-promo-card">

@@ -1,0 +1,746 @@
+Title: Evidence Attribution in Visual Document Understanding without Coordinates or Region Labels
+
+URL Source: https://arxiv.org/pdf/2607.24651v1
+
+Published Time: Tue, 28 Jul 2026 02:17:12 GMT
+
+Number of Pages: 23
+
+Markdown Content:
+# Evidence Attribution in Visual Document Understanding without Coordinates or Region Labels 
+
+Zhuchenyang Liu, Yao Zhang, Yu Xiao 
+
+Aalto University Espoo, Finland 
+
+zhuchenyang.liu@aalto.fi 
+
+Abstract 
+
+Reliable visual document understanding re-quires a model to attribute each answer to the evidence regions that support it. Recent bench-marks and systems express this step through a coordinate interface: the model outputs the coordinates of bounding boxes that mark the evidence regions in the document. Under this interface, vision-language models often fail to identify the right regions even when the an-swer is correct, a failure known as Attribution Hallucination. We present a study that inves-tigates whether this failure is partially limited by what the model can express through coor-dinates. On a verified bilingual CiteVQA sub-set, we compare the coordinate interface with a language interface in which the model out-puts only text, quoting its evidence verbatim, and a multimodal retriever returns the location of each quote as a page region proposed by a layout parser (tables and figures are quoted through their captions or notes); the compari-son is repeated over six open vision-language models. Compared with the coordinate inter-face, evidence recall rises from at most 8 points to between 26 and 47 and the hallucination rate roughly halves, with little change in answer quality. Building on this comparison, we use the same quote-and-retrieve pipeline as a train-ing scaffold: because region-level evidence labels are expensive to collect for long doc-uments, we introduce a GRPO recipe whose reward is a judge’s reading of the gold answer and crops of the retrieved regions, training the model to quote better evidence without any re-gion labels and raising an 8B backbone’s strict attributed accuracy from 22.4 to 33.8. These findings indicate a practical path to improve attribution"without a coordinate interface and without costly region-level supervision. 
+
+1 Introduction 
+
+As vision-language models (VLMs) move from single pages to long, layout-rich documents, vi-sual document understanding demands more than "answer" :      
+
+> "Phosphor-bronze" <bbox page="2" x1="536" y1="105"
+> x2="642" y2="250" /> Coordinate interface "answer" : " ... are made
+> of phosphor bronze" IoU 0 ⟶miss "quote": "Pin: Phosphor-bronze" Embedding + Match retrieved semantic block IoU 0.85 ⟶hit Natural Language interface ground truth evidence coordinate interface bbox retrieved semantic block
+
+Figure 1: The interface artifact in one example (Qwen3-VL-8B; page 2 of a 24-page input; question: what spe-cific alloy is used for the internal contact pins). Both answers are correct. Only the evidence interface differs. 
+
+a correct answer: in domains such as finance, law, and medicine, an answer is useful only if it can be verified, and verification requires evidence at-tribution, the model pointing to the regions that support each answer. This requirement has recently crystallized into a line of benchmarks and systems: CiteVQA (Ma et al., 2026) scores answers jointly with element-level evidence citations, where an el-ement is a single paragraph, table, or figure on a page; further benchmarks annotate bounding-box evidence (Loison et al., 2026; Yu et al., 2025b); and attribution systems train or prompt models to local-ize their evidence (Ma et al., 2024; Liu et al., 2025a, 2026). Across all of these, evidence is expressed through the same interface: the model outputs the coordinates of a bounding box. Under this coordinate interface, a model at-tributes evidence by autoregressively generating numeric coordinate tokens, a format inherited from object detection. The reported results are discour-aging. Auditing twenty models, CiteVQA finds that even strong systems frequently produce a cor-rect answer while citing a wrong region, a fail-ure it names Attribution Hallucination, and open arXiv:2607.24651v1 [cs.CV] 27 Jul 2026 models rarely exceed single-digit evidence recall. CiteVQA reads this failure as a lack of fundamental grounding reliability. This reading raises two issues, and we address them in turn. The first is diagnostic: is the failure a missing capability, or an artifact of the coordinate interface? Coordinate-based document grounding was posed only recently (Ma et al., 2026; Loison et al., 2026; Yu et al., 2025b), so VLM training may offer little direct supervision for it, and no prior work compares evidence interfaces on the same models in visual documents. Evidence from other domains, however, points at the output format itself as the weak link: replacing or bypassing co-ordinate emission recovers grounding in interface agents and natural images (Wu et al., 2025; Yang et al., 2023; Kang et al., 2025), format restrictions degrade language model performance more broadly (Tam et al., 2024), and object-grounding objectives do not reliably reduce hallucination (Geigle et al., 2024). The apparent lack of capability may there-fore be a mismatch between the evidence a model can express in language and what the coordinate interface can carry. The second issue is practical: systems that respond to the failure train on region or page labels (Ma et al., 2024; Liu et al., 2025a; Xiong et al., 2025), yet region-level evidence labels are expensive to collect for long documents, so we ask whether attribution can be improved without them. The first issue calls for a comparative study be-tween interfaces: if the attribution ability is present but poorly expressed, a more expressive evidence interface should recover it. We hold the back-bone, input pages, questions, and scoring fixed and change only the way the model expresses evi-dence (Figure 1). In the coordinate condition, the model follows the CiteVQA protocol and emits bounding-box coordinates. In the language con-dition, the model outputs only text: it quotes its evidence verbatim, a layout parser divides each page into candidate regions, semantic blocks, and a multimodal retriever returns for each quote the block it comes from. This condition adapts quote-based citation, an established practice in text RAG (Gao et al., 2023; Zhang et al., 2024), to page re-gions in visual documents. We evaluate on the single-document portion of CiteVQA, restricted to 719 bilingual questions whose annotations we could verify against the available source PDFs. The comparison recovers most of the reported failure. Across six open models from four families, spanning 8B to 31B parameters, evidence recall rises from at most 8.1 under coordinates to between 25.9 and 46.9 under the language interface, and the hallucination rate falls from between 82 and 97 percent to between 39 and 65 percent, with little change in answer quality. Because the language condition adds the parser and the retriever, we run ablation controls that apportion the credit; they show that the recovery rests on location information that the models express in generated language. For the second issue, the same pipeline becomes a training scaffold that removes the need for region-level evidence labels. We construct a reward in which a vision-language judge compares the model answer against the gold answer and scores crops of the cited regions, so the signal derives entirely from data that any QA set already contains. GRPO turns these judged rewards into group-relative ad-vantages for the quoting policy, with DAPO’s asym-metric clipping for stability (Shao et al., 2024; Yu et al., 2025a). Trained on 1.6K questions built from LongDocURL (Deng et al., 2024) and instantiated on the 8B backbone, the smallest with reliable cita-tion formatting, the model reaches 51.3 evidence recall and a 28.4 percent hallucination rate, and an independent evaluation judge suggests that the improvement reflects better evidence rather than reward exploitation. Our contributions are threefold. First, a con-trolled study that, to our knowledge, is the first to analyze the impact of the evidence interface in vi-sual document attribution, quantified through an ex-plicit Attribution Hallucination rate. Second, a lan-guage evidence interface that carries quote-based citation, established practice in text RAG, across the modality boundary, resolving quotes to pixel regions. Third, a region-label-free reinforcement learning recipe that raises an 8B backbone’s strict attributed accuracy from 22.4 to 33.8. 
+
+2 Related Work 
+
+Four lines of work border ours: text-QA attribution supplies the quote-then-resolve pattern we transfer, extractive Doc-VQA delimits our task, coordinate-based evidence systems are the object of our diag-nosis, and reinforcement learning for grounding is the paradigm our reward modifies. 
+
+Evidence attribution in text-based QA. Attribu-tion has been studied extensively in settings where both the answer and the evidence are text. Go-pherCite trains models with reinforcement learning to support answers with verbatim quotes (Menick et al., 2022), ALCE formalizes citation evaluation (Gao et al., 2023), RARR attributes generations through post-hoc retrieval (Gao et al., 2022), and LongCite produces fine-grained span citations from automatically constructed supervision (Zhang et al., 2024). Citation quality can be improved without human labels (Cohen-Wang et al., 2024; Chuang et al., 2025) and evaluated for whether citations support the statements (Wallat et al., 2025). How-ever, our evidence is a region of a rendered page rather than a text span, so quotes cross a modality boundary and are scored geometrically. 
+
+Answer localization in extractive Doc-VQA. In extractive document QA, the answer is a text span that appears verbatim on the page, so a system can return a box around that span as a form of expla-nation. DLaVA (Mohammadshirazi et al., 2024) tags detected text regions with identifiers so that the model can name the answer region, and ARIAL (Mohammadshirazi et al., 2025) maps the gener-ated answer string back to an OCR segment. In our task setting, most questions are abstractive synthe-ses over long documents, therefore what has to be localized is the supporting evidence, often several elements on different pages. 
+
+Localizing evidence in visual documents. Clos-est to our task are systems that localize support-ing evidence in rendered documents. VISA (Ma et al., 2024) learns visual source attribution from large-scale box supervision, LAT (Liu et al., 2025a) combines stepwise box prediction with reinforce-ment learning, and Chain of Evidence (Liu et al., 2026) prompts a model to emit pixel-level boxes along its reasoning chain. All of them express evi-dence directly as coordinates, and none examines the interface itself. 
+
+Reinforcement learning for visual grounding. 
+
+Verifiable-reward reinforcement learning has im-proved visual grounding in general settings, for detection, referring, and grounded reasoning tasks (Liu et al., 2025b; Shen et al., 2025; Cao et al., 2025), with annotation-free variants pur-sued through closed-loop frameworks (Yang et al., 2026), and subsequently for multi-page documents (Xiong et al., 2025). These methods compute re-wards on predicted coordinates or page identities and therefore presuppose region or page labels. Our reward is computed on natural-language quotes af-ter retrieval, requires neither kind of label, and gates on answer correctness. 
+
+3 Method 
+
+Problem statement. A document D is a se-quence of page images (p1, . . . , p N ). Given a ques-tion q, the system outputs an answer y along with a citation set C = {(kj , b j )}mj=1 , where kj is a page index and bj is a bounding box on that page. The ground truth provides the answer y∗ and the necessary evidence elements G = {(k∗ 
+
+> i
+
+, b ∗ 
+
+> i
+
+)}.We say that a cited box b matches a ground-truth element b∗ on the same page if their intersection over union, IoU( b, b ∗) = |b∩b∗|/|b∪b∗|, is at least 
+
+0.5; recall and the remaining metrics are defined in Section 4. We distinguish between two tasks: page-level localization, which identifies the correct page, and element-level localization, which identifies the annotated unit on that page—whether a paragraph, table, or figure. Ground truth is annotated at the element level, and we call the units a layout parser proposes semantic blocks. The two interfaces differ in how C is produced (Figure 2). Under the coordinate interface, the model generates C directly as coordinate tokens: 
+
+C = fθ(q, D ). Under our language interface, the model instead produces verbatim quotes U =
+
+fθ(q, D ); the citation set is then assembled outside the model as 
+
+C = A f (U ), f (B(D)) ,
+
+where f embeds the quotes and the parser-proposed blocks B(D), and A performs a one-to-one assign-ment (Section 3.2). This same construction further enables training for attribution without requiring region-level labels (Section 3.3). 
+
+3.1 Natural-language evidence interface 
+
+In contrast to coordinate prediction, our model pro-duces evidence in its native textual modality: a JSON object comprising a free-form answer and a list of supporting quotes. Each quote is a verba-tim span extracted from a single page region, with spans drawn at the level of a sentence, table row, table cell, caption, or note. This design naturally handles non-textual evidence as well, since tables and figures are represented through their captions, cells, or notes. Requiring verbatim spans also an-chors each quote to a specific block: a caption or a cell is nearly unique within a document, whereas a free-form description of a figure could match any topically similar one under semantic retrieval. Moreover, because the answer generation mecha-nism is identical to standard question answering, answer quality is unlikely to be affected by the in-terface change. The complete prompt is given in Appendix J.2. 
+
+3.2 Whole-document semantic block retrieval 
+
+Quotes are resolved to regions by retrieving from the parsed document structure (Figure 2, center). A layout parser (MinerU (Wang et al., 2024)) seg-ments every page into typed semantic blocks, each representing a paragraph, table, figure, or caption. Each block β in B(D) = {β1, . . . , β n} carries a page index k(β) and a bounding box b(β).To enable retrieval, we render each block as an image crop and embed it with a multimodal encoder f (Qwen3-VL-Embedding-2B (Li et al., 2026)). Embedding the crop rather than the ex-tracted text is crucial, as about thirty percent of evidence is non-textual, and rendered tables of-ten have low similarity to plain-language quotes in the text space. Each quote uj is embedded with the same encoder, yielding similarities Sjℓ =cos  f (uj ), f (βℓ) for all blocks. We consider candidates from the entire docu-ment and deliberately ignore the model’s predicted page numbers, which are unreliable, to prevent page errors from becoming unrecoverable. Quotes are then matched to blocks by solving a linear as-signment problem: 
+
+π∗ = arg max 
+
+> π∈Π
+> m
+
+X
+
+> j=1
+
+Sj,π (j), (1) where Π is the set of injective maps from the 
+
+m quotes to the n blocks, ensuring that each block receives at most one quote. We solve Eq. 1 using the Hungarian algorithm (Kuhn, 1955), and the final citation set becomes C =
+
+{(k(βπ∗(j)), b (βπ∗(j))) }mj=1 .
+
+3.3 Region-label-free reinforcement learning 
+
+Our training signal does not require region-level labels (Figure 2, right). The reward is constructed from the question, model answer, gold answer, and retrieved crops of the page regions the model cites. We instantiate this reward on the language interface, where the base policy cites evidence with sufficient frequency for group-relative optimization to carry meaningful signal, and we optimize using Group Relative Policy Optimization (GRPO; Shao et al., 2024). For each question, the policy samples n re-sponses. Each response is parsed into an answer and a list of quotes, which are then resolved to block crops via the retrieval procedure described in Section 3.2. A vision-language judge takes as input the question, the gold answer, the model’s answer, and the retrieved crops, and outputs three integer scores in [0 , 5] : answer correctness a, evidence rel-evance erel , and evidence coverage ecov (prompt in Appendix J.5). Importantly, the judge operates on the retrieved crops rather than the raw quotes, so that a fluent but mismatched quote—one assigned to the wrong block—receives a low score, keep-ing the reward aligned with box-level evaluation metrics. The reward is defined as 
+
+r = a
+
+5 · erel + ecov 
+
+10 . (2) This multiplicative formulation ensures that evi-dence scores contribute only when the answer is already correct—precisely the scenario that Attribu-tion Hallucination concerns. Meanwhile, summing the two evidence scores maintains sufficient within-group reward variance to provide a useful gradient signal. The group-relative advantages for Eq. 2 are com-puted via within-group normalization. The policy is trained with a clipped importance-weighted ob-jective, using an asymmetric clip range following DAPO (Yu et al., 2025a), along with a KL penalty toward the frozen initial model. Dynamic sampling discards groups whose mean reward falls outside a predefined keep band, as such groups yield near-zero group-relative advantage. The full objective and hyperparameters are detailed in Appendix A, and Algorithm 1 summarizes the training loop. Box recall against manual annotations is used solely for validation and reporting. 
+
+4 Experimental Setup 
+
+Benchmark. We evaluate on the single-document portion of CiteVQA (Ma et al., 2026). Since some linked PDFs are no longer accessible or differ from the annotated version, we retain only questions where the source PDF is available and the annotated evidence is verifiably present. This filtering is based solely on ground truth and document content, so it favors neither interface, and the dropped documents have text layers at least as rich as the retained ones (Appendix B). The filter retains 719 of 987 original questions "answer": " ... "   
+
+> Npages,
+> full document
+> "quote": "... ",
+> "...", "...", "..."
+> gold
+> answer
+> question
+> quote embedding
+> GRPO +
+> group filtering
+> answer corr.
+> evidence rel.
+> evidence cov.
+> crops
+> Multimodal Encoder
+> semantic block embedding
+> VLM
+> Layout Parser
+> (MinerU) Semantic Blocks
+> one-to-one
+> assignment Judge
+> training stage, region-label-free
+> reward
+> LoRA update
+> citation
+> Coordinate
+> question
+
+Figure 2: Method overview. Solid lines denote our language interface: a layout parser proposes semantic blocks, a multimodal encoder embeds both the model’s verbatim quotes and the proposed blocks, and a one-to-one assignment matches each quote to a block, whose page and box become the citation. Dashed lines denote the coordinate interface, which directly outputs box coordinates and is evaluated on those raw outputs. The boxed region on the right illustrates the training phase: a judge compares the retrieved crops and the model answer against the gold answer, and the gated reward from Eq. 2 drives GRPO optimization. 
+
+(72.9%), covering 440 PDFs with a median length of 34 pages (max: 182). We call this the verified evaluation set and use it throughout; see Appendix A for composition details. 
+
+VLMs. We evaluate six instruction-tuned VLMs across four families: Qwen3-VL-8B and Qwen3-VL-30B-A3B (Bai et al., 2025), Qwen3.5-9B and Qwen3.5-27B (Qwen Team, 2026), Gemma-3-12B (Team et al., 2025), and Gemma-4-31B (Team et al., 2026). The selection spans dense and MoE architectures, thinking and non-thinking variants, and sizes from 8B to 31B; it also overlaps with CiteVQA’s reported models, enabling direct com-parison with published coordinate-interface results. All models process full documents with adap-tive per-page resolution capped at one megapixel, matching CiteVQA’s protocol (Appendix A). Thinking models use 4096 output tokens to avoid truncating reasoning before citations, while non-thinking models use 1536. Greedy decoding is applied throughout. 
+
+Metrics. We adopt the CiteVQA evaluation suite. The annotations distinguish two types of evidence: necessary elements, which every answer must cite, and additional supporting elements. Based on these, we report two core retrieval metrics. Recall (Rec) is the macro-averaged box recall over necessary elements at IoU ≥ 0.5 on the same page. Preci-sion (Prec) follows the loop semantics of the scorer released with CiteVQA, the number of annotated elements hit divided by the number of boxes cited, and is matched against all annotated evidence rather than the necessary subset, so that citing optional evidence is not penalized (Appendix H). Table 1 reports these metrics on the subset with parseable judge outputs (Appendix B); judge-free tables in-clude all valid responses, so recall may differ by up to two points between the two settings. Recall is monotonic in the number of citations, so we report it alongside precision throughout. We also report judge-based quality metrics. Rel-evance (Rel) and Answer Quality (Ans) are scores from 0 to 5 provided by a judge (reported scaled by ×20 ). The Strict Attribution Accuracy (SAA) is defined as SAA = 1Ans ≥ 4 ∧ (Rel ≥ 4 ∨ Rec ≥ 0.6) .
+
+From this, we compute the Attribution Hallucina-tion (AH) rate: 
+
+AH = P (SAA = 0 | Ans ≥ 4) ,
+
+i.e., the fraction of correct answers that fail to cite appropriate evidence. We additionally provide multi-threshold recall (same-page, at IoU thresholds from 0.1 to 0.7) and a citation format rate (fmt), defined as the propor-tion of responses containing any parseable citation. All judge-based evaluations use Gemini-3.5-Flash with the CiteVQA judge prompts (Appendices J.3 and J.4); this judge is a different model from the training reward judge and is not involved in reward computation or retrieval. Training. We train Qwen3-VL-8B, chosen as the smallest backbone with reliable citation format-ting, with low-rank adaptation (LoRA) on the lan-guage model (Hu et al., 2021), keeping the vision tower frozen, using EasyR1 (Zheng et al., 2025). The training set contains 1,584 long-document questions built from LongDocURL (Deng et al., 2024), rendered as page windows, with 83 held out for validation and no overlap with the evaluation PDFs (Appendix A). The training reward judge is Qwen3.5-9B, served alongside the trainer. We sample n=8 responses per question at temperature 1.0 and train for three epochs (144 steps), evalu-ating the final checkpoint without selection; the remaining hyperparameters and the training curve are given in Appendix A. 
+
+5 Results 
+
+5.1 Main comparison 
+
+Table 1 compares our coordinate-interface repro-duction (a) with our language interface (b). Under coordinates, box recall never exceeds 8.1% and AH ranges from 82.1% to 97.0%, even though answer scores reach 91.8. By contrast, the lan-guage interface—with the same backbones and inputs—boosts recall to 25.9–46.9% and reduces AH to 38.6–65.4%; the GRPO-trained 8B model achieves 51.3% recall and 33.8% SAA. Precision follows the same pattern, rising from ≤ 8.6% under coordinates to 22.9–52.7% under language. Answer scores are stable across interfaces for five of six backbones (within 2.3 points). Qwen3-VL-8B is the exception, dropping 6.2 points under language, plausibly due to the quoting obligation straining its small output budget. Gemma-3-12B’s low answer scores under both conditions reflect weak Chinese performance (Appendix C), not in-terface effects. All gains in recall, SAA, and AH are significant (paired bootstrap and McNemar, Ap-pendix D). 
+
+5.2 Recall by overlap threshold 
+
+Figure 3 shows recall at increasing IoU thresholds. Under coordinates, all backbones exhibit the same pattern: taking Qwen3-VL-8B, recall drops sharply from 30.7% (page-level) to 5.8% at IoU 0.1 and 0.0% at IoU 0.7. Under the language interface, recall is nearly flat across thresholds, ranging for Qwen3-VL-8B from 42.3% at IoU 0.1 to 39.2% at IoU 0.7. This flatness is expected: language citations adopt the geometry of parser-proposed 0         
+
+> 25
+> 50
+> 75
+> 100
+> recall (%)
+> ■(a) coordinate interface
+> page IoU ≥0.1 ≥0.3 ≥0.5 ≥0.7
+> 0
+> 25
+> 50
+> 75
+> 100
+> recall (%)
+> ■(b) language interface
+> parser ceiling
+> Qwen3-VL-8B + GRPO
+> Qwen3-VL-8B
+> Qwen3-VL-30B-A3B
+> Qwen3.5-9B
+> Qwen3.5-27B
+> Gemma-3-12B
+> Gemma-4-31B
+> Qwen3-VL-8B + GRPO
+> parser ceiling
+
+Figure 3: Recall of necessary evidence as the overlap requirement tightens, under the coordinate (a) and lan-guage (b) interfaces. Dashed: the parser ceiling; starred: the GRPO-trained model. Exact values and the citation-format rate appear in Appendix Table 4. 
+
+blocks, making a correctly matched quote element-precise by design, whereas coordinate boxes miss at element granularity even on the right page. The dashed line marks the parser ceiling (88.2% at IoU 0.5, macro-averaged). Both the ceiling and the flat threshold profile replicate with an indepen-dent parser (Appendix E), confirming robustness. 
+
+5.3 Where the recovery comes from 
+
+Because the language condition adds three compo-nents that the coordinate condition lacks, a parser, a retriever, and an assignment step, Table 1 shows that the system recovers attribution but not which component is responsible. Table 2 presents an ab-lation study that isolates each component in turn. 
+
+Granularity alone is not the missing piece. 
+
+Snapping each predicted coordinate box to the best-overlapping block on its stated page (“+snap”) gives the coordinate interface the same candidate set and granularity as retrieval. This eliminates the threshold decay seen in coordinates, yet recall re-mains low, ranging from 5.0% to 23.5%, capped by each model’s same-page recall. 
+
+The retriever alone also does not explain the recovery. We first test retrieval using the question as the query, returning as many blocks per question as the language run originally cited. This budget Model Rec .5 Prec Rel Ans SAA AH ↓                                                                              
+
+> (a) Coordinate interface: CiteVQA protocol, our reproduction (verified set)
+> Qwen3-VL-8B 0.3 0.3 15.0 59.6 1.4 97.0 Qwen3-VL-30B-A3B 1.3 4.6 15.7 61.9 3.8 92.1 Qwen3.5-9B 4.0 5.9 21.1 89.7 11.0 87.3 Qwen3.5-27B 8.1 8.6 29.1 91.8 16.1 82.1
+> Gemma-3-12B 0.3 0.3 28.0 39.5 1.0 95.9 Gemma-4-31B 7.8 6.6 33.0 78.7 9.2 87.1
+> (b) Language interface (ours): same backbones as (a), quotes resolved by retrieval (verified set)
+> Qwen3-VL-8B 39.9 37.6 52.0 53.4 22.4 41.2 Qwen3-VL-30B-A3B 34.9 35.1 42.7 60.3 24.7 47.0 Qwen3.5-9B 25.9 50.6 33.7 89.6 29.6 65.4 Qwen3.5-27B 46.9 52.7 52.9 90.0 51.5 40.5 Gemma-3-12B 29.9 22.9 45.8 37.2 10.7 48.0 Gemma-4-31B 44.5 45.7 56.4 77.0 42.4 38.6 Qwen3-VL-8B + GRPO (ours) 51.3 26.5 57.4 60.4 33.8 28.4
+
+Table 1: Main results on the verified evaluation set (percentages; Gemini-3.5-Flash judge; metric definitions in Section 4). Rec .5: box recall at IoU 0.5; Prec: citation precision; Rel, Ans: judge scores ( ×20 ); SAA: strict attributed accuracy; AH: hallucination among correct answers (lower is better). Bold: best per panel. Per-condition n is 681 to 719 (Appendix B). 
+
+is set by each model’s own citation count, which if anything favors the retrieval control. Under this set-ting, recall stays below the quote pipeline for every backbone—e.g., by 13 to 19 percentage points for Qwen3-VL-8B, Qwen3.5-27B, and Gemma-4-31B. However, if we append the answer that the same model generated in that run (not the gold answer) to the query, the gap largely closes for those three models and even exceeds the quote pipeline for the other three. This second comparison is more naturally in-terpreted as a second reading of the same model output than as an external baseline. The question-only rows measure what the retrieval machinery alone can achieve, while the q+a rows measure the location-relevant information encoded in the model’s generated language (Section 6.2). Im-portantly, the two readings often retrieve different blocks, and the quotes contribute 11.1 points of coverage that question-plus-answer retrieval never reaches, against 2.4 points for a second query built from the question alone (Appendix F). The strong q+a performance therefore does not render the quote channel redundant. 
+
+Multimodal encoding contributes beyond string matching. Lexical and BM25 resolvers op-erating on the same quotes lose 5 to 14 points com-pared with the crop-embedding retriever, which also resolves paraphrased quotes rather than relying on literal copying. Full results and quote-fidelity statistics are provided in Appendix F.                                           
+
+> coordinate retrieval controls ours Backbone raw +snap qq+a lex quotes Qwen3-VL-8B 0.3 9.8 27.1 38.4 28.5 39.9 Qwen3-VL-30B 1.3 5.0 27.6 37.4 24.3 34.8 Qwen3.5-9B 3.9 14.8 22.7 32.5 20.7 25.2 Qwen3.5-27B 7.8 22.9 25.8 40.5 32.4 44.5 Gemma-3-12B 0.3 6.5 29.1 41.8 25.5 29.9 Gemma-4-31B 7.8 23.5 27.3 42.8 33.9 44.5 8B + GRPO ––35.6 52.0 37.6 51.2
+
+Table 2: Credit-assignment controls, recall at IoU 0.5 on all 719 valid responses (Table 1 uses the judged subset). 
+
+raw : coordinate interface. +snap : each box replaced by the maximum-IoU block on its stated page. q, q+a :retrieval from the question alone, or the question plus the answer the same model generated, at that run’s citation budget. lex : the same quotes resolved lexically. quotes :the full language interface. 
+
+5.4 Effect of region-label-free training 
+
+Training with GRPO using the reward in Eq. 2 con-sistently improves the benchmark’s target metrics (Table 1, last row). Compared with the Qwen3-VL-8B language baseline, the trained model achieves higher box recall (39.9 → 51.3) and SAA (22.4 →
+
+33.8), while AH drops from 41.2 to 28.4. Same-page recall rises from 63.2 to 73.8, with gains uni-form across all IoU thresholds, and the evaluation judge rates the trained model higher on both rele-vance and answer quality. These gains come with a trade-off, however. The trained model cites more regions per response (4.6 vs. 2.1 for the baseline), yet citation precision declines from 37.6 to 26.5 and box F1 does not improve (32.2 → 28.8), so part of the recall gain is purchased with additional citations. We examine the source of these gains and assess whether the extra citations are beneficial or simply noise in Section 6.3. 
+
+6 Discussion 
+
+6.1 Interface artifact, not capability gap 
+
+The main results adjudicate between two hypothe-ses from the introduction. If models lacked location ability, changing the evidence interface should not help; yet retrieval-resolved quotes raise recall by roughly an order of magnitude (Table 1), confirm-ing that the deficit is in the coordinate format, not in the model. The threshold decomposition (Figure 3) shows what coordinates lose: page identity remains but region geometry does not, as predicted boxes are coarse rectangles around a broadly correct area. The pattern persists across four families and a four-fold size range; the best coordinate an-swerer still mis-attributes 82.1% of its correct an-swers. Scaling alone does not fix coordinate attribu-tion. The format is nonetheless learnable: reported closed-source results (Appendix Table 5) show Gemini-3.1-Pro reaching 68.9 recall and 76.0 SAA through the same coordinate format, and detection-style coordinate emission succeeds in natural im-ages (Chen et al., 2021, 2023; You et al., 2023). It is therefore not unlearnable but merely unlearned: open models without dedicated grounding super-vision fail with coordinates yet succeed through language, and Section 5.3 traces the recovered abil-ity to the language they generate. 
+
+6.2 Models already describe locations in language 
+
+Behavioral evidence comes from the citation-format rate (Appendix Table 4; see Appendix Fig-ure 6 for examples). Under the coordinate prompt, Qwen3-VL-30B-A3B produces a parseable box in only 33.1% of responses. Manual inspection shows its non-citing outputs are rarely refusals or truncations; rather, the model answers the ques-tion and then describes the evidence location ver-bally—page numbers, section titles, table names. These are metric failures, but they reveal that mod-els asked for coordinates often respond with our proposed language interface instead. The language interface has its own compliance cost, Qwen3.5-9B emitting parseable citations in only 49.2% of responses, so format adherence is per-model rather than inherent to either interface. 
+
+6.3 Residual errors and what training fixes 
+
+When the language interface misses an evidence element, the failure can occur at three places: the parser proposes no block that matches the anno-tation, the model never quotes that evidence, or the correct block is retrieved but lost when the one-to-one assignment gives it to another quote. Appendix H defines these categories and reports their shares before and after training; two readings matter here. First, the parser ceiling is softer than IoU 0.5 suggests, because most unreachable ele-ments are granularity mismatches in which a block does contain the evidence, and we keep IoU 0.5 as primary only for comparability with the pub-lished standard. Second, the residual is dominated by evidence the model never quotes rather than by ranking errors, and nearly all of the recall gain from training comes out of exactly that category, which is what the coverage term of the reward is designed to produce. Are these extra citations noise? The annotations alone cannot say, since precision counts any ci-tation outside a labeled element as wrong. The independent judge, which reads the crops and pe-nalizes irrelevant ones, gives a cleaner signal: un-der a stricter variant of SAA that drops the recall disjunct and requires Ans ≥ 4 ∧ Rel ≥ 4, the trained model improves from 19.1 to 27.4 (Mc-Nemar p = 6 × 10 −7, Appendix D). The extra citations therefore tend to land on supporting ma-terial that the annotations do not cover, and the policy improves its quoting rather than exploiting the reward. 
+
+7 Conclusion 
+
+Evidence attribution in visual documents has ap-peared to be beyond open vision-language models, a failure read as a capability gap. Expressing evi-dence as verbatim quotes and resolving them by re-trieval recovers attribution across six open models from four families, and a complementary GRPO-based training improves it further. These findings indicate a practical path to improve attribution with-out coordinates interface and costly region-level supervision in visual document understanding. Limitations 
+
+For research scope, our claims are scoped to single-document evidence attribution; multi-document set-tings add a retrieval dimension we do not study. For methodology, first, our method does not teach the model to localize on its own: the model only writes quotes, and the parser and the retriever are what turn each quote into a page region. How-ever our pipeline offers ways to get end-to-end region output supervision: its retrieved regions can serve as training labels for such a model, its judge-based reward applies to any model that outputs regions, and a model could simply name one of the parser’s blocks instead of writing coordinates (Yang et al., 2023). Second, the language inter-face depends on a layout parser and a cacheable per-document parsing and embedding pass (Ap-pendix A). Its ceiling is therefore the parser’s ceil-ing. Third, for figure evidence, the interface returns the figure’s block through its caption, purely graph-ical evidence with no caption cannot be quoted. Finally, the assignment step always returns a block for every quote, so a hallucinated quote is resolved to a plausible-looking region rather than flagged. Retrieval similarity is informative enough to sup-port abstention (Appendix I). For experiment, first, evaluation coverage is bounded by source-PDF availability. The verifi-cation filter shrinks the benchmark (Appendix B), and the retained documents skew toward usable text layers, so performance on heavily scanned col-lections is untested. Second, all results are single runs with greedy decoding, and the reinforcement learning result is a single seed on one backbone; we report paired uncertainty estimates in Appendix D. Finally, both training and evaluation rely on vision-language judges. The reward judge shapes the train-ing signal, and judged metrics inherit the biases of the judge models. We mitigate this by using the CiteVQA well-designed protocol and an evaluation judge independent of training. 
+
+References 
+
+Christoph Auer, Maksym Lysak, Ahmed S. Nassar, Michele Dolfi, Nikolaos Livathinos, Panos Vage-nas, Cesar Berrospi Ramis, Matteo Omenetti, Fabian Lindlbauer, Kasper Dinkla, Valéry Weber, Lucas Morin, Ingmar Meijer, Viktor Kuropiatnyk, and Peter W. J. Staar. 2024. Docling technical report. ArXiv ,abs/2408.09869. Shuai Bai, Yuxuan Cai, Ruizhe Chen, Ke qin Chen, Xiong-Hui Chen, Zesen Cheng, Lianghao Deng, Wei Ding, Rongyao Fang, Chang Gao, Chunjiang Ge, Wenbin Ge, Zhifang Guo, Qidong Huang, Qidong Huang, Fei Huang, Binyuan Hui, Shutong Jiang, Zhaohai Li, and 46 others. 2025. Qwen3-vl tech-nical report. ArXiv , abs/2511.21631. Meng Cao, Haoze Zhao, Can Zhang, Xiaojun Chang, Ian Reid, and Xiaodan Liang. 2025. Ground-r1: In-centivizing grounded visual reasoning via reinforce-ment learning. ArXiv , abs/2505.20272. Ke Chen, Zhao Zhang, Weili Zeng, Richong Zhang, Feng Zhu, and Rui Zhao. 2023. Shikra: Unleashing multimodal llm’s referential dialogue magic. ArXiv ,abs/2306.15195. Ting Chen, Saurabh Saxena, Lala Li, David J. Fleet, and Geoffrey E. Hinton. 2021. Pix2seq: A language modeling framework for object detection. ArXiv ,abs/2109.10852. Yung-Sung Chuang, Benjamin Cohen-Wang, Shan-non Zejiang Shen, Zhaofeng Wu, Hu Xu, Xi Vic-toria Lin, James Glass, Shang-Wen Li, and Wen tau Yih. 2025. Selfcite: Self-supervised alignment for context attribution in large language models. ArXiv ,abs/2502.09604. Benjamin Cohen-Wang, Harshay Shah, Kristian Georgiev, and Aleksander Madry. 2024. Contextcite: Attributing model generation to context. ArXiv ,abs/2409.00729. Chao Deng, Jiale Yuan, Pi Bu, Pei-Jie Wang, Zhongzhi Li, Jian Xu, Xiao-Hui Li, Yuan Gao, Jun Song, Bo Zheng, and Chenglin Liu. 2024. Longdocurl: a comprehensive multimodal long document bench-mark integrating understanding, reasoning, and lo-cating. In Annual Meeting of the Association for Computational Linguistics .Luyu Gao, Zhuyun Dai, Panupong Pasupat, Anthony Chen, Arun Tejasvi Chaganty, Yicheng Fan, Vincent Zhao, N. Lao, Hongrae Lee, Da-Cheng Juan, and Kelvin Guu. 2022. Rarr: Researching and revising what language models say, using language models. In 
+
+Annual Meeting of the Association for Computational Linguistics .Tianyu Gao, Howard Yen, Jiatong Yu, and Danqi Chen. 2023. Enabling large language models to generate text with citations. In Conference on Empirical Meth-ods in Natural Language Processing .Gregor Geigle, Radu Timofte, and Goran Glavas. 2024. Does object grounding really reduce hallu-cination of large vision-language models? ArXiv ,abs/2406.14492. Edward J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu Wang, and Weizhu Chen. 2021. Lora: Low-rank adaptation of large language models. Preprint , arXiv:2106.09685. Seil Kang, Jinyeong Kim, Junhyeok Kim, and Seong Jae Hwang. 2025. Your large vision-language model only needs a few attention heads for visual grounding. 
+
+2025 IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pages 9339–9350. Harold W. Kuhn. 1955. The hungarian method for the assignment problem. Naval Research Logistics (NRL) , 52. Mingxin Li, Yanzhao Zhang, Dingkun Long, Ke qin Chen, Sibo Song, Shuai Bai, Zhibo Yang, Pengjun Xie, An Yang, Dayiheng Liu, Jingren Zhou, and Junyang Lin. 2026. Qwen3-vl-embedding and qwen3-vl-reranker: A unified framework for state-of-the-art multimodal retrieval and ranking. ArXiv ,abs/2601.04720. Peiyang Liu, Ziqiang Cui, Xi Wang, Di Liang, and Wei Ye. 2026. Chain of evidence: Pixel-level visual at-tribution for iterative retrieval-augmented generation. 
+
+Proceedings of the 49th International ACM SIGIR Conference on Research and Development in Infor-mation Retrieval .Shuochen Liu, Pengfei Luo, Chao Zhang, Yuhao Chen, Haotian Zhang, Qi Liu, Xin Kou, Tong Xu, and En-hong Chen. 2025a. Look as you think: Unifying reasoning and visual evidence attribution for verifi-able document rag via reinforcement learning. ArXiv ,abs/2511.12003. Ziyu Liu, Zeyi Sun, Yuhang Zang, Xiao wen Dong, Yuhang Cao, Haodong Duan, Dahua Lin, and Jiaqi Wang. 2025b. Visual-rft: Visual reinforcement fine-tuning. 2025 IEEE/CVF International Conference on Computer Vision (ICCV) , pages 2034–2044. Ant’onio Loison, Quentin Macé, Antoine Edy, Victor Xing, Tom Balough, Gabriel de Souza Pereira Mor-eira, Bo Liu, Manuel Faysse, Céline Hudelot, and Gautier Viaud. 2026. Vidore v3: A comprehensive evaluation of retrieval augmented generation in com-plex real-world scenarios. In Annual Meeting of the Association for Computational Linguistics .Dongsheng Ma, Jiayu Li, Zhengren Wang, Yijie Wang, Jiahao Kong, Wei Zeng, Jutao Xiao, Jie Yang, Wentao Zhang, Bin Wang, and Conghui He. 2026. Citevqa: Benchmarking evidence attribution for trustworthy document intelligence. ArXiv , abs/2605.12882. Xueguang Ma, Shengyao Zhuang, Bevan Koopman, G. Zuccon, Wenhu Chen, and Jimmy Lin. 2024. Visa: Retrieval augmented generation with visual source attribution. ArXiv , abs/2412.14457. Jacob Menick, Maja Trebacz, Vladimir Mikulik, John Aslanides, Francis Song, Martin Chadwick, Mia Glaese, Susannah Young, Lucy Campbell-Gillingham, Geoffrey Irving, and Nat McAleese. 2022. Teaching language models to support answers with verified quotes. ArXiv , abs/2203.11147. Ahmad Mohammadshirazi, Pinaki Prasad Guha Neogi, Dheeraj Kulshrestha, and Rajiv Ramnath. 2025. Ar-ial: An agentic framework for document vqa with precise answer localization. ArXiv , abs/2511.18192. Ahmad Mohammadshirazi, Pinaki Prasad Guha Neogi, Ser-Nam Lim, and Rajiv Ramnath. 2024. Dlava: Document language and vision assistant for answer localization with enhanced interpretability and trust-worthiness. ArXiv , abs/2412.00151. Qwen Team. 2026. Qwen3.5: Towards native multi-modal agents. Zhihong Shao, Peiyi Wang, Qihao Zhu, Runxin Xu, Jun-Mei Song, Mingchuan Zhang, Y. K. Li, Yu Wu, and Daya Guo. 2024. Deepseekmath: Pushing the limits of mathematical reasoning in open language models. 
+
+ArXiv , abs/2402.03300. Haozhan Shen, Peng Liu, Jingcheng Li, Chunxin Fang, Yibo Ma, Jiajia Liao, Qiao li Shen, Zilun Zhang, Kangjia Zhao, Qianqian Zhang, Ruochen Xu, and Tiancheng Zhao. 2025. Vlm-r1: A stable and gener-alizable r1-style large vision-language model. ArXiv ,abs/2504.07615. Zhi Rui Tam, Cheng-Kuang Wu, Yi-Lin Tsai, Chieh-Yen Lin, Hung yi Lee, and Yun-Nung Chen. 2024. Let me speak freely? a study on the impact of format restrictions on large language model performance. In 
+
+Conference on Empirical Methods in Natural Lan-guage Processing .Gemma Team, Sherif El Abd, Vaibhav Aggarwal, Robin Algayres, Alek Andreev, Olivier Bachem, Ian Bal-lantyne, Cormac Brick, Victor Cuarbune, Michelle Cas-bon, Mayank Chaturvedi, Victor Cotruta, Alice Coucke, Phil Culliton, Robert Dadashi, Lucas Dixon, Mohamed Elhawaty, Utku Evci, Clément Farabet, and 282 others. 2026. Gemma 4 technical report. Gemma Team, Aishwarya Kamath, Johan Ferret, Shreya Pathak, Nino Vieillard, Ramona Merhej, Sarah Perrin, Tatiana Matejovicova, Alexandre Ram’e, Morgane Rivière, Louis Rouillard, Thomas Mesnard, Geoffrey Cideron, Jean-Bastien Grill, Sabela Ramos, Edouard Yvinec, Michelle Casbon, Etienne Pot, Ivo Penchev, and 192 others. 2025. Gemma 3 technical report. 
+
+ArXiv , abs/2503.19786. Jonas Wallat, Maria Heuss, Maarten de Rijke, and Avishek Anand. 2025. Correctness is not faithful-ness in retrieval augmented generation attributions. 
+
+Proceedings of the 2025 International ACM SIGIR Conference on Innovative Concepts and Theories in Information Retrieval (ICTIR) .Bin Wang, Chaochao Xu, Xiaomeng Zhao, Linke Ouyang, Fan Wu, Zhiyuan Zhao, Rui Xu, Kaiwen Liu, Yuan Qu, Fukai Shang, Bo Zhang, Liqun Wei, Zhihao Sui, Wei Li, Botian Shi, Yu Qiao, Dahua Lin, and Conghui He. 2024. Mineru: An open-source solution for precise document content extrac-tion. ArXiv , abs/2409.18839. Qianhui Wu, Kanzhi Cheng, Rui Yang, Chaoyun Zhang, Jianwei Yang, Huiqiang Jiang, Jian Mu, Baolin Peng, Bo Qiao, Reuben Tan, Si Qin, Lars Lidén, Qing-wei Lin, Huan Zhang, Tongxing Zhang, Jianbing Zhang, Dongmei Zhang, and Jianfeng Gao. 2025. Gui-actor: Coordinate-free visual grounding for gui agents. ArXiv , abs/2506.03143. Junyu Xiong, Yonghui Wang, Weichao Zhao, Chenyu Liu, Bing Yin, Weng Zhou, and Houqiang Li. 2025. Docr1: Evidence page-guided grpo for multi-page document understanding. In AAAI Conference on Artificial Intelligence .Jiacheng Yang, Anqi Chen, Yunkai Dang, Qi Fan, Con-glei Wang, Wenbin Li, Feng Miao, and Yang Gao. 2026. Hart: High-resolution annotation-free reason-ing technique through a closed-loop framework. Jianwei Yang, Hao Zhang, Feng Li, Xueyan Zou, Chun yue Li, and Jianfeng Gao. 2023. Set-of-mark prompt-ing unleashes extraordinary visual grounding in gpt-4v. Haoxuan You, Haotian Zhang, Zhe Gan, Xianzhi Du, Bowen Zhang, Zirui Wang, Liangliang Cao, Shih-Fu Chang, and Yinfei Yang. 2023. Ferret: Refer and ground anything anywhere at any granularity. ArXiv ,abs/2310.07704. Qiying Yu, Zheng Zhang, Ruofei Zhu, Yufeng Yuan, Xiaochen Zuo, Yu Yue, Tiantian Fan, Gaohong Liu, Lingjun Liu, Xin Liu, Haibin Lin, Zhiqi Lin, Bole Ma, Guangming Sheng, Yuxuan Tong, Chi Zhang, Mofan Zhang, Wang Zhang, Hang Zhu, and 16 others. 2025a. Dapo: An open-source llm reinforcement learning system at scale. ArXiv , abs/2503.14476. Wenhan Yu, Wang Chen, Guanqiang Qi, Weikang Li, Yang Li, Lei Sha, Deguo Xia, and Jizhou Huang. 2025b. Sciegqa: A dataset for scientific evidence-grounded question answering and reasoning. Jiajie Zhang, Yushi Bai, Xin Lv, Wanjun Gu, Danqing Liu, Minhao Zou, Shulin Cao, Lei Hou, Yuxiao Dong, Ling Feng, and Juanzi Li. 2024. Longcite: Enabling llms to generate fine-grained citations in long-context qa. ArXiv , abs/2409.02897. Yaowei Zheng, Junting Lu, Shenzhi Wang, Zhangchi Feng, Dongdong Kuang, Yuwen Xiong, and Richong Zhang. 2025. Easyr1: An efficient, scalable, multi-modality rl training framework. https://github. com/hiyouga/EasyR1 .
+
+A Implementation Details 
+
+Reproducibility. We will release the question identifiers of the verified evaluation set together with the verification filter, the inference and retrieval pipeline, the evaluation and control-experiment scripts, and the training configuration, so that every number in the paper can be repro-duced from the public CiteVQA and LongDocURL releases. 
+
+Adaptive resolution. Every model receives all pages of the document. Each page is rendered at 
+
+min(10 6, B/n ) pixels, where n is the page count and B = 1 .87 × 10 8 is a total pixel budget cho-sen so that the rendered document fits the model context. Because the longest document in the ver-ified set has 182 pages, the per-page resolution is in practice the one-megapixel cap for every back-bone, which matches the standard adaptive scaling of CiteVQA (downscaling to at most 1024 × 1024 
+
+while preserving aspect ratio). Pages are encoded as JPEG images. 
+
+Retrieval implementation. Semantic blocks are taken from the MinerU parse of each PDF (me-dian 388 blocks per document). Block crops are rendered at 150 dpi and embedded once per docu-ment with Qwen3-VL-Embedding-2B; the embed-dings are cached on disk. Quotes are embedded as text with the same encoder. Similarities are cosine over unit-normalized embeddings, and the one-to-one assignment is solved with the Hungar-ian algorithm (SciPy linear_sum_assignment ); when a response contains more quotes than the document has blocks, each quote falls back to its highest-similarity block. 
+
+Training data construction. LongDocURL (Deng et al., 2024) provides long-document QA pairs with gold answers and evidence-page anno-tations. For each question we render a window of up to 30 pages around the annotated evidence pages at the same per-page pixel budget as eval-uation, which keeps long documents tractable for rollout sampling; the evidence-page annotation is used only to place the window, never in the reward. The resulting set contains 1,584 training questions over 349 documents, with 83 questions held out for validation. A whole-text document fingerprint check confirms that no training document overlaps the CiteVQA evaluation PDFs. The rollout prompt is the same natural-language citation contract as evaluation (Appendix J.2). 
+
+Optimization objective. For a question q over document D, the rollout policy πθold samples a group of n responses {oi}ni=1 , and the scalar re-wards ri of Eq. 2 are normalized within the group, 
+
+ˆAi = ri − mean  {rj }nj=1 
+
+
+
+std  {rj }nj=1 
+
+ + ϵ , (3) so that every token of oi shares the advantage ˆAi.With the token-level importance ratio ρi,t (θ) = Algorithm 1 Region-label-free GRPO for evidence attribution  
+
+> 1:
+
+for each training question (q, D, y ∗) do  
+
+> 2:
+
+sample n responses o1, . . . , o n ∼ πθold (· | 
+
+q, D ) 
+
+> 3:
+
+for each response oi do  
+
+> 4:
+
+parse oi into answer yi and quotes Ui 
+
+> 5:
+
+Ci ← A  f (Ui), f (B(D))  ▷ retrieval, Sec. 3.2  
+
+> 6:
+
+judge (q, y ∗, y i, crops of Ci) →
+
+ai, e rel ,i , e cov ,i  
+
+> 7:
+
+ri ← (ai/5) · (erel ,i + ecov ,i )/10 ▷
+
+Eq. 2  
+
+> 8:
+
+end for  
+
+> 9:
+
+if mean i ri /∈ [0 .01 , 0.99] then discard group ▷ dynamic sampling  
+
+> 10:
+
+end if  
+
+> 11:
+
+ˆAi ← (ri − mean r)/(std r + ϵ) ▷ Eq. 3  
+
+> 12:
+
+update θ by maximizing Eq. 4  
+
+> 13:
+
+end for 
+
+πθ(oi,t | q, D, o i,<t ) / π θold (oi,t | q, D, o i,<t ),training maximizes 
+
+J (θ) = E
+
+ 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+1
+
+|oi|
+
+X
+
+> t
+
+min 
+
+
+
+ρi,t ˆAi,
+
+clip  ρi,t , 1 − εl, 1 + εh
+
+ ˆAi
+
+
+
+− β DKL 
+
+πθ ∥ πref 
+
+,
+
+(4) where πref is the frozen initial model, the KL diver-gence is computed with the low-variance estimator of Shao et al. (2024), and the clip range is asym-metric with εh > ε l following DAPO (Yu et al., 2025a). 
+
+Training hyperparameters. LoRA rank 64, al-pha 64, applied to all linear layers of the language model, with the vision tower frozen. Rollouts use 
+
+n=8 samples per question at temperature 1.0, max-imum prompt length 48,000 tokens, and maximum response length 768 tokens. The keep band for group filtering is [0 .01 , 0.99] on the group mean reward. The learning rate is 10 −5 with a con-stant schedule, rollout batch 32, global batch 16, three epochs, 144 optimizer steps. The training reward judge is Qwen3.5-9B served with vLLM alongside the trainer. The objective of Eq. 4 uses clip range (εl, ε h) = (0 .2, 0.28) , KL coefficient 
+
+β = 0 .01 against the frozen initial model with the low-variance estimator, and group-normalization constant ϵ = 10 −6 in Eq. 3. Figure 4 shows the held-out validation reward, and Figure 5 tracks the three reward components together with the num-ber of quotes per response. Coverage starts lowest and rises the most (1.4 to 2.5), relevance gains about one point, answer correctness moves least, and the model cites roughly one additional quote per response by the end of training; these dynamics match the element-level decomposition of Figure 7, where most of the recall gain comes from evidence that was previously not cited. 60 80 100 120 140 
+
+> training step
+> 0.30
+> 0.32
+> 0.34
+> 0.36
+> 0.38
+> held-out val reward
+> fi nal ckpt (144)
+> 0.378
+
+Figure 4: Held-out validation reward during GRPO training. The final checkpoint (step 144) is evaluated without selection. 1.0        
+
+> 1.5
+> 2.0
+> 2.5
+> 3.0
+> 3.5
+> 4.0
+> judge score (0-5)
+> a(answer corr.)
+> erel (relevance)
+> ecov (coverage)
+> 60 80 100 120 140
+> training step
+> 2.5
+> 3.0
+> 3.5
+> 4.0
+> 4.5
+> 5.0
+> quotes / response
+
+Figure 5: Training dynamics of the reward components (top; judge scores on the 0–5 scale) and of the citing behavior (bottom; quotes per response), shown from step 45 onward; per-step metrics for steps 1 to 44 are unavailable because a cluster requeue overwrote the metrics file before it was archived. Bold lines are 7-step moving averages over the per-step values (faint). The coverage component and the number of quotes rise the most, consistent with the training gain being driven by citing previously omitted evidence. Training and evaluation cost. Reinforcement learning ran as four chained cluster jobs total-ing 28.4 wall-clock hours on three H200 GPUs each (two for the trainer and one serving the re-ward judge and the embedder), or approximately 85 GPU-hours. Evaluating the 13-condition ma-trix (six backbones under two interfaces, plus the trained model) took approximately 60 single-H200 GPU-hours of inference, dominated by the two thinking models with their 4096-token output bud-gets. Diagnostic analyses (retrieval headroom and parser ceiling) add under two GPU-hours. At infer-ence, the language interface adds a one-time per-document cost, the layout parse and one embedding per block (median 388 blocks, on the order of sec-onds for parsing and half a minute of GPU time for embeddings per document), which is cacheable across questions of the same document, and a per-question cost of embedding the quotes and solving one assignment, which is negligible; the coordinate interface adds no overhead. Judging costs are listed below. 
+
+Evaluation judging. The evaluation judge is Gemini-3.5-Flash, called through the batch API with thinking disabled, temperature 0, and a 1024-token output limit. For each response, the answer-accuracy judge receives the question, the gold an-swer, and the model answer, and the relevance judge additionally receives the crops of the cited regions rendered at 150 dpi (at most six per re-sponse). Judging the full 13-condition matrix took roughly 18,950 requests, 40.9M input tokens and 1.6M output tokens in total. 
+
+Benchmark construction. Starting from the CiteVQA single-document questions, we keep a question when (i) its source PDF resolves and downloads, (ii) all annotated evidence pages exist in the downloaded file, and (iii) the annotated tex-tual evidence is verifiably present at the annotated location, established by extracting the text under each ground-truth box and matching it against the annotated content. The checks inspect only ground-truth annotations and never model outputs. Table 3 summarizes the resulting set. Question types fol-low the CiteVQA taxonomy: Complex Synthesis questions combine several elements, often across pages; Multimodal Parsing questions target a spe-cific table or figure; Factual Retrieval questions look up a single fact; Quantitative Reasoning ques-tions require numeric computation over document content. The non-textual share is the fraction of           
+
+> Property Value Questions 719 Source PDFs 440 Language (en / zh) 386 / 333 Complex Synthesis 394 (55%) Multimodal Parsing 136 Factual Retrieval 122 Quantitative Reasoning 67 Pages (median / p90 / max) 34 / 104 / 182 Non-textual evidence ∼30%
+> Table 3: Composition of the verified single-document evaluation set.
+
+necessary ground-truth elements whose annotated type is a table or a figure. 
+
+Protocol checks. Three properties support the fairness of the comparison. The coordinate condi-tion uses the CiteVQA prompt verbatim (including its minor typographical errors, which we preserve unchanged), and our coordinate numbers fall in the same regime as the published single-document scores for shared models. Thinking models receive a 4096-token output budget because long reasoning chains truncate final citations at smaller budgets; this correction raises coordinate scores. The veri-fication filter used to build the verified evaluation set inspects only ground-truth annotations, never model outputs. 
+
+Closed-source reference points. Table 5 repro-duces the closed-source rows of the CiteVQA main table, which we do not rerun. They serve one pur-pose in our argument, discussed in Section 6: sys-tems trained at scale do reach useful attribution accuracy through the coordinate interface, so the failure we diagnose in open models is a matter of missing supervision rather than of an unlearnable output format. The numbers are not comparable to Table 1 in absolute terms, since they come from the full single-document split scored by a different judge, and CiteVQA does not report AH. 
+
+B Benchmark Filtering Funnel 
+
+The CiteVQA validation release contains 987 single-document questions. The verification fil-ter removes 117 questions whose source PDF does not resolve or is not a valid PDF, 4 whose anno-tated evidence pages lie outside the downloaded file, 131 whose annotated evidence text cannot be found at the annotated location, and 16 whose doc-ument differs from the annotated version and can-not be byte-verified, leaving 719 questions (72.9 Backbone Interface page @0.1 @0.3 @0.5 @0.7 fmt                                                                                            
+
+> Parser ceiling (upper bound for retrieval) 100.0 95.2 90.3 88.2 86.4 –Qwen3-VL-8B coord. 30.7 5.8 1.2 0.3 0.0 61.5 lang. 63.2 42.3 40.7 39.9 39.2 97.5 Gemma-3-12B coord. 20.6 4.8 1.0 0.3 0.0 95.1 lang. 49.8 32.0 30.5 29.9 29.3 99.7 Qwen3.5-9B coord. 33.6 13.0 7.0 3.9 1.8 63.3 lang. 32.7 26.5 25.6 25.2 24.9 49.2 Qwen3-VL-30B-A3B coord. 14.3 4.5 1.9 1.3 1.1 33.1 lang. 50.2 37.1 35.6 34.8 34.0 75.8 Gemma-4-31B coord. 45.5 19.3 12.2 7.8 3.7 99.4 lang. 59.0 47.3 45.6 44.5 43.8 88.3 Qwen3.5-27B coord. 45.5 22.0 14.1 7.8 3.3 86.6 lang. 56.1 47.3 45.6 44.5 43.8 76.1 Qwen3-VL-8B + GRPO lang. 73.8 54.2 52.2 51.2 50.1 97.9
+
+Table 4: Multi-threshold recall of necessary evidence (same-page recall, then same page with IoU ≥ t) and citation-format rate, over all valid responses (n=719). Qwen3.5-27B and Gemma-4-31B coincide to one decimal at every IoU threshold; they differ at the second decimal. The parser ceiling is the recall achievable if retrieval were perfect, i.e., matching against every semantic block of the document.                                     
+
+> System Rec .5Rel Ans SAA Gemini-3.1-Pro-Preview 68.9 82.6 86.7 76.0 Gemini-3-Flash-Preview 49.5 76.8 85.3 69.3 Gemini-2.5-Pro 31.5 61.7 83.0 49.4 GPT-5.4 35.9 69.8 87.6 61.7 GPT-5.2 20.9 54.9 71.4 32.6 Qwen3.6-Plus 9.8 26.7 87.1 20.2 Seed2.0-Pro 35.8 60.8 82.9 51.9 GLM-5V-Turbo 18.3 31.2 50.0 14.1
+
+Table 5: Closed-source coordinate-interface results re-produced from the CiteVQA main table (Ma et al., 2026): their full single-document split, Qwen3-VL-235B judge, temperature 1.0. These numbers are refer-ence points rather than direct comparisons with Table 1, which uses the verified evaluation set and a different judge; CiteVQA does not report AH. 
+
+percent). To test whether the text-verification cri-terion skews the benchmark toward born-digital documents, we measured the share of pages with a substantive extractable text layer (more than 200 characters) for both groups. Retained documents average a 0.78 text-layer share and include 45 scan-like documents (10.2 percent) with text on fewer than a quarter of their pages; documents dropped by the text-mismatch criterion average a 0.84 share with 3.8 percent scan-like. The filter therefore does not select for parser-friendly documents; the text-mismatch drops reflect annotation-document dis-agreements rather than scanned-document exclu-sion. Per-condition n in Table 1 varies between 681 and 719 because judge responses that contain no parseable score tag (13 of the 9,347 answer calls and 240 of the 9,347 relevance calls, 13 conditions over 719 questions) exclude their question from that condition. 
+
+C Per-Language and Per-Type Results 
+
+The interface effect and the training gain hold in both benchmark languages (Table 6); Chinese ques-tions score at least as well as English ones under the language interface. At the level of individual evidence elements, the language interface recovers tables nearly as well as running text, while fig-ures remain the hardest category, consistent with their caption-based anchoring; coordinate rows stay near zero for most backbones in every category (Ta-ble 7). 
+
+D Statistical Tests 
+
+For every backbone we pair the two interface con-ditions on the questions judged in both, and for GRPO we pair against its base model. Differences in recall are tested with a paired bootstrap over questions (10,000 resamples, fixed seed), SAA with an exact McNemar test on discordant pairs, and AH with a paired bootstrap of the conditional rate; we also recompute AH on the intersection of questions answered correctly (Ans ≥ 4) under both conditions, which removes any composition effect from differing denominators. Table 8 shows that every contrast is significant and that intersection-AH is within two points of the unconditional AH throughout. Under the stricter SAA variant of Section 6.3 that requires judged relevance alone ( Ans ≥ 4 ∧ Rel ≥
+
+4, no recall disjunct), the GRPO model improves English (386) Chinese (333) Condition Rec .5 SAA AH Rec .5 SAA AH Qwen3-VL-8B coord. 0.4 1.0 97.9 0.1 1.8 95.9 Qwen3.5-27B coord. 6.0 11.7 86.8 10.4 21.0 76.9 Gemma-4-31B coord. 7.7 10.6 85.5 7.9 7.5 89.0 Qwen3-VL-8B lang. 37.2 20.7 41.6 43.2 24.3 40.9 Qwen3.5-27B lang. 39.9 44.8 47.1 55.1 59.4 33.1 Gemma-4-31B lang. 44.2 46.1 35.3 44.7 38.1 42.8 8B + GRPO lang. 50.5 34.2 27.6 52.2 33.3 29.3 
+
+Table 6: Per-language results for representative conditions (the remaining backbones follow the same pattern). Judged subsets per condition.                         
+
+> Condition text table figure Qwen3-VL-8B coord. 0.3 0.4 0.0 Qwen3.5-27B coord. 5.7 10.0 11.3 Gemma-4-31B coord. 7.9 6.3 12.7 Qwen3-VL-8B lang. 38.1 35.4 9.9 Qwen3.5-27B lang. 43.8 35.1 12.7 Gemma-4-31B lang. 44.4 34.7 19.7 8B + GRPO lang. 51.1 44.6 19.7
+
+Table 7: Element-level recall at IoU 0.5 by evidence type (685 text, 271 table, 71 figure elements; text includes titles and lists, table includes captions and footnotes, figure includes image captions). 
+
+over its base from 19.1 to 27.4 (discordant pairs 
+
+b = 99 , c = 40 , McNemar p = 6 .0 × 10 −7), and the corresponding hallucination rate falls from 50.0 to 42.0. 
+
+E Cross-Parser Check 
+
+The layout parser and the CiteVQA annotations could in principle share segmentation conventions, which would inflate the parser ceiling and the flat threshold profile of the language interface. To test this, we re-parsed all 440 documents with Docling (Auer et al., 2024), an independently developed layout parser that shares no lineage with the annota-tion tooling, and repeated the judge-free geometric evaluation. The Docling ceiling is 100.0 (page), 95.9 (IoU 0.1), 91.0 (0.3), 87.8 (0.5), and 79.8 (0.7), against 100.0, 95.2, 90.3, 88.2, and 86.4 for the parser used in the main experiments, although Docling segments about twice as finely (median 884 blocks per document against 388). The near-identical ceiling at the standard threshold indicates that the reachability of the annotated elements is a property of the documents rather than of one parser’s segmentation conventions. Table 9 repeats the language-interface evaluation with the model quotes held fixed and only the parser swapped. Re-call is 3 to 6 points below the main results, consis-tent with the finer segmentation, but the profile that carries the paper’s argument is unchanged: recall stays nearly flat from IoU 0.1 to 0.7, the ordering of the backbones is preserved, and the training gain persists (44.9 against 35.9 for the base model at IoU 0.5). The flat threshold profile is therefore not an artifact of one parser’s segmentation conventions. 
+
+F Credit-Assignment Controls 
+
+Coordinate-to-block snapping. Table 10 reports the full multi-threshold results of the snapping con-trol from Section 5.3. Snapping removes the thresh-old decay, which confirms that the raw coordinate collapse between IoU 0.1 and 0.7 is a granular-ity phenomenon, but the snapped recall remains bounded by each model’s same-page recall and far below the language interface. 
+
+Retrieval-only baselines. With the question alone as the query and a fixed budget of k blocks per question, recall at IoU 0.5 is 18.9 at k=1 , 33.1 at k=3 , and 39.9 at k=5 ; the corresponding same-page recalls are 34.9, 54.1, and 65.9. These fixed-budget numbers are not comparable to the language runs, which average between 1.1 and 3.3 citations per response; the budget-matched comparison ap-pears in Table 2. Splitting the budget-matched com-parison by answer correctness sharpens the reading. On correctly answered questions (Ans ≥ 4), quote recall exceeds the question-plus-answer control by 4.5 to 7.1 points (for Qwen3-VL-8B, 52.1 against 45.0, over a question-only floor of 28.3), while on incorrectly answered questions both controls fall toward the floor and the quote margin vanishes. Quotes and answers therefore rise and fall together as expressions of the same underlying evidence identification, and on the same correctly answered questions the coordinate interface stays below 8.1 recall, which is the dissociation that the main re-sults quantify as AH. Pair (NL vs. coord.) n ∆Rec .5 [95% CI] ∆SAA [95% CI] McNemar p AH pair inters.-AH Qwen3-VL-8B 717 +39 .8 [36.4, 43.2] +21 .1 [18.0, 24.3] 6.0 × 10 −40 41.0 / 97.0 38.5 / 96.3 Qwen3-VL-30B 717 +33 .7 [30.5, 37.0] +20 .8 [17.6, 24.1] 6.7 × 10 −34 47.1 / 92.1 43.0 / 91.6 Qwen3.5-9B 679 +21 .6 [18.2, 25.0] +18 .1 [14.1, 22.1] 4.6 × 10 −18 66.0 / 87.4 65.8 / 87.1 Qwen3.5-27B 656 +39 .4 [35.3, 43.4] +36 .4 [31.7, 41.2] 3.2 × 10 −44 40.4 / 82.6 40.0 / 82.5 Gemma-3-12B 719 +29 .7 [26.5, 32.8] +9 .7 [7.5, 12.1] 1.0 × 10 −17 48.0 / 95.9 45.8 / 96.3 Gemma-4-31B 718 +36 .7 [32.9, 40.4] +33 .3 [29.2, 37.2] 3.4 × 10 −49 38.6 / 87.1 37.1 / 87.2 GRPO vs. base 716 +11 .2 [8.1, 14.3] +11 .3 [8.2, 14.5] 4.0 × 10 −12 28.4 / 41.0 27.8 / 39.2 
+
+Table 8: Paired significance tests (NL: language interface). CI: paired bootstrap over questions (10k resamples). AH pair: language / coordinate (for the last row, GRPO / base). Intersection-AH restricts both conditions to questions with Ans ≥ 4 under both.                                         
+
+> Backbone page @0.1 @0.3 @0.5 @0.7 Qwen3-VL-8B 63.6 38.6 37.0 35.9 32.7 Qwen3-VL-30B 53.1 32.3 31.2 29.6 26.6 Qwen3.5-9B 33.8 23.5 21.9 20.9 18.6 Qwen3.5-27B 61.2 43.6 41.1 39.9 35.5 Gemma-3-12B 53.7 27.6 25.8 24.7 22.2 Gemma-4-31B 63.2 42.2 39.7 38.4 34.7 8B + GRPO 75.2 48.8 46.4 44.9 40.6
+
+Table 9: Language-interface recall with Docling blocks in place of the main parser, on identical model quotes. The flat threshold profile and the training gain replicate under the independent parser. 
+
+Complementarity of quotes and answers. The similar aggregate recall of the quotes and q+a rows in Table 2 hides that the two readings succeed on different questions: their per-question recalls corre-late at only 0.39 to 0.54 (Pearson) across backbones and differ on 30 percent of question and backbone pairs. Table 11 scores each question by the better of the two readings, an oracle union that diagnoses how disjoint the two signals are rather than describ-ing a deployable system. Pooled over the seven language runs, the union reaches 51.9 recall against 40.8 for q+a alone. As a control for generic query diversity, the union of question-only retrieval with q+a adds only 2.4 points over q+a, while adding the quotes adds 11.1, so the extra coverage comes from what the quotes say and not from issuing a second query. For questions with several neces-sary elements the per-question maximum is a lower bound on the true union; on the 505 questions with a single necessary element, where the union is ex-act, the pattern is unchanged (for Gemma-4-31B, 61.2 against 50.5 for the diversity control). Both readings use the same encoder, candidate set, and per-question citation budget throughout. 
+
+Resolver ablation and quote fidelity. Table 12 resolves the same quotes with a token-F1 lex-                                                                        
+
+> Backbone var. page @0.1 @0.3 @0.5 @0.7 Qwen3-VL-8B raw 30.7 5.8 1.2 0.3 0.0 snap 30.7 10.6 9.9 9.8 9.4 Qwen3-VL-30B raw 14.3 4.5 1.9 1.3 1.1 snap 14.3 5.6 5.1 5.0 4.9 Qwen3.5-9B raw 33.6 13.0 7.0 3.9 1.8 snap 33.6 16.6 15.1 14.8 14.2 Qwen3.5-27B raw 45.5 22.0 14.1 7.8 3.3 snap 45.5 25.1 23.6 22.9 22.2 Gemma-3-12B raw 20.6 4.8 1.0 0.3 0.0 snap 20.6 7.2 6.5 6.5 6.4 Gemma-4-31B raw 45.5 19.3 12.2 7.8 3.7 snap 45.5 25.8 24.3 23.5 22.9
+
+Table 10: Snapping control, full thresholds (n=719). Each predicted coordinate box is snapped to the max-imally overlapping semantic block on its stated page, with a nearest-block fallback when no block overlaps and no change when the page has no parsed blocks. 
+
+ical matcher and with Okapi BM25 over the parsed block texts, under the same whole-document scope and one-to-one assignment as the production matcher, and lists the quote-fidelity rates. Exact means the normalized quote is a substring of some single block text, which fails for quotes that span block boundaries; fuzzy means a token-F1 of at least 0.8 against some block. 
+
+G Qualitative Examples 
+
+Figure 6 shows real outputs for one document ques-tion, all three produced by the models we evaluate rather than constructed for illustration. The three panels correspond to the three behaviors the paper distinguishes: a coordinate answer that reaches the correct page but places its box away from the evi-dence, a coordinate prompt answered with a verbal description of the location instead of a box, and the same evidence quoted verbatim and resolved by retrieval to the annotated block. Together they show that the information needed for attribution is present in all three cases and that only the interface Backbone quotes q+a quotes ∪ q+a q ∪ q+a Qwen3-VL-8B 39.9 38.4 51.2 41.2 Qwen3-VL-30B 34.8 37.4 46.9 40.6 Qwen3.5-9B 25.2 32.5 40.5 34.2 Qwen3.5-27B 44.5 40.5 53.7 41.7 Gemma-3-12B 29.9 41.8 50.0 44.5 Gemma-4-31B 44.5 42.8 55.4 45.3 8B + GRPO 51.2 52.0 65.5 54.7                                           
+
+> Table 11: Oracle union of the two readings of the same model output, evidence recall at IoU 0.5 (n=719). The quotes and q+a columns repeat Table 2; each union col-umn scores a question by the better of its two readings and diagnoses signal disjointness rather than a system. The q ∪q+a column is the query-diversity control.
+> Backbone exact fuzzy lex BM25 ours Qwen3-VL-8B 14.9 48.7 28.5 27.9 39.9 Qwen3-VL-30B 22.3 52.9 24.3 24.3 34.8 Qwen3.5-9B 40.0 57.2 20.7 20.6 25.2 Qwen3.5-27B 36.3 57.4 32.4 32.2 44.5 Gemma-3-12B 16.2 39.4 25.5 24.6 29.9 Gemma-4-31B 29.4 53.1 33.9 33.5 44.5 8B + GRPO 20.6 50.6 37.6 36.8 51.2
+> Table 12: Quote fidelity (percent of quotes with an exact or fuzzy block match) and evidence recall at IoU 0.5 under lexical, BM25, and multimodal (ours) resolvers on identical quotes.
+
+differs (Section 6). 
+
+H Citation Precision and Residual Errors 
+
+This section supports the precision trade-off of Sec-tion 5 and the error analysis of Section 6.3. 
+
+Scoring protocol. We inherit the matching rule, the metric definitions, and the judge prompts from CiteVQA, and state here both what they compute and the two choices we add on top. All box metrics use the same matching rule: a cited box matches an annotated element when the two lie on the same page and their IoU is at least 0.5. Recall is com-puted per question as the number of necessary el-ements matched by at least one citation divided by the number of necessary elements, then macro-averaged over questions. Precision replicates the re-leased scorer’s loop verbatim: its numerator counts 
+
+annotated elements that some citation hits , and its denominator is the number of boxes the model cited .The two therefore range over different objects, and a single box that covers two annotated elements contributes two to the numerator and one to the denominator, so the quantity is not a standard preci-sion and can exceed one in rare cases. Per-question F1 is the harmonic mean of these two quantities. The two choices we add are the following, and we apply them identically to every condition. First, recall is scored against necessary evidence while precision is scored against all annotated evidence, including the optional supporting elements, so that citing genuinely supporting material the annota-tors marked optional is not counted as an error. Second, we score citations against whichever page the model names, without correcting page indices. If anything the first choice disadvantages the lan-guage interface, which cites more regions per re-sponse and therefore has more opportunity to land outside the annotation. 
+
+Citation precision and F1. Citation precision rises from between 0.3 and 8.6 under the coordi-nate interface to between 22.9 and 52.7 under the language interface, with 1.0 to 3.4 citations per response under coordinates and 1.1 to 3.3 under language. Per-question box F1 follows the same ordering (0.2 to 6.7 under coordinates, 21.5 to 39.1 under language). The GRPO model cites 4.6 re-gions per response at 26.5 precision and 28.8 F1, against 2.1, 37.6, and 32.2 for its base model, as discussed in Section 5. Precision is the counter-weight that makes recall interpretable: citing every parsed block would attain the ceiling recall of Ta-ble 4 by construction, at a precision below one per-cent. Truncating the trained model’s citations to the baseline’s budget, whether by retrieval similarity or by the model’s own citation order, does not pre-serve its recall advantage, so the training gain oper-ates through broader coverage rather than through more precise individual citations, consistent with the element-level decomposition of Figure 7 and with the judge-based analysis of Section 5. 
+
+Element-level residual decomposition. This analysis asks, for each necessary evidence element in the verified evaluation set, why the language in-terface did or did not recover it. Every one of the 1,034 elements falls into exactly one of four cate-gories. Recovered means the element is matched by the citation the pipeline actually produced. Rank-limited means the correct block does appear among the retriever’s top five candidates for some quote, but the one-to-one assignment awards that block to a different quote, so the element is lost at the as-signment step rather than at retrieval. Not retrieved 
+
+means the correct block appears in no quote’s top five at all, which happens when the model does not quote that piece of evidence; this is a failure of cov-erage rather than of ranking. Parser-unreachable (a) coordinate interface · Qwen3-VL-8B                                                                    
+
+> ground-truth element (zoom)
+> predicted boxes · IoU 0.00 · miss (b) coordinate interface · Qwen3-VL-30B-A3B
+> model output (excerpt), same question as (a)
+> The process for managing literature entries is described across several pages. Page 10
+> states that after executing the query, “the resulting literature lists were processed with Software R” [...]
+> On page 11 ,under Step 7(“Processing, organisation and management”), it confirms that the results underwent merging and duplicate removal using software R. [...] The description of Supplemental Material 2
+> on page 16 identifies its content as “R Code” [...] …every location reported in words only
+> no parseable box · miss (c) language interface (ours) · Qwen3-VL-8B
+> model quote: “After executing the final search query in both Web of Science and Scopus …”
+> retrieved block =ground-truth element
+> retrieved block · IoU 0.98 · hit
+
+Figure 6: Real model outputs for the same question on the same document (which programming tool was used in the data-management phase). Dimmed page regions are shown only for context; the clear regions are the annotated ground-truth element (green) and the model’s citation. (a) Qwen3-VL-8B under the coordinate interface answers correctly and reaches the correct page, but emits two stacked template-like boxes below the evidence (IoU 0); the zoom shows the annotated element, whose text contains the answer. (b) Qwen3-VL-30B-A3B, asked for coordinates, answers and describes every evidence location in words, page numbers and a step heading, emitting no parseable box. (c) Qwen3-VL-8B under the language interface quotes the evidence verbatim, and retrieval returns the exact ground-truth block (IoU 0.98). 
+
+means no semantic block overlaps the annotation at IoU 0.5, so no assignment could have recovered the element in the first place. For the base model, 13.9 percent of elements are parser-unreachable, 48.5 percent are not retrieved (a figure that includes the unreachable ones, since they are absent from every candidate list as well), and 16.4 percent are rank-limited. Two readings follow. First, the parser-unreachable share over-states the ceiling: 95.6 percent of those elements are fully contained inside some block, so the failure is a granularity mismatch between the annotation and the parser’s units rather than a missing block, and a containment criterion in place of IoU 0.5 would make them reachable. We nevertheless re-port IoU 0.5 as the primary criterion because it is the published standard. Second, the residual is dominated by coverage rather than by ranking, the not-retrieved share being about three times the rank-limited share. Applying the same decomposition after GRPO isolates what training changed. Of the 11.9-point gain in recovered elements, 10.4 points come out of the not-retrieved bucket, that is, from evidence the base model never quoted and the trained model does. The rank-limited share barely moves, and the parser-unreachable share is constant by construc-tion. This is the behavior that the coverage term of Eq. 2 rewards, and the training dynamics agree: the coverage score and the number of citations per response rise the most over training (Figure 5). 0 20 40 60 80 100 
+
+share of necessary evidence elements (%)    
+
+> 35.0 16.4 34.6 13.9
+
+base NL    
+
+> 46.9 15.0 24.2 13.9
+
++ GRPO 
+
+> recovered (matched@1)
+> rank-limited (in top-5)
+> not retrieved (coverage)
+> parser-unreachable
+
+Figure 7: Element-level decomposition of the 1,034 necessary evidence elements (IoU 0.5), before and af-ter GRPO. Recovered: matched by the current top-1 assignment. Rank-limited: the correct block is in the retriever’s top five but loses the assignment. Not re-trieved: absent from every quote’s top five (a coverage failure). Parser-unreachable: no semantic block over-laps the annotation. Training grows the recovered share mostly by shrinking the not-retrieved bucket; the parser-unreachable share is constant by construction. I Selective Prediction on Citation Similarity 
+
+The assignment of Eq. 1 returns a block for every quote, including quotes that match nothing in the document. The assigned cosine similarity provides a usable abstention signal: citation hit rates rise monotonically with similarity for every backbone (from roughly 10 percent in the lowest quintile to between 16 and 47 percent in the highest), and retaining only the most similar citations raises ci-tation precision, for example from 30.6 to 43.6 percent for Qwen3.5-27B when keeping the top fifth (Figure 8). A deployed system can therefore trade coverage for reliability by abstaining below a similarity threshold instead of always presenting a citation. 20 40 60 80 100    
+
+> citations retained (%)
+> 20
+> 30
+> 40
+> citation precision (%)
+> ■(a) precision vs. retention
+> 0.5 0.6 0.7 0.8
+> assigned cosine similarity (quintile mean)
+> 10
+> 20
+> 30
+> 40
+> hit rate (%)
+> ■(b) reliability by similarity
+> Gemma-3-12B
+> Gemma-4-31B
+> 8B + GRPO
+> Qwen3.5-27B
+> Qwen3.5-9B
+> Qwen3-VL-8B
+> Qwen3-VL-30B
+
+Figure 8: Judge-free selective prediction over assigned citations. (a) Citation precision against necessary evi-dence as low-similarity citations are abstained. (b) Hit rate by similarity quintile; the monotone trend shows the similarity is informative about citation correctness. J Prompts 
+
+This appendix reproduces, verbatim, every prompt used in the paper. 
+
+J.1 Coordinate-interface system prompt 
+
+Taken verbatim from the official CiteVQA release ( prompts/infer_system.txt ), including its element-level instructions and in-context examples. 
+
+# Document Analysis Assistant Answer the question based on the provided PDF page images, and cite the evidence regions in your 
+
+,→ answer. ## Evidence Citation Rules 1. Evidence must be at the **element level**: a complete paragraph, a complete table, a complete 
+
+,→ image, or a complete note. Do not select partial text from a paragraph or a single row 
+
+,→ from a table, and do not select an entire page or spanning multiple tables/paragraphs. 
+
+,→ Note: This is very important and will directly affect your score. 2. For **tables and images**, if there are captions or footnotes, they need to be annotated as ** 
+
+,→ separate evidence** with their own bbox, not merged into the table/image bbox. 3. Each piece of cited evidence text should be followed by a `<bbox /> ` tag indicating the 
+
+,→ evidence location. 4. When an inference step relies on multiple pieces of evidence, use multiple `<bbox /> ` tags 
+
+,→ separately. 5. Pure reasoning/calculation steps do not need `<bbox /> `.## Annotation Format 
+
+``` 
+
+<bbox page="page_number" x1="left" y1="top" x2="right" y2="bottom" /> 
+
+``` 
+
+Page numbers start from 1 (note: ignore original page numbers); coordinates are relative 
+
+,→ coordinates on the page image, range 0-1000. ## Examples **Question:** What is the net change in the company 's precision copper tube production capacity 
+
+,→ from 2021 to 2024? **Answer:** According to the main text, the company 's precision copper tube production capacity increased 
+
+,→ from 798,000 tons in 2021 to 1.31 million tons in 2024: <bbox page="1" x1="536" y1="65" x2="642" y2="656" /> Therefore, the net change = 1.31 - 0.798 = 0.512 million tons. Additionally, according to "Table 1: Production line renovation will reduce the company 's costs", 
+
+,→ the per-ton comprehensive cost is expected to decrease by 700 yuan/ton after the 
+
+,→ production line renovation: <bbox page="8" x1="584" y1="65" x2="598" y2="371" /> <bbox page="8" x1="598" y1="59" x2="712" y2="670" /> ## Final Reminder Evidence must be a complete paragraph, a complete table, a complete image, or a complete note. Do 
+
+,→ not select partial rows from a paragraph or a single row from a table, and do not select 
+
+,→ an entire page or spanning multiple tables/paragraphs. Note: This is very important and 
+
+,→ will directly affect your score. 
+
+J.2 Language-interface system prompt (ours) 
+
+The GRPO rollouts use the same instruction (identical wording, different line wrapping in the training copy). # Document Analysis Assistant Answer the question based on the provided PDF page images. For EVERY piece of evidence that 
+
+,→ supports your answer, QUOTE the exact text span from the document (verbatim, as it appears 
+
+,→ ), so it can be located in the source. ## Rules 1. Each evidence quote must be a verbatim text span copied from the page (a sentence, a table row 
+
+,→ /cell, a caption, or a note). Do not paraphrase. 2. Quote the evidence at the element level: enough text to identify the region, not a single word 
+
+,→ and not a whole page. 3. If multiple regions support the answer, give multiple quotes. ## Output Format Return a single JSON object exactly in this form: {"answer": "<your full answer text>", "evidence": [{"page": p, "quote": "<verbatim text>"}, ...]} where p is the 0-based page index in the order shown. 
+
+J.3 Evaluation judge prompt: answer accuracy 
+
+Official CiteVQA judge prompt, given to Gemini-3.5-Flash. The system prompt is followed by the user-message template. 
+
+## Task You are a multimodal QA evaluation expert. Your task is to evaluate the overall quality of the 
+
+,→ answer. Provide your evaluation in the form of "reasoning" and "score". Evaluation should 
+
+,→ be based solely on the standard answer, without introducing your own external knowledge. You will receive a question, a standard answer, and the model 's generated answer. ## Evaluation Criteria **BE STRICT. Most answers are not as good as they appear. When in doubt, choose the lower score 
+
+,→ .** - 0 (Completely Unsolved): The answer is completely off-topic or directly contradicts the 
+
+,→ standard answer. - 1 (Mostly Unsolved): The answer has extremely low relevance, providing almost no valuable 
+
+,→ information. - 2 (Partially Solved): The answer covers some aspects but misses key information or has obvious 
+
+,→ factual errors. **Many "okay" answers fall here — do not over-rate.** - 3 (Acceptable): The answer covers the core facts but is incomplete, lacks necessary details, or 
+
+,→ has minor errors. **Only give this when the answer is genuinely useful despite clear gaps 
+
+,→ .** - 4 (Good): The answer clearly covers all key points with rigorous logic. Near-complete and 
+
+,→ accurate. **Reserve for strong answers. Do not hand out freely.** - 5 (Excellent): Complete, accurate, and perfectly structured and the answer must not be 
+
+,→ significantly more verbose than the standard answer. **Extremely Difficult to reach. Do 
+
+,→ not give 5 unless truly prefect in every dimension.** ## Important Notes - Ignore phrases like "cited from" or "from" that may appear in the model 's generated answer — 
+
+,→ they are irrelevant. - **DO NOT penalize the answer based on the language it is written in.** Chinese, English, or 
+
+,→ mixed — score the content only. - Only the exact facts in the standard answer count. Extra details beyond the standard answer do 
+
+,→ NOT improve the score. ## Output Format Please output two lines for the results: the first line is your reasoning for the score, and the 
+
+,→ second line is the score. Strictly follow this format without any additional content. # Output Example A reason why you choose this score (from 0 to 5). 
+
+``` <qa_acc>X</qa_acc> ``` 
+
+----- user message template -----Question: {question} Standard Answer: {standard_answer} Model 's Answer: {model_answer_no_bbox} 
+
+J.4 Evaluation judge prompt: evidence relevance 
+
+Official CiteVQA judge prompt; the retrieved evidence crops are attached to the user message as images. 
+
+## Task You are a professional DocVQA quality evaluation expert. Your task is to evaluate whether the PDF 
+
+,→ screenshots referenced in the answer can effectively support the corresponding answer 
+
+,→ content. You need to determine whether the visual information (text, charts, data) in the 
+
+,→ screenshots is consistent with the facts mentioned in the answer. You will receive a question, a standard answer (without images), and the model 's generated answer 
+
+,→ with interleaved images. ## Evaluation Dimensions - Truthfulness: Does the screenshot contain the key data or descriptions mentioned in the answer? - Sufficiency: Does the screenshot provide sufficient evidence for the conclusion, or is it taken 
+
+,→ out of context? - Localization Accuracy: Does the screenshot precisely cover the answer source, or does it 
+
+,→ contain irrelevant information? - Alignment: Does the screenshot exactly match the text being cited? Any misalignment is a flaw. ## Scoring Criteria **BE STRICT. A score of 5 is extremely rare and requires perfection. Most good answers should 
+
+,→ score 3-4.** - 0: No support at all. The screenshot content is completely irrelevant to the answer. - 1: Extremely weak support. The screenshot only mentions vague related concepts without specific 
+
+,→ data. - 2: Weak support. The screenshot contains partial key data, or has significant quality issues. - 3: Moderate support. The screenshot covers most of the evidence but has flaws (e.g., includes 
+
+,→ irrelevant content, slight misalignment with cited text, or captures too much/too little). - 4: Good support. The screenshot contains the core evidence with minor flaws. This is where most 
+
+,→ correct answers should score. - 5: **PERFECT support (extremely rare)**. The screenshot must be **flawless**: precise bounding 
+
+,→ box that exactly covers the cited text, no extra content, no skewing, no misalignment, and 
+
+,→ the evidence perfectly matches what is claimed. **Only give 5 when every single detail is 
+
+,→ perfect.** ## Important Notes - Be conservative with scores. If you hesitate between two scores, choose the lower one. - A slightly off-center crop, a small amount of extra content, or minor misalignment = score 3-4, 
+
+,→ NOT 5. - Score 5 should only be given when the bounding box is pixel-perfect and the evidence is exactly 
+
+,→ what was cited. ## Output Format Please output two lines for the results: the first line is your reasoning for the score, and the 
+
+,→ second line is the score. Strictly follow this format without any additional content. # Output Example A reason why you choose this score (from 0 to 5). 
+
+``` <relevance_score>X</relevance_score> ``` 
+
+----- user message template -----Question: {question} Standard Answer (without images, no need to evaluate): {standard_answer} Model 's Answer with Images: {answer_with_images} J.5 Training reward judge prompt 
+
+Scores a, erel , and ecov of Eq. 2. The judge sees the question, the gold answer, the model answer, and the retrieved crops; it never sees the model’s raw quotes. 
+
+You are a strict evaluator for a document QA system. The system answered a question about a 
+
+,→ document and cited EVIDENCE regions, shown to you as cropped images taken from the 
+
+,→ document pages (these are the regions the system localized). You are also given the 
+
+,→ REFERENCE (ground-truth) answer. Score these THREE aspects, each an integer 0-5. Use the FULL range; do not default to 5. 1. answer_correctness: does the SYSTEM ANSWER semantically match the REFERENCE answer? 5= 
+
+,→ equivalent, 3=partially correct or missing detail, 0=wrong/unrelated. Ignore wording, 
+
+,→ order, formatting; judge meaning. 2. evidence_relevance: are the cited crops the correct SOURCE that supports the reference answer? 
+
+,→ 5=a crop clearly contains the exact fact/figure/table-cell/text the reference answer 
+
+,→ comes from, 3=crops are on-topic but do not pinpoint it (related context only), 0=crops 
+
+,→ are irrelevant, or no evidence was provided. 3. evidence_coverage: do the cited crops TOGETHER cover ALL the information the reference answer 
+
+,→ requires? For a multi-part answer (several values/items/conditions), 5=every needed piece 
+
+,→ appears in some crop, 3=about half present, 1=only a small part, 0=key pieces missing or 
+
+,→ no evidence. For a single-fact answer, 5 if the one needed region is present, else 0. Output ONLY a JSON object: {"answer_correctness":<0-5>,"evidence_relevance":<0-5>," 
+
+,→ evidence_coverage":<0-5>,"reason":"<one short sentence>"}

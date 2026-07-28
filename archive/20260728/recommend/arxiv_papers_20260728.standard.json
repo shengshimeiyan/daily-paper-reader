@@ -1,0 +1,354 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-28T21:21:11.860358+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 7,
+    "deep_cap": 6,
+    "deep_selected": 6,
+    "quick_candidates": 3,
+    "quick_skim_target": 11,
+    "quick_selected": 3
+  },
+  "deep_dive": [
+    {
+      "id": "2607.24586v1",
+      "source": "arxiv",
+      "title": "D-Score: A Spectral Hidden-State Signal for Hallucination Detection in Large Language Models",
+      "abstract": "Large Language Models can produce fluent text that is false, unsupported by the available evidence, or inconsistent with information that appears to be internally represented by the model. We study hallucination detection from the geometry of hidden activations and introduce the D-Score, a simple spectral statistic computed from a single forward pass. For a fixed model, layer, and tolerance parameter, the D-Score counts how many singular directions of the hidden activation matrix have singular values that remain close to the leading one. We use this quantity as a hallucination score, classifying an input text as hallucinated when its D-Score is larger than a pre-defined quantity. The motivation is that, when a model processes a text that conflicts with information available in its own internal state, the hidden representation may encode both the asserted content and some form of counter-evidence, uncertainty, correction, or lack of support; this can make the hidden trajectory spread across additional singular directions. We formalize this intuition through a lightweight spectral argument and evaluate the resulting detector on FAVA-Annotation and RAGTruth. The experiments indicate that the D-Score is a strong hidden-state signal for hallucination detection, while requiring no external verifier, no retrieval step, and no multiple generations.",
+      "authors": [
+        "Bianca Raimondi",
+        "Davide Evangelista",
+        "Maurizio Gabbrielli",
+        "Elena Loli Piccolomini"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "published": "2026-07-27T15:52:33+00:00",
+      "link": "https://arxiv.org/pdf/2607.24586v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Hallucination detection in LLMs using hidden activations",
+      "llm_evidence_cn": "使用隐藏激活进行大模型幻觉检测",
+      "llm_evidence": "使用隐藏激活进行大模型幻觉检测",
+      "canonical_evidence": "使用隐藏激活进行大模型幻觉检测",
+      "llm_tldr_en": "The paper introduces D-Score, a spectral statistic from hidden activations, to detect hallucinations in LLMs by counting singular directions with singular values close to the leading one, achieving effective classification in a single forward pass.",
+      "llm_tldr_cn": "针对大语言模型生成虚假或不一致文本的幻觉问题，本文提出了一种基于隐藏激活几何特性的幻觉检测方法D-Score。该方法通过单次前向传播计算隐藏激活矩阵中奇异值接近主导方向的奇异方向数量，并将其作为幻觉评分来分类输入文本。实验表明，当模型处理文本时，D-Score能有效区分幻觉内容，为LLM幻觉检测提供了一种简单且高效的内部信号。",
+      "llm_tldr": "针对大语言模型生成虚假或不一致文本的幻觉问题，本文提出了一种基于隐藏激活几何特性的幻觉检测方法D-Score。该方法通过单次前向传播计算隐藏激活矩阵中奇异值接近主导方向的奇异方向数量，并将其作为幻觉评分来分类输入文本。实验表明，当模型处理文本时，D-Score能有效区分幻觉内容，为LLM幻觉检测提供了一种简单且高效的内部信号。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.22962v1",
+      "source": "arxiv",
+      "title": "ConsistencyGate: Preventing Memory Contamination in LLM Agents via Self-Consistency Admission Control",
+      "abstract": "LLM agents that operate over many turns accumulate facts in an external memory store and reuse them as premises for downstream reasoning. A hallucinated fact written at one step therefore persists as a false premise for every subsequent step, a failure mode we call memory contamination. Existing memory management addresses retrieval and capacity but not write-time correctness; this admission problem cannot be solved by utility- or recency-based criteria, and uncontrolled contamination compounds across long trajectories. We propose ConsistencyGate, a write-time admission gate that, before committing a candidate fact m extracted from context c, queries the LLM K times for a soft support score and admits m only when the average exceeds a threshold. The mechanism is model-agnostic, requires no fine-tuning, and reduces to a single forward pass in a log-probability variant for latency-sensitive deployments. To measure the effect on natural data, we construct two real-conversation benchmarks (LoCoMo-Contam and MSC-Contam) by planting controlled single-detail corruptions in long-term conversations from LoCoMo and MSC, and complement them with a structured synthetic corpus (MemContam) that isolates a near-oracle upper bound. Across four LLM backbones, ConsistencyGate reduces contamination on every benchmark relative to a write-everything baseline, with the cost concentrated on facts that are stated only implicitly in the source context. We release all three benchmarks together with the gate implementation.",
+      "authors": [
+        "Yan Zhang",
+        "Shibo Li"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CL"
+      ],
+      "published": "2026-07-25T00:08:09+00:00",
+      "link": "https://arxiv.org/pdf/2607.22962v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Mitigating hallucinated facts in LLM agents via self-consistency admission control",
+      "llm_evidence_cn": "通过自一致性准入控制缓解LLM智能体中的幻觉事实",
+      "llm_evidence": "通过自一致性准入控制缓解LLM智能体中的幻觉事实",
+      "canonical_evidence": "通过自一致性准入控制缓解LLM智能体中的幻觉事实",
+      "llm_tldr_en": "LLM agents accumulate hallucinated facts in memory over long trajectories, causing memory contamination. We propose ConsistencyGate, a write-time admission gate using self-consistency to prevent hallucinated facts from persisting as false premises.",
+      "llm_tldr_cn": "大语言模型智能体在多轮交互中会将幻觉事实存入记忆，导致记忆污染并影响后续推理。本文提出ConsistencyGate，一种写入时准入控制门，通过多次查询LLM计算软支持分数来过滤幻觉事实，防止其作为错误前提持续存在，有效缓解了长轨迹下的幻觉累积问题。",
+      "llm_tldr": "大语言模型智能体在多轮交互中会将幻觉事实存入记忆，导致记忆污染并影响后续推理。本文提出ConsistencyGate，一种写入时准入控制门，通过多次查询LLM计算软支持分数来过滤幻觉事实，防止其作为错误前提持续存在，有效缓解了长轨迹下的幻觉累积问题。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "how to detect and mitigate hallucinations in long form text generation",
+      "matched_requirement_id": "req-8",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.23067v1",
+      "source": "arxiv",
+      "title": "Attention-Guided Layer Selection for Contrastive Decoding in Large Language Models",
+      "abstract": "Contrastive decoding methods such as DoLa improve the factuality of Large Language Models (LLMs) by contrasting the output distributions of mature and premature layers. However, DoLa's dynamic layer selection relies solely on divergences in output vocabulary distributions. In this work, we propose three attention-guided strategies: Attention-JSD, Attention-Entropy-Max, and Attention-Entropy-Min, which leverage structural information carried by internal self-attention mechanisms as a signal for layer selection. Experimental results on TruthfulQA demonstrate that our strategies, particularly Attention-JSD and Attention-Entropy-Min, consistently outperform the original DoLa. We observe significant gains on multi-answer metrics (MC2 and MC3), suggesting that attention distributions can provide a more sensitive signal for resolving factual knowledge than output vocabulary distributions.",
+      "authors": [
+        "Yusuke Sakai",
+        "Natthawut Kertkeidkachorn",
+        "Kiyoaki Shirai"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL",
+        "cs.AI"
+      ],
+      "published": "2026-07-25T06:32:11+00:00",
+      "link": "https://arxiv.org/pdf/2607.23067v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Improving LLM factuality and mitigating hallucination via attention-guided contrastive decoding",
+      "llm_evidence_cn": "通过注意力引导的对比解码提升大模型事实性并缓解幻觉",
+      "llm_evidence": "通过注意力引导的对比解码提升大模型事实性并缓解幻觉",
+      "canonical_evidence": "通过注意力引导的对比解码提升大模型事实性并缓解幻觉",
+      "llm_tldr_en": "To improve the factuality of LLMs and mitigate hallucinations, this paper proposes attention-guided layer selection strategies for contrastive decoding, leveraging internal self-attention mechanisms to outperform the original DoLa method on TruthfulQA.",
+      "llm_tldr_cn": "针对对比解码方法DoLa在提升大语言模型事实性时仅依赖输出词汇分布差异的局限性，本文提出了三种注意力引导的层选择策略。这些策略利用模型内部自注意力机制的结构信息作为层选择信号。在TruthfulQA上的实验表明，Attention-JSD和Attention-Entropy-Min策略持续优于原始DoLa，在多答案指标上取得显著提升，为缓解幻觉提供了有效方法。",
+      "llm_tldr": "针对对比解码方法DoLa在提升大语言模型事实性时仅依赖输出词汇分布差异的局限性，本文提出了三种注意力引导的层选择策略。这些策略利用模型内部自注意力机制的结构信息作为层选择信号。在TruthfulQA上的实验表明，Attention-JSD和Attention-Entropy-Min策略持续优于原始DoLa，在多答案指标上取得显著提升，为缓解幻觉提供了有效方法。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.23361v1",
+      "source": "arxiv",
+      "title": "Hallucination Rates in Language Generation",
+      "abstract": "Language generation in the limit is an elegant model introduced by Kleinberg and Mullainathan [KM24] to formally study language generation by an algorithm that learns solely based on example strings. In this model, an algorithm is said to correctly generate from a language if it never makes an error after some finite time. In contrast, even sophisticated language models are known to regularly hallucinate in practice. In this paper, we initiate the study of language generation in the limit with (infinite) hallucination, i.e., the algorithm may generate incorrect strings infinitely often, but the errors occur at a limited rate (possibly even with 0-measure).   We first show that hallucination, even at rate 0, makes generation in the limit strictly more powerful: there are language collections that cannot be generated with finite error but can be generated with infinite error, even when errors occur on a 0-measure set of time-steps. Furthermore, while all countable collections are generatable with finite error, we show a strict hierarchy of (uncountable) language collections characterized by the hallucination rate. This hierarchy extends to breadth, the fraction of the target language generated. While all countable collections can attain the optimal breadth of 1/2 [KW26b], we show strict separation at every breadth and hallucination rate.   Finally, we study generation in the limit without repetition, where the algorithm may not repeat strings. This lets us compare the sets of correct and incorrect strings generated, rather than the fractions of correct and incorrect time-steps. Once again, we demonstrate a strict hierarchy at every hallucination rate and breadth. Taken together, these results reveal rich structure in language collections generatable in the limit with hallucination and establish hallucination rate as an important parameter in the theoretical study of language generation.",
+      "authors": [
+        "Debmalya Panigrahi",
+        "Fan Wei",
+        "Ian Zhang"
+      ],
+      "primary_category": "cs.DS",
+      "categories": [
+        "cs.DS",
+        "cs.CL",
+        "cs.LG"
+      ],
+      "published": "2026-07-25T20:56:10+00:00",
+      "link": "https://arxiv.org/pdf/2607.23361v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Formal study of hallucination rates in language generation",
+      "llm_evidence_cn": "语言生成中幻觉率的形式化研究",
+      "llm_evidence": "语言生成中幻觉率的形式化研究",
+      "canonical_evidence": "语言生成中幻觉率的形式化研究",
+      "llm_tldr_en": "Initiates the formal study of language generation in the limit with infinite hallucination, showing that allowing hallucinations at a limited rate makes generation strictly more powerful than error-free generation.",
+      "llm_tldr_cn": "针对复杂语言模型在实践中经常产生幻觉而传统理论模型要求无错误生成的问题，本文从理论角度发起了对具有无限幻觉的极限语言生成研究。研究定义了幻觉率受限的生成模型，并证明即使幻觉率为零，允许有限速率的幻觉也能使生成能力严格强于无错误生成。该结论揭示了幻觉在特定条件下能增强语言生成的理论能力，为理解大模型幻觉现象提供了重要的形式化基础。",
+      "llm_tldr": "针对复杂语言模型在实践中经常产生幻觉而传统理论模型要求无错误生成的问题，本文从理论角度发起了对具有无限幻觉的极限语言生成研究。研究定义了幻觉率受限的生成模型，并证明即使幻觉率为零，允许有限速率的幻觉也能使生成能力严格强于无错误生成。该结论揭示了幻觉在特定条件下能增强语言生成的理论能力，为理解大模型幻觉现象提供了重要的形式化基础。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "hallucination in large language models",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.23927v1",
+      "source": "arxiv",
+      "title": "Reality Monitoring in Large Language Models: Self-Knowledge That Transforms with Conversation Memory",
+      "abstract": "A conversational AI that cannot tell its own output from what a user said will treat its own mistakes as user-provided facts. In humans, this capacity is called reality monitoring, and its failures are linked to hallucinations, delusions, and confabulation, yet whether LLMs possess it remains untested. Here we show, across two experiments and six LLMs, that source attribution depends on how conversational memory is structured: ceiling accuracy for self-generated content under minimal memory demands reverses to a fragile external-item advantage once episodic delay removes that shortcut. Feedback exposes two failures: in some models, internal and external judgments swap; in others, accuracy improves while confidence decouples from correctness, dissociations invisible to existing benchmarks. Across models, this pattern implicates active, not aggregate, parameter count. This suggests that as AI systems take on autonomous, multi-turn roles, evaluating what they know is not enough: tracking where that knowledge came from may matter equally.",
+      "authors": [
+        "Saurabh Ranjan",
+        "Konstantina Sokratous",
+        "Brian Odegaard"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CL",
+        "cs.CY",
+        "q-bio.NC"
+      ],
+      "published": "2026-07-27T01:47:12+00:00",
+      "link": "https://arxiv.org/pdf/2607.23927v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Reality monitoring failures linked to hallucinations in LLMs",
+      "llm_evidence_cn": "现实监控失败与大语言模型幻觉相关",
+      "llm_evidence": "现实监控失败与大语言模型幻觉相关",
+      "canonical_evidence": "现实监控失败与大语言模型幻觉相关",
+      "llm_tldr_en": "This paper investigates reality monitoring in LLMs, showing that source attribution failures—confusing self-generated output with user input—are linked to hallucinations and depend heavily on conversational memory structure and episodic delay.",
+      "llm_tldr_cn": "针对大语言模型无法区分自身输出与用户输入的现实监控失败问题，本文通过两项实验和六个模型深入探究了该能力。研究发现，模型的源归因准确率严重依赖对话记忆结构：在最小记忆需求下表现极高，但情景延迟会使其逆转为外部项优势。此外，反馈机制暴露了内部与外部判断互换等严重失败，这些失败与幻觉和虚构现象密切相关，为理解和检测大语言模型幻觉提供了重要依据。",
+      "llm_tldr": "针对大语言模型无法区分自身输出与用户输入的现实监控失败问题，本文通过两项实验和六个模型深入探究了该能力。研究发现，模型的源归因准确率严重依赖对话记忆结构：在最小记忆需求下表现极高，但情景延迟会使其逆转为外部项优势。此外，反馈机制暴露了内部与外部判断互换等严重失败，这些失败与幻觉和虚构现象密切相关，为理解和检测大语言模型幻觉提供了重要依据。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "hallucination in large language models",
+      "matched_requirement_id": "req-1",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "id": "2607.24063v1",
+      "source": "arxiv",
+      "title": "The Cost of Knowing: A Resource-Aware Protocol for Benchmarking Hallucination Beyond Static Leaderboards",
+      "abstract": "On standard factuality tasks, frontier models now cluster near the top of the scale. The question is therefore shifting from how factual a system is toward how much compute that factuality costs. Static leaderboards score factuality in isolation and treat compute as free, so they cannot tell a genuinely better system apart from one that simply spends more. Consider a ranking reversal. A brute-force Best-of-4 agent posts the higher raw factuality score (H-Score 0.9169 vs 0.9103) and would top a static leaderboard, but once cost is counted it is the worse system, losing on Q-Score (0.5169 vs 0.5217) at roughly four times the tokens and latency, under a reported cost weight whose sensitivity we sweep. So the system that tops a static leaderboard can be the worse one to deploy. To make this trade-off visible, we introduce MAS-HQ (Multi-Agent System Hallucination Quest), a resource-aware evaluation protocol. It wraps any factuality detector and normalizes for cost, and it pits systems against each other rather than scoring them in isolation. The Q-Score measures factuality minus normalized cost under a competitive match. Across summarization and open-domain QA, single-agent baselines drift into resource-heavy over-optimization, while competition elicits more resource-efficient policies. These gains are small but consistent, and stable across 100 trials. The axis stays discriminative for frontier systems (Gemini-2.5-Pro, and GPT-5 in simulated preview) whose raw factuality scores are already bunched near the ceiling. MAS-HQ provides a reproducible way to measure how much a factual answer costs.",
+      "authors": [
+        "Keyu Li",
+        "Jin Gao",
+        "Dequan Wang"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-27T07:05:11+00:00",
+      "link": "https://arxiv.org/pdf/2607.24063v1",
+      "tags": [
+        "keyword:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Benchmarking hallucination and factuality in LLMs",
+      "llm_evidence_cn": "基准测试大模型幻觉与事实性",
+      "llm_evidence": "基准测试大模型幻觉与事实性",
+      "canonical_evidence": "基准测试大模型幻觉与事实性",
+      "llm_tldr_en": "Current static leaderboards evaluate LLM factuality in isolation, ignoring compute costs. This paper proposes a resource-aware protocol to benchmark hallucination, revealing that brute-force methods may score higher on factuality but are worse when cost is considered.",
+      "llm_tldr_cn": "当前静态排行榜在评估大模型事实性时忽略了计算成本。本文提出一种资源感知的幻觉基准测试协议，通过引入成本权重揭示出暴力采样方法虽在原始事实性得分上较高，但在考虑计算成本后实际上是更差的系统，为评估和检测幻觉提供了新视角。",
+      "llm_tldr": "当前静态排行榜在评估大模型事实性时忽略了计算成本。本文提出一种资源感知的幻觉基准测试协议，通过引入成本权重揭示出暴力采样方法虽在原始事实性得分上较高，但在考虑计算成本后实际上是更差的系统，为评估和检测幻觉提供了新视角。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "detecting hallucinations in language models",
+      "matched_requirement_id": "req-3",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2607.24348v1",
+      "source": "arxiv",
+      "title": "DeepFaith: Evidence-Grounded LLMs for Faithful Incident Reporting in Multi-Stage APT Defense",
+      "abstract": "Advanced Persistent Threats (APTs) are difficult to detect and interpret due to their multi-stage and stealthy nature. While recent autonomous defense systems leverage provenance graphs and learning-based models for detection and mitigation, their outputs remain largely machine-oriented and difficult for analysts to interpret. Large language models (LLMs) offer a promising interface for report generation, but often produce hallucinated or weakly grounded content. In this paper, we propose DeepFaith, an evidence-grounded framework for faithful incident reporting in multi-stage APT defense. DeepFaith transforms structured outputs from autonomous defense and explainability modules into natural-language reports that are explicitly aligned with underlying system evidence. The framework integrates a unified evidence representation, evidence-grounded prompting, faithfulness-aware generation, and post-generation verification to ensure that all generated statements are supported. Experiments in a realistic enterprise testbed demonstrate that DeepFaith improves faithfulness from 0.68 to 0.92, reduces unsupported claims from 0.32 to 0.08, and increases temporal consistency from 0.6 to 0.88, while maintaining concise reports and lower error rates than existing template-based and LLM-based solutions. These results show that evidence-grounded generation enables reliable, interpretable, and actionable reporting for security operations centers.",
+      "authors": [
+        "Trung V. Phan",
+        "Tri Gia Nguyen",
+        "Thomas Bauschert"
+      ],
+      "primary_category": "cs.CR",
+      "categories": [
+        "cs.CR",
+        "cs.AI"
+      ],
+      "published": "2026-07-27T12:27:17+00:00",
+      "link": "https://arxiv.org/pdf/2607.24348v1",
+      "tags": [
+        "keyword:llm-halluc"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Mitigating hallucination in LLM report generation via evidence grounding",
+      "llm_evidence_cn": "通过证据对齐缓解大模型报告生成中的幻觉",
+      "llm_evidence": "通过证据对齐缓解大模型报告生成中的幻觉",
+      "canonical_evidence": "通过证据对齐缓解大模型报告生成中的幻觉",
+      "llm_tldr_en": "To address hallucinations in LLM-generated incident reports for APT defense, this paper proposes DeepFaith, an evidence-grounded framework that aligns structured outputs from defense modules into faithful natural-language reports.",
+      "llm_tldr_cn": "针对大语言模型在高级持续性威胁防御报告中易产生幻觉或依据不足的问题，本文提出了DeepFaith框架。该框架将自主防御和可解释模块的结构化输出与证据对齐，生成明确关联证据的自然语言报告。实验表明，DeepFaith有效缓解了报告生成中的幻觉现象，提升了事件报告的忠实度与可解释性，为安全领域的忠实内容生成提供了新范式。",
+      "llm_tldr": "针对大语言模型在高级持续性威胁防御报告中易产生幻觉或依据不足的问题，本文提出了DeepFaith框架。该框架将自主防御和可解释模块的结构化输出与证据对齐，生成明确关联证据的自然语言报告。实验表明，DeepFaith有效缓解了报告生成中的幻觉现象，提升了事件报告的忠实度与可解释性，为安全领域的忠实内容生成提供了新范式。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "8plus"
+    },
+    {
+      "id": "2607.23944v1",
+      "source": "arxiv",
+      "title": "DICA: Dual-Indicator Guided Contrastive Alignment in Multimodal Large Language Models",
+      "abstract": "Human visual reasoning typically follows a coarse-to-fine attention process, starting from global scene understanding and gradually focusing on question-relevant regions. However, multimodal large language models may deviate from this pattern due to attention drift and the underutilization of visual evidence, which can lead to hallucinations. To mitigate these issues, this study proposes a Dual-Indicator Guided Contrastive Alignment (DICA), which tracks two information-theoretic indicators during inference: Visual Attention Entropy (VAE), which reflects the concentration of visual attention, and Output Image Correlation (OIC), which measures the dependence of generated outputs on the visual input. An abnormal increase in VAE or a decrease in OIC corresponds to different failure modes, which trigger targeted contrastive alignment to restore visual grounding. Experimental results across multiple benchmarks demonstrate that DICA consistently outperforms existing approaches and substantially reduces hallucinations, highlighting the effectiveness of indicator-driven intervention in improving multimodal inference reliability. The code is publicly available at https://github.com/BGWH123/DICA/.",
+      "authors": [
+        "Hao Yang",
+        "Jin Wang",
+        "Xuejie Zhang"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-07-27T02:40:49+00:00",
+      "link": "https://arxiv.org/pdf/2607.23944v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Mitigating hallucinations in multimodal LLMs via indicator tracking",
+      "llm_evidence_cn": "通过指标跟踪缓解多模态大语言模型中的幻觉",
+      "llm_evidence": "通过指标跟踪缓解多模态大语言模型中的幻觉",
+      "canonical_evidence": "通过指标跟踪缓解多模态大语言模型中的幻觉",
+      "llm_tldr_en": "Proposes DICA to mitigate hallucinations in multimodal LLMs by tracking Visual Attention Entropy and Output Image Correlation, applying contrastive alignment when anomalies are detected.",
+      "llm_tldr_cn": "人类的视觉推理通常遵循从粗到细的注意力过程，但多模态大语言模型常因注意力漂移和视觉证据利用不足而偏离此模式，进而导致幻觉。为缓解此问题，本文提出双指标引导对比对齐（DICA）方法。该方法在推理过程中跟踪视觉注意力熵和输出图像相关性两个信息论指标，当检测到异常增加或减少时，应用对比对齐来纠正注意力漂移，有效缓解了多模态大语言模型中的幻觉现象，提升了生成结果的可靠性。",
+      "llm_tldr": "人类的视觉推理通常遵循从粗到细的注意力过程，但多模态大语言模型常因注意力漂移和视觉证据利用不足而偏离此模式，进而导致幻觉。为缓解此问题，本文提出双指标引导对比对齐（DICA）方法。该方法在推理过程中跟踪视觉注意力熵和输出图像相关性两个信息论指标，当检测到异常增加或减少时，应用对比对齐来纠正注意力漂移，有效缓解了多模态大语言模型中的幻觉现象，提升了生成结果的可靠性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.24651v1",
+      "source": "arxiv",
+      "title": "Evidence Attribution in Visual Document Understanding without Coordinates or Region Labels",
+      "abstract": "Reliable visual document understanding requires a model to attribute each answer to the evidence regions that support it. Recent benchmarks and systems express this step through a coordinate interface: the model outputs the coordinates of bounding boxes that mark the evidence regions in the document. Under this interface, vision-language models often fail to identify the right regions even when the answer is correct, a failure known as Attribution Hallucination. We present a study that investigates whether this failure is partially limited by what the model can express through coordinates. On a verified bilingual CiteVQA subset, we compare the coordinate interface with a language interface in which the model outputs only text, quoting its evidence verbatim, and a multimodal retriever returns the location of each quote as a page region proposed by a layout parser (tables and figures are quoted through their captions or notes); the comparison is repeated over six open vision-language models. Compared with the coordinate interface, evidence recall rises from at most 8 points to between 26 and 47 and the hallucination rate roughly halves, with little change in answer quality. Building on this comparison, we use the same quote-and-retrieve pipeline as a training scaffold: because region-level evidence labels are expensive to collect for long documents, we introduce a GRPO recipe whose reward is a judge's reading of the gold answer and crops of the retrieved regions, training the model to quote better evidence without any region labels and raising an 8B backbone's strict attributed accuracy from 22.4 to 33.8. These findings indicate a practical path to improve attribution\"without a coordinate interface and without costly region-level supervision.",
+      "authors": [
+        "Zhuchenyang Liu",
+        "Yao Zhang",
+        "Yu Xiao"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.CL",
+        "cs.IR"
+      ],
+      "published": "2026-07-27T16:49:36+00:00",
+      "link": "https://arxiv.org/pdf/2607.24651v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Investigating and mitigating attribution hallucination in VLMs",
+      "llm_evidence_cn": "研究与缓解视觉语言模型中的归因幻觉",
+      "llm_evidence": "研究与缓解视觉语言模型中的归因幻觉",
+      "canonical_evidence": "研究与缓解视觉语言模型中的归因幻觉",
+      "llm_tldr_en": "Vision-language models often suffer from attribution hallucination, failing to identify correct evidence regions. This study investigates this failure in visual document understanding and compares coordinate interfaces with language interfaces, showing that language-based attribution can mitigate this hallucination.",
+      "llm_tldr_cn": "视觉语言模型在视觉文档理解中常出现归因幻觉，即使答案正确也无法识别正确的证据区域。本研究探讨了坐标接口是否限制了模型表达，并比较了坐标接口与纯文本语言接口，发现使用语言接口输出引用文本能有效缓解归因幻觉，为多模态幻觉检测与缓解提供了方法借鉴。",
+      "llm_tldr": "视觉语言模型在视觉文档理解中常出现归因幻觉，即使答案正确也无法识别正确的证据区域。本研究探讨了坐标接口是否限制了模型表达，并比较了坐标接口与纯文本语言接口，发现使用语言接口输出引用文本能有效缓解归因幻觉，为多模态幻觉检测与缓解提供了方法借鉴。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    }
+  ]
+}

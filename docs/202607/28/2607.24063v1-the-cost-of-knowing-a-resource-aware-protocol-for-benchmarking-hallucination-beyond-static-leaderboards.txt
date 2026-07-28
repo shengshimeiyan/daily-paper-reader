@@ -1,0 +1,952 @@
+Title: The Cost of Knowing: A Resource-Aware Protocol for Benchmarking Hallucination Beyond Static Leaderboards
+
+URL Source: https://arxiv.org/pdf/2607.24063v1
+
+Published Time: Tue, 28 Jul 2026 01:36:24 GMT
+
+Number of Pages: 13
+
+Markdown Content:
+# The Cost of Knowing: A Resource-Aware Protocol for Benchmarking Hallucination Beyond Static Leaderboards 
+
+Keyu Li, 1 Jin Gao, 1 Dequan Wang 1,*  
+
+> 1
+
+Shanghai Jiao Tong University Shanghai, China {chlorophyll, gaojin, dequanwang}@sjtu.edu.cn 
+
+Abstract 
+
+On standard factuality tasks, frontier models now cluster near the top of the scale. The question is therefore shifting from how factual a system is toward how much compute that fac-tuality costs. Static leaderboards score factuality in isolation and treat compute as free, so they cannot tell a genuinely bet-ter system apart from one that simply spends more. Consider a ranking reversal. A brute-force Best-of-4 agent posts the higher raw factuality score (H-Score 0.9169 vs. 0.9103) and would top a static leaderboard, but once cost is counted it is the worse system, losing on Q-Score (0.5169 vs. 0.5217) at roughly four times the tokens and latency, under a reported cost weight whose sensitivity we sweep. So the system that tops a static leaderboard can be the worse one to deploy. To make this trade-off visible, we introduce MAS-HQ ( Multi-
+
+Agent System Hallucination Quest), a resource-aware evalua-tion protocol. It wraps any factuality detector and normalizes for cost, and it pits systems against each other rather than scoring them in isolation. The Q-Score measures factuality minus normalized cost under a competitive match. Across summarization and open-domain QA, single-agent baselines drift into resource-heavy over-optimization, while competi-tion elicits more resource-efficient policies. These gains are small but consistent, and stable across 100 trials. The axis stays discriminative for frontier systems (Gemini-2.5-Pro, and GPT-5 in simulated preview) whose raw factuality scores are already bunched near the ceiling. MAS-HQ provides a repro-ducible way to measure how much a factual answer costs. 
+
+Introduction 
+
+On standard factuality tasks, frontier LLMs now cluster near the top of the scale (Huang et al. 2025a; Alzahrani et al. 2024; Huang et al. 2025b; Singh et al. 2025). As they do, the infor-mative question moves from how factual a system is to how much compute that factuality costs . Static leaderboards still score factuality in isolation and treat compute as free. Under that convention a model can “buy” a higher score through computationally extravagant mitigation, such as extensive Best-of-N sampling or exhaustive reasoning chains, without penalty. So a static leaderboard cannot tell a genuinely better system from one that merely spends more. Consider a ranking reversal. A brute-force Best-of-4 agent posts the higher raw factuality score (H-Score 0.9169 vs. 
+
+> *
+
+Corresponding author. 
+
+0.9103) and would top a static leaderboard. Once cost is counted it is the worse system: it loses on Q-Score (0.5169 vs. 0.5217) at roughly four times the tokens and latency, scored under a reported cost weight whose sensitivity we sweep, so the static-score winner can be the wrong deploy-ment pick. The trade-off is not a small-model artifact, since it persists for frontier systems (Gemini-2.5-Pro, and GPT-5 in simulated preview) whose raw factuality already sits near the ceiling. It is compounded in Multi-Agent Systems (MAS), where interactions can amplify and propagate hal-lucinations, outputs that appear plausible yet are factually erroneous (Macpherson and Platchias 2013; Huang et al. 2021; Ji et al. 2023; Li et al. 2022; Schmidgall and Moor 2025). In such settings latency and compute are first-order. In high-frequency trading or real-time news intelligence, an agent that delivers equally credible insights on half the budget delivers greater operational value. To make this trade-off visible, we introduce MAS-HQ (Multi-Agent System Hallucination Quest), a resource-aware evaluation protocol built on standard information-synthesis tasks (vectara 2024; Bao et al. 2024) as objective, quantifiable proxies. The accuracy term is metric-agnostic :any factuality detector works, and its reliability bounds the scores. The Q-Score then subtracts normalized cost under a competitive match, so an accuracy gain bought with dispro-portionate compute is scored down. Each measurement pairs with fixed budgets and a competitive ranking rule, which surfaces the ranking changes static leaderboards hide. We instantiate the protocol with the Q-Agent, whose optional parameterized telemetry knob surfaces partial state about an opponent only when a costly action such as self-review is taken, mirroring the partial observability of latency, retries, and tool calls in deployment. Figure 1 gives an overview. Experiments show that competition produces small but consistent shifts. Single-agent baselines fall into the over-optimization trap , spending disproportionate resources for marginal accuracy; under a shared budget, agents adopt more resource-efficient policies. The gaps stay stable across 100 trials, and they change relative rankings that a static score cannot surface. In summary, our contributions are: (1) The MAS-HQ pro-tocol: a resource-aware evaluation protocol that wraps any factuality metric and scores accuracy against normalized op-erational cost, making the cost-of-knowing trade-off visible. arXiv:2607.24063v1 [cs.AI] 27 Jul 2026 Multi -Agent System Ha llucination Quest Game                  
+
+> Q-Agent A
+> with passage 1 to i -1History
+> Q-Agent B
+> with passage N to i+1 History
+> ascending
+> order
+> descending
+> order
+> Vision
+> Mechanism As of 19 March , more than 220,000 cases of
+> COVID -19 have been reported in over 150
+> countries and territories, resulting in more than
+> 8,900 deaths and 85,000 recoveries.
+> Real World News from
+> Hallucination Leaderboard
+> Passage 1 ……Passage i Passage N
+> Summary:
+> As of March 19, over 220,000 COVID -19 cases
+> have been reported worldwide, with more than
+> 8,900 deaths and 85,000 recoveries.
+> Hallucination Score: 0.8
+> Penalty: 0.2 ( Resource used based on History )
+> Q-Score :0.8 –0.2 = 0.6
+> Summary:
+> By March 19, COVID -19 had spread to over 150
+> countries, causing 85,000 deaths and 220,000
+> recoveries globally.
+> Hallucination Score: 0.5
+> Penalty: 0.1 ( Resource used based on History )
+> Q-Score :0.5 –0.1 = 0.4
+> A Wins
+
+Figure 1: Same tasks, reversed ranking: higher factuality, worse once cost is counted. Two Q-Agents compete on MAS-HQ; the original passage list is input in different sequences to Q-Agent A and Q-Agent B, which devise strategies to summarize each passage using mechanisms such as the vision mechanism. Hallucination scores and resource-usage penalties are recorded and combined into the Q-Score, and the agent with the higher Q-Score wins—making the cost-of-knowing trade-off visible rather than hidden. In the current context, Q-Agent A wins. (2) A modular architecture for controlled ablations: in-cluding an optional parameterized telemetry knob (the “vi-sion mechanism”), which isolates when competition reverses rankings versus when it collapses onto the static axis. (3) Re-producible analysis: experiments showing shared budgets and competition elicit resource-efficient behaviors, consis-tent across trials, and a ranking reversal that static leader-boards overlook. 
+
+Related Work 
+
+LLM Hallucination and Resource-Agnostic Evaluation 
+
+Large Language Models (LLM) hallucination—the genera-tion of fluent yet factually erroneous content arising from flawed internals, biased data, or misaligned external knowl-edge (Macpherson and Platchias 2013; Huang et al. 2025a, 2021; Ji et al. 2023; Li et al. 2022; Bender et al. 2021; Li et al. 2023; Holtzman et al. 2019)—remains a criti-cal challenge. Various mitigation strategies, ranging from retrieval-augmentation to complex reasoning chains, have subsequently emerged (Abbas et al. 2021; Dai et al. 2023; Gao et al. 2022; Shi et al. 2023; Chuang et al. 2023). However, existing benchmarks (Lin, Hilton, and Evans 2021; Li et al. 2024; vectara 2024; Bao et al. 2024; Cheng et al. 2023) pre-dominantly focus on static, resource-agnostic hallucination reduction, inadvertently rewarding computationally extrava-gant approaches (e.g., exhaustive Best-of-N sampling) while ignoring operational costs like latency and API calls. MAS-HQ addresses this gap by explicitly evaluating efficiency alongside veracity, penalizing the brute-force accumulation of factuality. 
+
+Multi-Agent Systems and Economic Constraints As Multi-Agent Systems (MAS) deploy autonomous agents ca-pable of complex interaction across increasingly diverse do-mains (Liu et al. 2025; Guo et al. 2024; Rasheed et al. 2024; Wang et al. 2024; Huang et al. 2023; Hong et al. 2023; Chen et al. 2023; Yu, Kasaei, and Cao 2023; Ke et al. 2024; Ni and Buehler 2024; Xie et al. 2024; Jiang et al. 2024; Wu et al. 2023; Fan et al. 2024; Zhang et al. 2024a,b), evaluating their decision quality under stringent operational budgets in time-sensitive environments becomes paramount. While current benchmarks (Zhu et al. 2025) valuably assess open-ended collaboration, they often neglect the rigorous quantification of information fidelity against strict resource limitations. MAS-HQ addresses this by introducing a game-theoretic paradigm that utilizes standard generation tasks as quantifiable proxies, forcing agents to strategically balance task success against resource consumption and adversarial pressure. 
+
+MAS-HQ Framework and Reference Architecture 
+
+Static factuality leaderboards presuppose effectively infinite compute. They score how factual a system is while implic-itly assuming the compute that buys that factuality is free, so they cannot separate a genuinely better system from one that merely spends more. We introduce MAS-HQ ( Multi-Agent 
+
+System Hallucination Quest), a controlled resource-aware protocol that makes rankings cost-honest and makes such re-versals visible. MAS-HQ treats standard summarization and QA tasks as quantifiable proxies for information synthesis and scores factuality jointly against normalized operational cost, so speed, cost, and accuracy are all weighed rather than assumed free. Any factuality detector can serve as the ac-curacy term, so the protocol stays metric-agnostic. Figure 2 shows the MAS-HQ evaluation and the Q-Agent reference Policy                         
+
+> Summary
+> Review
+> choose
+> Evaluation
+> Text
+> generate
+> Passage Bank passage
+> History
+> move to next passage
+> Current Passage :
+> Hallucination Score
+> Passages As For Now :
+> Average Hallucination
+> Worst Hallucination Case
+> Passage Progress
+> Resources As For Now :
+> API Call
+> Time Elapsed
+> Review Times
+> Token Consumption
+> Continue (current summary)
+> Review (the worst case)
+> End (passage bank finished)
+> If aQ-Agent selects Review, its
+> history will be updated and synced
+> to another Q-Agent's policy prompt.
+> Vision Mechanism
+> Q-Agent AQ-Agent B
+
+The Q -Agent that 
+
+achieves the lowest 
+
+illusion with the 
+
+least resources wins.        
+
+> Policy Agent Summary Agent Review Agent Evaluation Agent
+
+Figure 2: Overview of the composition of the Q-Agent. Policy Agent receives both the Q-Agent’s own historical information and the opponent’s historical information (via the vision mechanism) to determine the next strategy. The text summary generated by either the Summary Agent or the Review Agent is evaluated by the Evaluation Agent, which computes the hallucination score (H-Score) and resource usage. After all steps are completed, the overall Q-Score is calculated, which includes the average hallucination score and resource consumption penalties. implementation. 
+
+MAS-HQ Mechanics and the Q-Score Objective 
+
+The Q-Score just adds a cost term to factuality: factuality minus normalized cost under a competitive match, not a replacement for the factuality metric. Built on established datasets (vectara 2024; Bao et al. 2024), MAS-HQ pairs agents that sequentially process information streams while trading factual consistency against operational cost, aggre-gated into a match-specific utility, the Q-Score :
+
+Q-Score = 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+(α · H-Score i − β · Pi)
+
+For each of N tasks, H-Score i ∈ [0 , 1] is the factuality metric from the plugged-in detector, and Pi is a normalized operational-cost penalty computed at evaluation time. This evaluation-time cost differs from the policy-side review cost an agent incurs internally when it refines. The Q-Score sub-tracts only the former, so cost-awareness is scored uniformly across agents and is not baked into the accuracy metric. The penalty Pi aggregates token count (input plus output), API calls, review iterations, and wall-clock runtime, each max-normalized over the agents in the same match, which makes Pi a relative rather than absolute cost. The parameters 
+
+α, β > 0 are deployment-SLA knobs encoding a particular accuracy-versus-cost operating point, so we report Q-Score sensitivity across a range of β. Because the penalty is rela-tive to the co-present competitor, the Q-Score is a match-specific payoff and not a standalone model score. Recovering an intrinsic per-agent ranking would require tournament or Elo-style aggregation over many matches, which we leave to future work. 
+
+The Q-Agent Reference Architecture. As a transparent, reproducible baseline, we provide the Q-Agent, a modular reference implementation (analogous to ReAct (Yao et al. 2022)) of four components. The Policy Agent (PA) decides the next action ( continue , review , or end ) from the current state and any available competitor telemetry. The 
+
+Summarization Agent (SA) executes the primary task. To avoid the degenerate “say less to avoid being wrong” shortcut, we deliberately isolate it from the Q-Score, which confines cost-awareness to the PA. The Review Agent (RA) refines summaries at an additional review cost, while the Evalua-tion Agent (EA) scores quality (Bao et al. 2024) and tracks consumption to inform the PA. 
+
+Competitive Dynamics and Optional Telemetry 
+
+We instantiate MAS-HQ as a head-to-head match to remove the infinite-compute assumption, with Agent A and Agent B processing tasks in opposite directions to prevent trivial convergence. 
+
+The Vision Mechanism. MAS-HQ includes an optional, parameterized telemetry knob controlling how much of a competitor’s activity is observable, mirroring the partial telemetry (latency, retries, tool-calls) available in real de-Q-Agent Competition Metrics 
+
+H-Score ↑ API Call ↓ Tokens ↓ Review ↓ Time ↓ Q-Score ↑ Winner A: GPT-4o-mini 0.9103 2417 1.36M 791 8.83k 0.5217 ✓
+
+B: GPT-4o-mini 0.9132 2438 1.44M 812 8.98k 0.5132 A: Qwen-Max 0.9030 2304 1.48M 682 13.77k 0.5101 ✓
+
+B: Qwen-Max 0.8994 2264 1.52M 642 14.45k 0.5070 A: Deepseek-V3 0.8860 2292 1.42M 666 12.26k 0.4860 B: Deepseek-V3 0.8894 2233 1.38M 607 12.06k 0.5051 ✓
+
+A: Gemini-2.0-Flash 0.9026 2262 1.56M 642 20.29k 0.5026 B: Gemini-2.0-Flash 0.9016 2157 1.53M 537 19.82k 0.5273 ✓
+
+A: Grok-3-beta 0.9070 2376 1.37M 750 10.71k 0.5070 B: Grok-3-beta 0.9049 2253 1.34M 627 10.15k 0.5337 ✓
+
+Table 1: The reversal recurs across LLMs: the highest-factuality agent is often not the winner. Within each competition group, Q-Agents share the same underlying LLM. Once cost is scored, the winner (Q-Score) is repeatedly not the agent with the higher raw factuality (H-Score)—resource efficiency (API Calls, Tokens, Review, Time) decides the cost-honest ranking. 
+
+Setup (Model: GPT-4o-mini) H-Score ↑ API Call ↓ Tokens ↓ Review ↓ Time (s) ↓ Q-Score ↑
+
+Single Agent: Best-of-1 0.9144 2477 1.62M 851 9.12k 0.5144 Single Agent: Best-of-2 0.9167 5201 3.40M 1787 19.15k 0.5167 Single Agent: Best-of-4 0.9169 9660 6.32M 3310 35.57k 0.5169 
+
+Multi-Agent: Q-Agent A (Ours) 0.9103 2417 1.36M 791 8.83k 0.5217 
+
+Multi-Agent: Q-Agent B (Ours) 0.9132 2438 1.44M 812 8.98k 0.5132 
+
+Table 2: The ranking reversal. Best-of-4 wins on raw factuality (H-Score 0.9169) but loses on Q-Score (0.5169 vs. 0.5217) at 
+
+∼4× the cost: the static-score winner is here the worse deployment pick. This is the over-optimization trap—MAS-HQ agents adopt more resource-efficient empirical policies, capturing most of the factuality at a fraction of the cost. ployments. When it is enabled and an agent executes a costly action such as review , a snapshot of its state ( V opponent A,i ) is disclosed to its rival, so the policy is conditioned on observed competitor cost: Choice B,i = Policy B(TB,i , V self B,i , V opponent A,i ), for i = 1 , . . . , N 
+
+Turning this knob lets us measure how opponent-conditioned review behavior changes the accuracy–cost trade-off; we ex-amine the full-versus-collapsed match ablation in appendix. A Limited Review Cycle budget ( R) further constrains how much refinement an agent may spend. The information struc-ture of a match (private state, conditional observation, se-quential actions, and terminal utility) can be described com-pactly as a POSG. We use this only as descriptive vocabulary and do not solve for equilibria, which remains future work. 
+
+Experiments 
+
+Our experiments ask what a static factuality score cannot resolve. First, does jointly scoring factuality against normal-ized operational cost expose accuracy–cost trade-offs, up to a reversal of the ranking, that static infinite-compute leader-boards hide? Second, do agents, including frontier models, adopt measurably different resource-efficient behaviors when cost is scored? And once raw factuality already clusters near the top of the scale, does the axis stay discriminative and reproducible, and does it depend on the choice of metric? 
+
+Experimental Setup and Metric Validation 
+
+Evaluations run within the MAS-HQ protocol on over 1,000 long-form news passages. Factual consistency ( H-Score ) is computed by a pre-trained discriminator (Bao et al. 2024) from the hallucination leaderboard (vectara 2024); the pro-tocol is metric-agnostic, and any detector can be substituted. To verify this automated metric, we run a blind human eval-uation on 100 randomly sampled summaries prior to large-scale testing. It yields a Pearson correlation of 0.96 between expert judgments and the discriminator’s H-Score , which confirms its reliability as a ranking mechanism. For a fair head-to-head comparison, we exclude passages that trigger safety refusals in any evaluated LLM, scoring competing agents only on the exact intersection both can process (808–813 passages per match). We set the halluci-nation threshold at T = 0 .85 , maximum review cycles at 
+
+R = 3 , and the Q-Score cost weights at α = 1 , β = 0 .01 .SOTA Competition ( α = 1 , β = 0 .01 ) H-Score ↑ Review ↓ Resource Penalty ↓ Q-Score ↑
+
+Q-Agent A: GPT-5 0.9312 867 0.4000 0.5312 Q-Agent B: GPT-5 0.9278 834 0.3897 0.5381 (✓)Q-Agent A: Gemini-2.5-Pro 0.9264 859 0.4000 0.5264 Q-Agent B: Gemini-2.5-Pro 0.9221 824 0.3911 0.5310 (✓)Q-Agent A: GPT-5 0.9315 869 0.4000 0.5315 (✓)Q-Agent B: GPT-4o-mini 0.9078 846 0.3877 0.5201 
+
+Table 3: The cost-of-knowing trade-off persists where raw factuality saturates. For frontier systems (GPT-5, simulated preview; Gemini-2.5-Pro) whose H-Scores already cluster near the top of the scale, the axis stays discriminative: higher pure factuality (H-Score) does not guarantee a win once the resource penalty is scored, so the reversal is not a small-model artifact. 
+
+α β Model Setup H-Score ↑ Review Count Resource Penalty Q-Score 1 0 Q-Agent A: GPT-4o-mini 0.9166 854 0.3899 0.5267 1 0 Q-Agent B: GPT-4o-mini 0.9189 889 0.4000 0.5189 
+
+1 0.01 Q-Agent A: GPT-4o-mini (Main) 0.9103 791 0.3886 0.5217 
+
+1 0.01 Q-Agent B: GPT-4o-mini (Main) 0.9132 812 0.4000 0.5132 1 0.02 Q-Agent A: GPT-4o-mini 0.9043 755 0.3901 0.5142 
+
+1 0.02 Q-Agent B: GPT-4o-mini 0.9096 772 0.4000 0.5096 
+
+Table 4: β toggles between static and cost-honest ranking. Fixing α = 1 and sweeping β. At β = 0 the protocol collapses onto the saturating raw-accuracy axis (cost unscored, infinite resources), while β = 0 .01 is an intermediate deployment-SLA setting that balances quality against cost; we report sensitivity rather than claim a canonical value. Per the protocol, the penalty term Pi max-normalizes API calls, total token consumption (input plus output), review iterations, and wall-clock runtime over the agents in each match. Here α and β are deployment-SLA parameters, and we report sensitivity to them below. Q-Agent A processes the passage queue sequentially, Q-Agent B in reverse. 
+
+A Ranking Reversal Under Best-of-N 
+
+A static leaderboard scores factuality in isolation and as-sumes compute is free, so it rewards brute-force scaling. Models can “buy” accuracy by spending more, and the leaderboard cannot separate a genuinely better system from one that merely spends more. The clearest case is a ranking reversal, where the system that would top a static leader-board is the one a deployer should not pick. We benchmark Q-Agents against a standard Single-Agent Best-of-N base-line (Table 2). The reversal is direct. The resource-agnostic Best-of-4 strategy posts the higher H-Score (0.9169 vs. 0.9103 for Q-Agent A) and would win a static leaderboard, but it buys those fractions of a point at nearly four times the token volume and latency. Once operational cost is scored, that spend does not pay off: Best-of-4 yields the lower final Q-Score (0.5169 vs. 0.5217). The static-score winner is the worse deployment pick, the over-optimization trap the protocol targets, with the Q-Agent capturing most of the factuality at a fraction of the cost. To check that this modest gap is not noise, we repeat the Q-Agent A vs. Q-Agent B match over 100 independent trials. Q-Agent A’s advantage is stable (0.5216 ±0.0009 vs. 0.5131 ±0.0009), so the small Q-Score gaps reflect a repro-ducible trade-off rather than run-to-run variance. 
+
+Resource-Efficient Behavior and Frontier-Model Comparisons 
+
+We run head-to-head matches across a diverse spectrum of LLMs to examine how scored cost reshapes rankings. The reversal is not confined to Best-of-N. Across brackets in Ta-ble 1, the match winner is often the agent with the lower 
+
+H-Score ; in the GPT-4o-mini bracket, the agent with the lower factuality score wins on the final Q-Score through greater frugality. Table 6 further investigates cross-model dy-namics and processing order, showing how agents on differ-ent foundation models (e.g., GPT-4o-mini vs. Grok-3-beta) leverage distinct efficiency profiles to change the outcome. The harder test is whether the axis stays informative for the strongest systems. We scale evaluations to state-of-the-art (SOTA) systems, including GPT-5 (simulated preview) and 
+
+Gemini-2.5-Pro (Table 3), whose baseline H-Scores al-ready cluster near the top of the scale. The cost-of-knowing trade-off persists for these systems too: even they must decide whether a marginal factual refinement justifies its added re-source penalty, and once raw scores cluster near the top, the GPT-4o-mini 
+
+Gemini-2.0-flash 
+
+Grok-3-beta 
+
+Qwen-max 
+
+DeepSeek-v3 
+
+0.825 
+
+0.850 
+
+0.875 
+
+0.900 
+
+0.925 
+
+0.950 
+
+> Hallucination Score
+
++5.5% +2.3% +3.6% +3.9% 
+
++5.1% 
+
+Before Review 
+
+After Review 
+
+0.00 0.02 0.029 0.04 0.06 0.08 0.10 
+
+Penalty Coefficient 
+
+0.5 
+
+0.6 
+
+0.7 
+
+0.8 
+
+0.9 
+
+1.0 
+
+> Q-Score
+
+Before Review 
+
+After Review Figure 3: Ablation study of the Review Agent in Q-Agent. Each experiment group presents the average results over Q-Agent A and Q-Agent B. Left: The Review Agent improves the H-Score and reduces hallucination to varying extents across different Q-Agent models. Right: When both Q-Agents are built using GPT-4o-mini, the smaller the penalty coefficient β, the more the review pays off in the final Q-Score—as β → 0 the ranking slides back toward the static raw-accuracy axis. cost-honest ranking is what still separates them. The effect holds for larger frontier systems, not just small models. 
+
+Protocol Robustness, Scalability, and Ablations 
+
+We conduct ablations isolating the protocol’s core compo-nents. 
+
+Cost-Weight Sensitivity ( α, β ). Since α (quality) and β
+
+(cost) are deployment-SLA parameters, we report a sen-sitivity analysis instead of fixing a single setting. Table 4 details the sweep with α = 1 across varying β. Here β tog-gles between static and cost-honest ranking. At β = 0 , with cost unscored, the protocol collapses onto the raw-accuracy axis, review counts surge, and the reversal disappears, re-verting to the infinite-compute setting. At β = 0 .02 review cost dominates and suppresses H-Scores . The intermediate 
+
+β = 0 .01 balances the two and reflects a realistic operational constraint; practitioners should pick α, β to match their own latency and token budgets. Figure 3 visualizes how adjusting 
+
+β shifts the final Q-Score optimization path.                                
+
+> Q-Agent Competition Metrics
+> H-Score ↑API Calls ↓Tokens ↓Reviews ↓Time (s) ↓Q-Score ↑Winner A: GPT-4o-mini 0.9108 2424 1.36M 798 8.84k 0.5214 ✓
+> B: GPT-4o-mini 0.9139 2445 1.44M 819 8.99k 0.5139 C: GPT-4o-mini 0.9123 2434 1.40M 808 8.89k 0.5180
+
+Table 5: Scalability to 3-Agent Competition. Results us-ing GPT-4o-mini demonstrate that the MAS-HQ framework scales to N-player scenarios, where multi-lateral cost pres-sure remains measurable. Q-Agent A wins via resource effi-ciency despite having the lowest H-Score. 
+
+Architecture Agnosticism. To rule out custom-engineering bias, we replace the Q-Agent with a stan-dardized ReAct Agent (Yao et al. 2022) under identical rules (Table 7). The ReAct Agents produce nearly identical performance metrics, review frequencies, and Q-Scores .This indicates the resource-efficient behavior arises from the LLM’s response to the scored-cost incentive rather than                                       
+
+> Q-Agent Competition Metrics
+> H-Score ↑API Call ↓Tokens ↓Review ↓Time ↓Q-Score ↑Winner A: GPT-4o-mini 0.9105 2401 1.34M 785 6.54k 0.5401 B: Grok-3-beta 0.9035 2177 1.30M 561 9.29k 0.5445 ✓
+> A: Grok-3-beta 0.9036 2312 1.34M 696 10.08k 0.5278 B: GPT-4o-mini 0.9092 2422 1.43M 806 6.78k 0.5419 ✓
+
+Table 6: Main results investigating the impact of LLM and passage processing order. In each competition group, Q-Agent A and Q-Agent B are constructed using different LLMs. Q-Agent A retrieves original text from the passage bank in forward order, while Q-Agent B retrieves in reverse order. The winning agent in each competition is highlighted with a light gray background, and better values for individual metrics are shown in bold .structural hardcoding, and that the protocol is agnostic to the agent scaffold.                       
+
+> Architecture (GPT-4o-mini) H-Score ↑Review Count Resource Penalty Q-Score ↑
+> Q-Agent (Player A) 0.9166 854 0.3899 0.5267 Q-Agent (Player B) 0.9189 889 0.4000 0.5189 ReAct Agent (Player A) 0.9166 855 0.3889 0.5277
+> ReAct Agent (Player B) 0.9189 890 0.4000 0.5189
+
+Table 7: Architecture Agnostic Validation. Replacing the custom Q-Agent with a standard ReAct Agent under MAS-HQ rules yields nearly identical behavioral metrics. This indicates that the resource-efficient behavior arises from the LLM’s response to the scored-cost incentive, not from struc-tural hardcoding. 
+
+Generality and Scalability. MAS-HQ is not constrained to summarization or two-player matches. Table 8 demon-strates its adaptation to exact-match factoid QA (Sim-pleQA (Wei et al. 2024)), showing that the resource–accuracy trade-off transfers across factuality metrics. Table 5 then illustrates scaling to a 3-Agent competition, where multi-lateral cost pressure remains measurable. Q-Agent B
+
+Q-Agent A
+
+ID:0 Continue -> End 
+
+With only 1 text remaining to 
+
+complete the set of 99, it is 
+
+strategic to process this last text to 
+
+ensure all summaries are 
+
+generated. My current average 
+
+hallucination score of 0.9061 is 
+
+slightly lower than my opponent's 
+
+0.9205, but completing all texts 
+
+promptly may provide an edge in 
+
+overall performance. A review 
+
+can be considered after if 
+
+necessary, but resource usage is 
+
+still within acceptable limits. 
+
+ID:11 Continue 
+
+With 12 texts remaining and a decent 
+
+average hallucination score of 0.9052, 
+
+continuing to process the next text 
+
+is the best strategy to complete the 
+
+summarization task efficiently . My 
+
+score is slightly lower than the 
+
+opponent's 0.9204, but I have more 
+
+completed texts (87 vs 65). 
+
+Reviewing now might consume 
+
+additional resources without 
+
+significant gain, as the worst score 
+
+(0.8629) is not critically low. 
+
+ID:5 Review 
+
+The hallucination 
+
+score of 0.7789 for 
+
+text ID 5 is below the 
+
+acceptable threshold 
+
+of 0.85, and 
+
+improving this score 
+
+is critical to 
+
+maintaining a high 
+
+average factual 
+
+accuracy. 
+
+ID:22 Review 
+
+The hallucination score of 
+
+0.4433 for text ID 22 is 
+
+significantly below the 
+
+acceptable threshold of 
+
+0.85, indicating a high 
+
+level of factual 
+
+inconsistency that needs 
+
+improvement to 
+
+maintain a competitive 
+
+average score. 
+
+ID:100 Review -> End 
+
+The hallucination score of 0.8255 
+
+for text ID 99 is below the 
+
+acceptable threshold of 0.85. 
+
+Reviewing this text to improve 
+
+factual accuracy is necessary to 
+
+maintain a high average score 
+
+and stay competitive. 
+
+ID:97 Review 
+
+The hallucination 
+
+score of 0.8251 for 
+
+text ID 96 is below 
+
+the acceptable 
+
+threshold of 0.85. 
+
+Reviewing this text 
+
+is necessary to 
+
+improve factual 
+
+accuracy and 
+
+maintain a 
+
+competitive average 
+
+hallucination score 
+
+against the opponent. 
+
+ID:75 Continue 
+
+I have 26 texts remaining to 
+
+summarize, and my current average 
+
+hallucination score (0.9220) is higher 
+
+than my opponent's (0.9067). 
+
+Continuing to process the next text 
+
+will help me complete more 
+
+summaries efficiently while 
+
+maintaining a strong factual 
+
+consistency. Reviewing can be 
+
+considered later if needed, but 
+
+completing the remaining texts takes 
+
+priority to avoid falling behind on 
+
+progress compared to my opponent 
+
+who has only 6 texts left. 
+
+ID:64 Continue 
+
+I am behind my opponent 
+
+in terms of completed 
+
+texts (62 vs 79). My 
+
+current average 
+
+hallucination score 
+
+(0.9248) is higher than my 
+
+opponent's (0.9025), so I 
+
+should focus on 
+
+completing more texts to 
+
+close the gap while 
+
+maintaining efficiency .
+
+Reviewing can be 
+
+considered later if 
+
+necessary, as my worst 
+
+score (0.8992) is still 
+
+relatively high. 
+
+B Results 
+
+H Score: 0.9068 
+
+Policy API: 99 
+
+Summary API: 99 
+
+Review API: 63 
+
+Total API: 261 
+
+In Tokens: 111k 
+
+Out Tokens: 23k 
+
+Total Tokens: 
+
+135 k
+
+Review: 63 
+
+Time: 1065.42 
+
+Q-Score : 0.5386 
+
+A Results 
+
+H Score: 0.9080 
+
+Policy API: 99 
+
+Summary API: 99 
+
+Review API: 68 
+
+Total API: 266 
+
+In Tokens: 121k 
+
+Out Tokens: 26k 
+
+Total Tokens: 
+
+147 k
+
+Review: 68 
+
+Time: 1247.79 
+
+Q-Score : 0.5080 
+
+descending order 
+
+ascending order Figure 4: Case study on a subset of MAS-HQ. Through vision mechanism, Q-Agent A and Q-Agent B dynamically adjust their strategies based on their own H-Score, resource usage, and comparisons with the opponent, deciding whether to continue generating summaries or perform reviews. In this example the same reversal appears at the match level: Q-Agent B wins on the cost-honest Q-Score through lower resource usage despite a slightly lower H-Score. These are empirical, match-specific observations, not equilibrium claims.                                       
+
+> Q-Agent Competition Metrics
+> H-Score ↑API Calls ↓Tokens ↓Reviews ↓Time (s) ↓Q-Score ↑Winner A: GPT-4o 0.3872 11.40k 0.89M 2745 12.54k 0.3832 ✓
+> B: GPT-4o 0.3837 11.16k 0.87M 2512 12.39k 0.3798 A: GPT-4o-mini 0.0132 11.09k 0.86M 2437 12.20k 0.0092 ✓
+> B: GPT-4o-mini 0.0116 11.03k 0.85M 2382 12.14k 0.0086
+
+Table 8: MAS-HQ Generality on SimpleQA Task. Results show the framework’s applicability to question-answering. The H-Score is adapted to exact match accuracy. The core trade-off between performance and resource cost remains, with the winning agent in both cases investing more resources for higher accuracy. 
+
+Telemetry-Knob Ablation. Finally, Table 9 isolates the optional vision telemetry knob and the reverse processing order. Removing either collapses the match into a symmetric, tied outcome, where both agents receive the same Q-Score. With both active, they introduce the partial observability and asymmetry that let the protocol distinguish opponent-conditioned review behavior. Only with the knob active does the competitive setting differ from a static one.                 
+
+> Setup Passage Order Agent A Q-Score Agent B Q-Score Outcome Our’s Setup (Vision On) A: Fwd, B: Rev 0.5217 0.5132 Dynamic Competition
+> Ablation 1 (Vision On) A: Fwd, B: Fwd 0.5097 0.5097 Identical (No Asymmetry) Ablation 2 (Vision Off) A: Fwd, B: Rev 0.5081 0.5081 Identical (No Interaction)
+
+Table 9: Ablation on Passage Order and Vision Mecha-nism. Both reverse-order processing and the vision mech-anism are necessary to break symmetry; removing either collapses the match into a tied outcome, showing that these knobs are what make the competitive, cost-honest setting differ from a static one. 
+
+Case Study: Opponent-Conditioned Review Behavior 
+
+To ground the aggregate metrics in observable behavior, Fig-ure 4 provides a case study of a 100-passage subset, capturing agents that adjust review effort based on cumulative progress and the partial opponent telemetry exposed by the vision knob. A recurring pattern is resource-conserving. When Q-Agent A observes Q-Agent B spending heavily to raise its 
+
+H-Score , Q-Agent A curtails its own review cycles, trading marginal factual gains for a resource advantage sufficient to win. These are empirical, match-specific behavioral obser-vations, not equilibrium claims. Conclusion 
+
+We introduce MAS-HQ, a controlled, resource-aware pro-tocol that replaces “infinite compute” assumption of static leaderboards with metric-agnostic Q-Score that penalizes normalized token and runtime costs. Across Best-of-N , Re-Act substitution, QA generalization, and N -player matches, Q-Agent achieves gains by using compute efficiently. 
+
+References 
+
+Abbas, A.; Tirumala, K.; Simig, D.; Ganguli, S.; and Morcos, A. S. 2021. Semdedup: Data-efficient learning at web-scale through semantic deduplication, 2023. URL https://arxiv. org/abs/2303.09540 .Alzahrani, N.; Alyahya, H.; Alnumay, Y.; Alrashed, S.; Al-subaie, S.; Almushayqih, Y.; Mirza, F.; Alotaibi, N.; Al-Twairesh, N.; Alowisheq, A.; et al. 2024. When benchmarks are targets: Revealing the sensitivity of large language model leaderboards. In Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers) , 13787–13805. Bao, F.; Li, M.; Luo, R.; and Mendelevitch, O. 2024. HHEM-2.1-Open. Bender, E. M.; Gebru, T.; McMillan-Major, A.; and Shmitchell, S. 2021. On the dangers of stochastic parrots: Can language models be too big? In Proceedings of the 2021 ACM conference on fairness, accountability, and trans-parency , 610–623. Chen, H.; Ji, W.; Xu, L.; and Zhao, S. 2023. Multi-agent consensus seeking via large language models. arXiv preprint arXiv:2310.20151 .Cheng, Q.; Sun, T.; Zhang, W.; Wang, S.; Liu, X.; Zhang, M.; He, J.; Huang, M.; Yin, Z.; Chen, K.; et al. 2023. Evalu-ating hallucinations in chinese large language models. arXiv preprint arXiv:2310.03368 .Chuang, Y.-S.; Xie, Y.; Luo, H.; Kim, Y.; Glass, J.; and He, P. 2023. Dola: Decoding by contrasting layers im-proves factuality in large language models. arXiv preprint arXiv:2309.03883 .Dai, D.; Jiang, W.; Dong, Q.; Lyu, Y.; and Sui, Z. 2023. Neural knowledge bank for pretrained transformers. In CCF International Conference on Natural Language Processing and Chinese Computing , 772–783. Springer. Fan, C.; Chen, J.; Jin, Y.; and He, H. 2024. Can large language models serve as rational players in game theory? a systematic analysis. In Proceedings of the AAAI Conference on Artificial Intelligence , volume 38, 17960–17967. Gao, L.; Dai, Z.; Pasupat, P.; Chen, A.; Chaganty, A. T.; Fan, Y.; Zhao, V. Y.; Lao, N.; Lee, H.; Juan, D.-C.; et al. 2022. Rarr: Researching and revising what language models say, using language models. arXiv preprint arXiv:2210.08726 .Guo, T.; Chen, X.; Wang, Y.; Chang, R.; Pei, S.; Chawla, N. V.; Wiest, O.; and Zhang, X. 2024. Large language model based multi-agents: A survey of progress and challenges. 
+
+arXiv preprint arXiv:2402.01680 .Holtzman, A.; Buys, J.; Du, L.; Forbes, M.; and Choi, Y. 2019. The curious case of neural text degeneration. arXiv preprint arXiv:1904.09751 .Hong, S.; Zheng, X.; Chen, J.; Cheng, Y.; Wang, J.; Zhang, C.; Wang, Z.; Yau, S. K. S.; Lin, Z.; Zhou, L.; et al. 2023. Metagpt: Meta programming for multi-agent collaborative framework. arXiv preprint arXiv:2308.00352 , 3(4): 6. Huang, D.; Zhang, J. M.; Luck, M.; Bu, Q.; Qing, Y.; and Cui, H. 2023. Agentcoder: Multi-agent-based code genera-tion with iterative testing and optimisation. arXiv preprint arXiv:2312.13010 .Huang, L.; Yu, W.; Ma, W.; Zhong, W.; Feng, Z.; Wang, H.; Chen, Q.; Peng, W.; Feng, X.; Qin, B.; et al. 2025a. A survey on hallucination in large language models: Principles, taxon-omy, challenges, and open questions. ACM Transactions on Information Systems , 43(2): 1–55. Huang, Y.; Feng, X.; Feng, X.; and Qin, B. 2021. The factual inconsistency problem in abstractive text summarization: A survey. arXiv preprint arXiv:2104.14839 .Huang, Y.; Nasr, M.; Angelopoulos, A.; Carlini, N.; Chiang, W.-L.; Choquette-Choo, C. A.; Ippolito, D.; Jagielski, M.; Lee, K.; Liu, K. Z.; et al. 2025b. Exploring and mitigat-ing adversarial manipulation of voting-based leaderboards. 
+
+arXiv preprint arXiv:2501.07493 .Ji, Z.; Lee, N.; Frieske, R.; Yu, T.; Su, D.; Xu, Y.; Ishii, E.; Bang, Y. J.; Madotto, A.; and Fung, P. 2023. Survey of hal-lucination in natural language generation. ACM computing surveys , 55(12): 1–38. Jiang, F.; Peng, Y.; Dong, L.; Wang, K.; Yang, K.; Pan, C.; Niyato, D.; and Dobre, O. A. 2024. Large language model enhanced multi-agent systems for 6G communications. IEEE Wireless Communications .Ke, Y. H.; Yang, R.; Lie, S. A.; Lim, T. X. Y.; Abdullah, H. R.; Ting, D. S. W.; and Liu, N. 2024. Enhancing diagnos-tic accuracy through multi-agent conversations: using large language models to mitigate cognitive bias. arXiv preprint arXiv:2401.14589 .Li, J.; Chen, J.; Ren, R.; Cheng, X.; Zhao, W. X.; Nie, J.-Y.; and Wen, J.-R. 2024. The dawn after the dark: An empirical study on factuality hallucination in large language models. 
+
+arXiv preprint arXiv:2401.03205 .Li, W.; Wu, W.; Chen, M.; Liu, J.; Xiao, X.; and Wu, H. 2022. Faithfulness in natural language generation: A system-atic survey of analysis, evaluation and optimization methods. 
+
+arXiv preprint arXiv:2203.05227 .Li, Z.; Zhang, S.; Zhao, H.; Yang, Y.; and Yang, D. 2023. Batgpt: A bidirectional autoregessive talker from generative pre-trained transformer. arXiv preprint arXiv:2307.00360 .Lin, S.; Hilton, J.; and Evans, O. 2021. Truthfulqa: Mea-suring how models mimic human falsehoods, 2022. URL https://arxiv. org/abs/2109.07958 .Liu, B.; Li, X.; Zhang, J.; Wang, J.; He, T.; Hong, S.; Liu, H.; Zhang, S.; Song, K.; Zhu, K.; et al. 2025. Advances and challenges in foundation agents: From brain-inspired intelligence to evolutionary, collaborative, and safe systems. 
+
+arXiv preprint arXiv:2504.01990 .Macpherson, F.; and Platchias, D. 2013. Hallucination: Phi-losophy and psychology . MIT Press. Ni, B.; and Buehler, M. J. 2024. MechAgents: Large language model multi-agent collaborations can solve mechanics prob-lems, generate new data, and integrate knowledge. Extreme Mechanics Letters , 67: 102131. Rasheed, Z.; Waseem, M.; Ahmad, A.; Kemell, K.; Xiaofeng, W.; Duc, A.; and Abrahamsson, P. 2024. Can large language models serve as data analysts. A multi-agent assisted ap-proach for qualitative data analysis .Schmidgall, S.; and Moor, M. 2025. Agentrxiv: To-wards collaborative autonomous research. arXiv preprint arXiv:2503.18102 .Shi, W.; Min, S.; Lomeli, M.; Zhou, C.; Li, M.; Szilvasy, G.; James, R.; Lin, X. V.; Smith, N. A.; Zettlemoyer, L.; et al. 2023. In-context pretraining: Language modeling beyond document boundaries. arXiv preprint arXiv:2310.10638 .Singh, S.; Nan, Y.; Wang, A.; D’Souza, D.; Kapoor, S.; Üstün, A.; Koyejo, S.; Deng, Y.; Longpre, S.; Smith, N.; et al. 2025. The Leaderboard Illusion. arXiv preprint arXiv:2504.20879 .vectara. 2024. Hallucination Leaderboard. Wang, Z.; Wang, W.; Li, Z.; Wang, L.; Yi, C.; Xu, X.; Cao, L.; Su, H.; Chen, S.; and Zhou, J. 2024. Xuat-copilot: Multi-agent collaborative system for automated user accep-tance testing with large language model. arXiv preprint arXiv:2401.02705 .Wei, J.; Karina, N.; Chung, H. W.; Jiao, Y. J.; Papay, S.; Glaese, A.; Schulman, J.; and Fedus, W. 2024. Measur-ing short-form factuality in large language models. arXiv preprint arXiv:2411.04368 .Wu, D.; Shi, H.; Sun, Z.; and Liu, B. 2023. Decipher-ing digital detectives: Understanding llm behaviors and ca-pabilities in multi-agent mystery games. arXiv preprint arXiv:2312.00746 .Xie, C.; Chen, C.; Jia, F.; Ye, Z.; Lai, S.; Shu, K.; Gu, J.; Bibi, A.; Hu, Z.; Jurgens, D.; et al. 2024. Can Large Lan-guage Model Agents Simulate Human Trust Behavior? In 
+
+The Thirty-eighth Annual Conference on Neural Information Processing Systems .Yao, S.; Zhao, J.; Yu, D.; Du, N.; Shafran, I.; Narasimhan, K. R.; and Cao, Y. 2022. React: Synergizing reasoning and acting in language models. In The eleventh international conference on learning representations .Yu, B.; Kasaei, H.; and Cao, M. 2023. Co-navgpt: Multi-robot cooperative visual semantic navigation using large lan-guage models. arXiv preprint arXiv:2310.07937 .Zhang, A.; Chen, Y.; Sheng, L.; Wang, X.; and Chua, T.-S. 2024a. On generative agents in recommendation. In 
+
+Proceedings of the 47th international ACM SIGIR conference on research and development in Information Retrieval , 1807– 1817. Zhang, J.; Hou, Y.; Xie, R.; Sun, W.; McAuley, J.; Zhao, W. X.; Lin, L.; and Wen, J.-R. 2024b. Agentcf: Collaborative learning with autonomous language agents for recommender systems. In Proceedings of the ACM Web Conference 2024 ,3679–3689. Zhu, K.; Du, H.; Hong, Z.; Yang, X.; Guo, S.; Wang, Z.; Wang, Z.; Qian, C.; Tang, X.; Ji, H.; et al. 2025. MultiA-gentBench: Evaluating the Collaboration and Competition of LLM agents. arXiv preprint arXiv:2503.01935 .
+
+Formalization as a Partially Observable Stochastic Game 
+
+To rigorously ground our framework, we formalize MAS-HQ as a two-player, finite-horizon, general-sum Partially Observ-able Stochastic Game, denoted by G. This game-theoretic perspective is essential for capturing the strategic tension between accuracy and cost. 
+
+Players, States, and Information Structure. The set of players is N = {A, B }. At any discrete time step i ∈{1, ..., N }, the global state si contains the complete history of both agents. Because the game features imperfect infor-mation via the vision mechanism, each agent j ∈ N only ac-cesses a private observation oji , comprising its internal state 
+
+V self  
+
+> j,i
+
+and a conditional signal ωi about the opponent’s state, 
+
+˜V opponent  
+
+> −j,i
+
+. The action space is A = {continue , review }.
+
+Histories and Belief States. An agent j’s local history is 
+
+hji = ( oj
+
+> 1
+
+, a j
+
+> 1
+
+, . . . , o ji−1, a ji−1, o ji ). Critically, to address the hidden nature of the adversary, a rational agent must main-tain a belief state bji ∈ ∆( H−ji ). This belief is strictly defined over the probability distribution of all possible opponent pri-vate histories H−ji , updated via Bayes’ rule whenever new information ωi is leaked: 
+
+bji (h−ji ) = P (oji |hji−1, h −ji , π −j∗)bji−1(h−ji−1)
+
+P 
+
+> h′− j∈H −ji
+
+P (oji |hji−1, h ′− j , π −j∗)bji−1(h′
+
+> i−1
+
+)
+
+Sequential Rationality and Equilibrium Trade-offs. Astrategy πj : Hj → ∆( A) maps histories to actions to maxi-mize the final expected Q-Score. In a Perfect Bayesian Equi-librium, actions are sequentially rational given beliefs. The strategic tension arises directly from this structure: an action like ‘review‘ may increase myopic utility (local H-Score ), but it explicitly alters the opponent’s belief state μ∗ by reveal-ing ωi. This leakage can be exploited, potentially lowering future expected utility. A rational agent only chooses to ‘re-view‘ if the expected utility gain exceeds both the explicit resource penalty and the implicit strategic cost of informa-tion leakage, Cinfo :
+
+Cinfo (hji ) ≜ Eπ−j∗(·| b−j
+
+> prior )
+
+[U j ] − Eπ−j∗(·| b−j
+
+> posterior )
+
+[U j ] > 0
+
+While our framework does not compute this equilibrium an-alytically, its design strictly compels LLM agents to nav-igate these exact trade-offs, providing a robust testbed for evaluating emergent, efficient intelligence under adversarial pressure. 
+
+Detailed Game-Theoretic Formalization of MAS-HQ 
+
+In this appendix, we provide a comprehensive formaliza-tion of the MAS-HQ framework. We model the system as a two-player, general-sum, finite-horizon, Partially Observable Stochastic Game (POSG), which is a standard and powerful model for multi-agent interactions under uncertainty. This level of detail clarifies the precise mechanics and strategic complexities that the agents must navigate. A POSG can be formally defined by the tuple G =
+
+⟨N , S, {A j }j∈N , T , R, {Ωj }j∈N , O, H ⟩. We define each component in the context of MAS-HQ. 
+
+Core Components of the MAS-HQ Game 
+
+Players ( N ): The set of players is N = {A, B }, represent-ing the two competing Q-Agents. 
+
+State Space ( S): The global state space S captures the complete, objective state of the game at any time step. A state si ∈ S at step i is a composite tuple: 
+
+si = ( sAi , s Bi , I i)
+
+where Ii tracks the current passage index for each agent, and 
+
+sji is the private state of agent j, invisible to its opponent. This private state is itself a detailed record of performance and resource expenditure: 
+
+sji = ⟨{ Hjk }Nk=1 , {Cjk}Nk=1 , pji , ρ ji , t ji ⟩
+
+• {Hjk }Nk=1 is the vector of H-Scores for all passages, with entries for unprocessed passages set to a null value. 
+
+• {Cjk}Nk=1 is the vector of completion statuses for all pas-sages (e.g., not started, summarized, reviewed). 
+
+• pji is the vector of cumulative resource penalties incurred up to step i, including token counts, API calls, etc. 
+
+• ρji is the number of remaining review cycles available to agent j.
+
+• tji is the cumulative runtime for agent j.
+
+Action Space ( A): The joint action space is A = AA ×AB . At any step i, each agent j selects an action aji ∈ A j =
+
+{continue , review k, end }, where k ∈ { 1, ..., N } spec-ifies which passage to review. The Policy Agent’s decision maps to one of these grounded actions. 
+
+Transition Function ( T ): The transition function T : S × A → ∆( S) defines the dynamics of the game, specifying the probability P (si+1 |si, ai) of transitioning to state si+1 
+
+given the current state si and joint action ai = ( aAi , a Bi ).Most transitions are deterministic (e.g., choosing ‘continue‘ increments the passage index). However, stochasticity arises from the ‘review‘ action, where the resulting H-Score jk, new 
+
+is a random variable conditioned on the Review Agent’s capabilities and the passage complexity. 
+
+Reward Function ( R): The game has a terminal reward structure. For any non-terminal step i < H , the immediate reward for each player is zero. The reward function R : S → 
+
+R|N | is defined as: 
+
+Rj (si) = 
+
+(0 if i < H 
+
+> 1
+> N
+
+PNk=1 
+
+
+
+α · Hjk − β · P jk (pjH , p−jH )
+
+
+
+if i = H
+
+where H is the horizon (total number of passages, N ), and the penalty P jk is computed based on the final resource vectors 
+
+pjH and p−jH of both agents, reflecting the normalization step described in the main text. 
+
+Observation Spaces ( Ω) and Observation Function ( O): 
+
+This is the core of the imperfect information structure. Each agent j has a private observation space Ωj . The observation function O : S × A → ∆(Ω A × ΩB ) gives the probability 
+
+P (oi+1 |si+1 , ai) of the agents observing a joint observation 
+
+oi+1 = ( oAi+1 , o Bi+1 ) after a transition. An observation oji ∈
+
+Ωj is defined as: 
+
+oji = ( sji , ω ji )
+
+• sji is the agent’s own private state, which it always ob-serves. 
+
+• ωji is the signal received from the opponent. The ob-servation function is designed to implement the "vision mechanism": 
+
+ωji =
+
+ϕ(s−ji ) if a−ji−1 ∈ { review k}Nk=1 
+
+∅ otherwise where ϕ(s−ji ) is a function that extracts a public snapshot of the opponent’s state (e.g., their worst H-Score and total tokens used). 
+
+Beliefs, Policies, and Equilibrium 
+
+Histories and Belief States: Since each agent cannot ob-serve the full state si, it must maintain a belief over the possible states of the opponent. An agent j’s history is a sequence of its past actions and observations, hji =(aj
+
+> 0
+
+, o j
+
+> 1
+
+, . . . , a ji−1, o ji ). A belief state bji ∈ B j = ∆( S) is a probability distribution over the global state space S, condi-tioned on the agent’s private history hji . The belief is updated recursively using the Bayes filter: 
+
+bji (s′) = P (oji |s′, a ji−1, b ji−1) P 
+
+> s∈S
+
+P (s′|s, a ji−1, π −j∗)bji−1(s)
+
+P (oji |aji−1, b ji−1)
+
+where the update depends on the observation function, the transition function, and a model of the opponent’s policy 
+
+π−j∗.
+
+Policies and Value Functions: A policy πj : Bj →
+
+∆( Aj ) maps an agent’s belief state to a distribution over its actions. A rational agent seeks a policy that maximizes its expected terminal utility. This can be solved via dynamic programming over the belief space. The value of a belief state for agent j at step i under a policy profile (πj , π −j ) is given by the Bellman equation: 
+
+max   
+
+> aj∈A j
+
+Rj (b, a j ) + X 
+
+> oj∈Ωj
+
+P (oj |b, a j , π −j )V ji+1 (τ (b, a j , o j , π −j )) 
+
+!
+
+where Rj (b, a j ) = P 
+
+> s∈S
+
+b(s)Rj (s, a j ) is the expected im-mediate reward, and τ (·) is the belief update function. Perfect Bayesian Equilibrium (PBE): The central solu-tion concept for this game is the PBE. A PBE is a strategy profile (πA∗, π B∗) and a system of beliefs μ∗ such that: 1. Sequential Rationality: For each player j, the policy πj∗
+
+must be a best response to π−j∗ at every possible belief state b ∈ B j that can be reached under the equilibrium strategies. That is, πj∗ must satisfy the Bellman optimal-ity equation above. 2. Belief Consistency: The beliefs μ∗ must be derived from the strategy profile (πA∗, π B∗) using Bayesian updating, wherever possible. The strategic decision to ‘review‘ is thus a compar-ison between the expected values Qj (b, review ) and 
+
+Qj (b, continue ). The ‘review‘ action may increase the immediate components of the final utility (by improving an 
+
+H-Score ) but incurs two costs: (1) a direct resource penalty captured by T and R, and (2) a strategic information cost, as revealing information through O allows the opponent to form a more accurate belief b−j , leading to a more effective counter-strategy π−j∗, thereby reducing player j’s future ex-pected utility. MAS-HQ is designed to create an environment where these complex, interdependent calculations are neces-sary for victory, thus providing a deep and holistic benchmark of strategic agent intelligence. 
+
+More Ablation Studies 
+
+Influence of Hyperparameters T and R Within the Q-Agent framework, the threshold for review guidance T and the maximum number of review times R are critical hy-perparameters. R limits the review investment per passage, encouraging broader resource allocation. T influences the Policy Agent’s decision to review by providing a recommen-dation if a passage’s H-Score falls below this threshold (and 
+
+R is not exceeded), aiming to maintain a baseline level of factual consistency. 
+
+Threshold T : We fixed R = 3 and varied T ∈{0.8, 0.85 , 0.9}. As shown in Table 10, increasing T gener-ally leads to higher resource consumption. As T rises, more passages are likely to fall below the threshold, triggering more review recommendations and, consequently, actual re-views by the Policy Agent. This was observed as an increase in total resource usage for both Q-Agent A and B. But a higher 
+
+T does not automatically guarantee a significantly improved 
+
+H-Score or final Q-Score . The experiments showed that while resource consumption increased with T , the H-Score 
+
+did not exhibit a corresponding significant rise and, in some instances, slightly decreased. This led to a marginal decrease in the final Q-Score . This phenomenon could be attributed to two factors: (i) the Policy Agent may still opt against review-ing despite the recommendation if its internal logic deems the current H-Score sufficient relative to costs, or (ii) exces-sive reviews on already reasonably good summaries might yield diminishing returns on H-Score improvement. 
+
+Maximum Review Times R: We fixed T = 0 .85 and varied R ∈ { 2, 3, 4}. As shown in Table 11, increasing R
+
+beyond a certain point ( R = 3 in our tests) showed minimal impact on H-Score and overall resource consumption; token consumption even saw a slight decrease. The final Q-Score 
+
+was highest when R = 3 , suggesting that simply allowing more reviews per article does not compel Policy Agent to utilize them if it deems further reviews unnecessary or ineffi-cient. A limit of R = 3 appeared sufficient for the Q-Agents to achieve a good balance, and further increasing R did not lead to proportionally more reviews or better H-Scores , thus avoiding unproductive resource expenditure. Table 10: Effect of Hallucination Threshold (T ). Results evaluate Q-Agent (built with GPT-4o-mini) performance and resource consumption with a fixed number of allowed re-views (R = 3) and varying T ∈ { 0.8, 0.85 , 0.9}. As T
+
+increases, resource consumption rises but leads to a slight decrease in H-Score and overall Q-Score.                                                                      
+
+> Q-Agent Competition Metrics
+> H-Score ↑API Call ↓Tokens ↓Reviews ↓Time ↓Q-Score ↑Winner A: R= 3 , T = 0 .80.9110 2401 1.33M 785 7.03k 0.5241 ✓
+> B: R= 3 , T = 0 .80.9141 2422 1.41M 806 7.33k 0.5141 A: R= 3 , T = 0 .85 0.9103 2417 1.36M 791 8.83k 0.5217 ✓
+> B: R= 3 , T = 0 .85 0.9132 2438 1.44M 812 8.99k 0.5132 A: R= 3 , T = 0 .90.9074 2427 1.39M 807 9.10k 0.5132 ✓
+> B: R= 3 , T = 0 .90.9113 2429 1.46M 809 9.20k 0.5113
+
+Table 11: Effect of Maximum Allowed Reviews (R). Re-sults evaluate Q-Agent (built with GPT-4o-mini) perfor-mance and resource consumption with a fixed hallucination score threshold (T = 0 .85) and varying R ∈ { 2, 3, 4}. In-creasing R beyond 3 does not significantly alter H-Score or resource consumption, with the highest overall Q-Score observed at R = 3 .                                                                     
+
+> Q-Agent Competition Metrics
+> H-Score ↑API Call ↓Tokens ↓Reviews ↓Time ↓Q-Score ↑Winner A: T= 0 .85 , R = 2 0.9074 2414 1.39M 798 6.83k 0.5139 ✓
+> B: T= 0 .85 , R = 2 0.9089 2423 1.24M 807 7.04k 0.5089 A: T= 0 .85 , R = 3 0.9103 2417 1.36M 791 8.83k 0.5217 ✓
+> B: T= 0 .85 , R = 3 0.9132 2438 1.45M 812 8.99k 0.5132 A: T= 0 .85 , R = 4 0.9101 2417 1.36M 799 8.15k 0.5197 ✓
+> B: T= 0 .85 , R = 4 0.9112 2426 1.45M 808 8.32k 0.5112
+
+Statistical Robustness. To address the concern regarding the robustness of our findings, we re-ran the GPT-4o-mini experiment for 100 independent trials. The results, reported in Table 12 with means and standard deviations, confirm the stability and statistical significance of our conclusions. The extremely low standard deviations across all metrics indi-cate that the strategic trade-offs captured by our framework are highly consistent. The outcome—Q-Agent A winning via resource efficiency—is reproducible, validating that our single-run experiments reliably represent the agents’ behav-iors. Table 12: Statistical Robustness Analysis. Mean and stan-dard deviation over 100 independent trials of the GPT-4o-mini competition. The low variance across all metrics con-firms the stability and reproducibility of our findings.                          
+
+> Q-Agent Competition Metrics (Mean ±Std. Dev.)
+> H-Score ↑API Calls ↓Tokens ↓Reviews ↓Time (s) ↓Q-Score ↑
+> A: GPT-4o-mini 0.9102 ±.0009 2417 ±51.36M ±.001M 791 ±58.83k ±.05k 0.5216 ±.0009 B: GPT-4o-mini 0.9132 ±.0009 2438 ±51.44M ±.001M 812 ±58.98k ±.05k 0.5131 ±.0009
+
+Prompts and Other Results 
+
+In the appendix, we first present the prompt composition of each module in the Q-Agent. Table 13 shows the detailed results in the main text, with the addition of the changes in H-Score before and after review, and input tokens con-sumption and output tokens consumption; Table 14 presents the detailed results of Tables 10 and Table 11 in the main text, also including the changes in H-Score before and after review. 
+
+User Prompt for Q-Agent in MAS-HQ 
+
+# Policy Agent 
+
+You are part of a Multi-Agent System engaged in a summa-rization competition against several opponents, where each agent generates multiple candidate summary texts based on the original news article. The objective is to produce summaries with the lowest pos-sible hallucination (i.e., highest factual consistency, reflected in higher hallucination scores) while minimizing resource us-age—including API calls, token consumption, time, and re-view attempts, all of which are penalized when excessive. Your ultimate goal is to outperform your competitors by achieving the best balance between factual accuracy and re-source efficiency, and to emerge as the final winner. Your role is to make strategic decisions about what to do next. Here is your current status: - MAS ID: {mas_id} - Completed texts: {completed_texts}/{total_texts} - Remaining texts: {remaining_texts} - Current token usage: {token_usage} tokens - API calls made: {api_calls} - Review calls made: {review_calls} - Current average hallucination score: {avg_score} - Time elapsed: {time_elapsed:.2f} seconds You need to decide whether to: - CONTINUE: Process the next text and generate a new sum-mary - REVIEW: Revisit and improve the text with the highest hallucination rate (lower hallucination score means more hal-lucination) - END: Stop processing if all texts have been summarized and there’s no need for review The current text summarization task is at ID {current_id} out of {max_id} texts. The text with the highest hallucination rate so far is ID {worst_id}, with hallucination score: {worst_score}, where 0 means most hallucinated and 1 means least hallucinated. {opponent_info} IMPORTANT: You must output your decision in the following JSON format: 
+
+‘‘‘ {"choice": "continue" or "review" or "end ", "question_id": current question ID, "previous_id": ID of the text with highest hallucination rate }‘‘‘ 
+
+# Summary Agent 
+
+You are a chat bot answering questions using data. You must stick to the answers provided solely by the text in the passage provided. You are asked the question ’Provide a concise summary of the following passage, covering the core pieces of information described.’ {passage} IMPORTANT: You must output your response in the following JSON format: 
+
+‘‘‘ {"summary": "your summary here" }‘‘‘ 
+
+# Review Agent 
+
+You are a chat bot answering questions using data. You must stick to the answers provided solely by the text in the passage provided. You previously summarized the following passage, but your summary contained hallucinations (hallucination score: {score}, where 0 means most hallucinated and 1 means least hallucinated), which means factual inconsistencies occurred. Original passage: {passage} Your previous summary: {previous_summary} Please provide a new, more accurate summary that strictly adheres to the information in the passage. Focus on improving factual consistency and removing any information not present in the original text. IMPORTANT: You must output your response in the following JSON format: 
+
+‘‘‘ {"summary": "your revised summary here" }‘‘‘ 
+
+Table 13: The detailed data including H-Score before the review (to the left of the arrow) and after the review (to the right of the arrow), as well as the input tokens and output tokens.                                                                                                                                            
+
+> Q-Agent Competition Metrics
+> H-Score ↑API Call ↓In Tokens ↓Out Tokens ↓Reviews ↓Time ↓Q-Score ↑
+> A: GPT-4o-mini 0.8606 →0.9103 2417 1193792 166277 791 8832.44 0.8715 B: GPT-4o-mini 0.8673 →0.9132 2438 1270282 178959 812 8987.41 0.5132 A: Qwen-Max 0.8689 →0.9030 2304 1230775 254575 682 13776.31 0.5101 B: Qwen-Max 0.8658 →0.8994 2264 1250367 270670 642 14453.96 0.5070 A: Deepseek-V3 0.8489 →0.8860 2292 1219960 202441 666 12267.18 0.4860 B: Deepseek-V3 0.8504 →0.8894 2233 1185813 198797 607 12068.32 0.5051 A: Gemini-2.0-flash 0.8835 →0.9026 2262 1173195 394719 642 20295.29 0.5026 B: Gemini-2.0-flash 0.8794 →0.9016 2157 1150648 379961 537 19825.70 0.5273 A: Grok-3-Beta 0.8753 →0.9070 2376 1180401 195116 750 10719.56 0.5070 B: Grok-3-Beta 0.8743 →0.9049 2253 1160176 188357 627 10150.14 0.5337 A: GPT-4o-mini 0.8613 →0.9105 2401 1177136 165320 785 6543.14 0.5401 B: Grok-3-Beta 0.8752 →0.9035 2177 1121979 178422 561 9294.05 0.5445 A: Grok-3-Beta 0.8730 →0.9036 2312 1161825 187466 696 10082.70 0.5278 B: GPT-4o-mini 0.8566 →0.9092 2422 1256067 178474 806 6783.37 0.5419
+
+Then, we present the pseudocode implemented by Q-Agent on MAS-HQ in Algorithm 1. Table 14: The detailed data in Table 10 and Table 11 include 
+
+H-Score before the review (to the left of the arrow) and after the review (to the right of the arrow), as well as the input tokens and output tokens.                                                                                                                                                              
+
+> Q-Agent Competition Metrics
+> H-Score ↑API Call ↓In Tokens ↓Out Tokens ↓Reviews ↓Time ↓Q-Score ↑
+> A: R= 3 , T = 0 .80.8653 →0.9110 2401 1173893 164656 785 7025.22 0.5241 B: R= 3 , T = 0 .80.8626 →0.9141 2422 1239197 175090 806 7334.55 0.5141 A: R= 3 , T = 0 .85 0.8606 →0.9103 2417 1193792 166277 791 8832.44 0.5217 B: R= 3 , T = 0 .85 0.8673 →0.9132 2438 1270282 178959 812 8987.41 0.5132 A: R= 3 , T = 0 .90.8621 →0.9074 2427 1221860 169344 807 9101.14 0.5132 B: R= 3 , T = 0 .90.8554 →0.9113 2429 1275735 179762 809 9201.04 0.5113 A: R= 2 , T = 0 .85 0.8598 →0.9074 2414 1221271 174944 798 6836.23 0.5139 B: R= 2 , T = 0 .85 0.8588 →0.9089 2423 1248994 178067 807 7043.92 0.5089 A: R= 3 , T = 0 .85 0.8606 →0.9103 2417 1193792 166277 791 8832.44 0.5217 B: R= 3 , T = 0 .85 0.8673 →0.9132 2438 1270282 178959 812 8987.41 0.5132 A: R= 4 , T = 0 .85 0.8620 →0.9101 2417 1193519 162816 799 8153.87 0.5197 B: R= 4 , T = 0 .85 0.8599 →0.9112 2426 1268954 176334 808 8321.54 0.5112
+
+Algorithm 1 MAS-HQ multi-agent evaluation and compe-tition. Each agent sequentially summarizes passages while minimizing hallucination and managing resources. Review actions reveal partial state to opponents, introducing adver-sarial strategy. 
+
+Input : Passages Ti, i = 1 to N ; Q-Agents A and B; Hallucination scoring model 
+
+Output : Global scores QA, QB for both agents 
+
+1: for each agent A ∈ { Agent A , Agent B } do 
+
+2: Initialize self-state V self 
+
+1
+
+3: for each article Ti in order determined by agent (A: 
+
+i = 1 ..N , B: i = N.. 1) do 
+
+4: // Policy decision with optional opponent state 
+
+5: if A has received V opponent i then 
+
+6: choice i ← PA( Ti, V self i , V opponent i )
+
+7: else 
+
+8: choice i ← PA( Ti, V self i )
+
+9: end if 
+
+10: if choice i = continue then 
+
+11: Generate summary Si ← SA( Ti)
+
+12: else if choice i = review then 
+
+13: Identify worst summary Sw based on hallucina-tion score 
+
+14: Generate revised summary Sw ← RA( Tw, S w)
+
+15: // Referee exposes partial state to opponent 
+
+16: Referee observes V self i and shares with opponent as V opponent i+1 
+
+17: else if choice i = end then 
+
+18: Terminate processing 
+
+19: break 
+
+20: end if 
+
+21: // Evaluation step 
+
+22: Compute hallucination score Hi ← EA( Ti, S i)
+
+23: Track resource usage: tokens, time, reviews → Pi
+
+24: // Update self-state 
+
+25: Update V self i+1 with current metrics 
+
+26: end for 
+
+27: // Compute final global score 
+
+28: QA = 1
+
+N
+
+PNi=1 (α · Hi − β · Pi)
+
+29: end for 
+
+30: return QA, QB
