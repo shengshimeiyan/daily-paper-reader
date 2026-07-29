@@ -6,49 +6,41 @@
 </div>
 
 ## 每次日报
-- 最新运行日期：2026-07-28
-- 运行时间：2026-07-28 21:30:51 UTC
+- 最新运行日期：2026-07-29
+- 运行时间：2026-07-29 21:35:31 UTC
 - 运行状态：成功
-- 本次总论文数：9
-- 精读区：6
-- 速读区：3
+- 本次总论文数：6
+- 精读区：0
+- 速读区：6
 
 ### 今日简报（AI）
-今日精读6篇速读3篇，重磅聚焦大模型幻觉检测与智能体记忆防污染。
-最值得关注：利用谱隐状态信号精准检测大模型幻觉（D-Score），以及通过自一致性准入控制有效防止智能体记忆污染（ConsistencyGate）。
-建议关注大模型可靠性提升方案，了解如何让AI在复杂任务中既不“胡编乱造”也不“记忆错乱”。!
-- 详情：[/202607/28/README](/202607/28/README)
+1) 今日速读6篇前沿论文，聚焦多模态大模型鲁棒性增强与复杂文档理解新框架。
+2) 视觉Token压缩能显著提升多模态大模型鲁棒性，认知解耦与语义裁剪则是突破复杂文档理解瓶颈的关键。
+3) 建议关注这些“减负”与“拆解”技术如何让AI在处理图文长文档时更稳、更准。
+- 详情：[/202607/29/README](/202607/29/README)
 
 ### 精读区论文标签
-1. [D-Score: A Spectral Hidden-State Signal for Hallucination Detection in Large Language Models](/202607/28/2607.24586v1-d-score-a-spectral-hidden-state-signal-for-hallucination-detection-in-large-language-models)  
-   标签：评分：9.0/10、query:llm-halluc
-   evidence：使用隐藏激活进行大模型幻觉检测
-2. [ConsistencyGate: Preventing Memory Contamination in LLM Agents via Self-Consistency Admission Control](/202607/28/2607.22962v1-consistencygate-preventing-memory-contamination-in-llm-agents-via-self-consistency-admission-control)  
-   标签：评分：8.0/10、query:llm-halluc
-   evidence：通过自一致性准入控制缓解LLM智能体中的幻觉事实
-3. [Attention-Guided Layer Selection for Contrastive Decoding in Large Language Models](/202607/28/2607.23067v1-attention-guided-layer-selection-for-contrastive-decoding-in-large-language-models)  
-   标签：评分：8.0/10、query:llm-halluc
-   evidence：通过注意力引导的对比解码提升大模型事实性并缓解幻觉
-4. [Hallucination Rates in Language Generation](/202607/28/2607.23361v1-hallucination-rates-in-language-generation)  
-   标签：评分：8.0/10、query:llm-halluc
-   evidence：语言生成中幻觉率的形式化研究
-5. [Reality Monitoring in Large Language Models: Self-Knowledge That Transforms with Conversation Memory](/202607/28/2607.23927v1-reality-monitoring-in-large-language-models-self-knowledge-that-transforms-with-conversation-memory)  
-   标签：评分：8.0/10、query:llm-halluc
-   evidence：现实监控失败与大语言模型幻觉相关
-6. [The Cost of Knowing: A Resource-Aware Protocol for Benchmarking Hallucination Beyond Static Leaderboards](/202607/28/2607.24063v1-the-cost-of-knowing-a-resource-aware-protocol-for-benchmarking-hallucination-beyond-static-leaderboards)  
-   标签：评分：8.0/10、query:llm-halluc
-   evidence：基准测试大模型幻觉与事实性
+- 本次无精读推荐。
 
 ### 速读区论文标签
-1. [DeepFaith: Evidence-Grounded LLMs for Faithful Incident Reporting in Multi-Stage APT Defense](/202607/28/2607.24348v1-deepfaith-evidence-grounded-llms-for-faithful-incident-reporting-in-multi-stage-apt-defense)  
-   标签：评分：8.0/10、query:llm-halluc
-   evidence：通过证据对齐缓解大模型报告生成中的幻觉
-2. [DICA: Dual-Indicator Guided Contrastive Alignment in Multimodal Large Language Models](/202607/28/2607.23944v1-dica-dual-indicator-guided-contrastive-alignment-in-multimodal-large-language-models)  
+1. [Visual Token Compression Enhances Robustness of MLLMs](/202607/29/2607.22716v1-visual-token-compression-enhances-robustness-of-mllms)  
+   标签：评分：7.0/10、query:llm-halluc
+   evidence：通过视觉Token剪枝缓解多模态大模型幻觉
+2. [CONSISTRE: A Unified Consistency-Aware Framework for Document-Level Relation Extraction with Large Language Models](/202607/29/2607.24312v1-consistre-a-unified-consistency-aware-framework-for-document-level-relation-extraction-with-large-language-models)  
+   标签：评分：7.0/10、query:llm-halluc
+   evidence：在文档级LLM提取中保持一致性并避免矛盾输出
+3. [DeCoRAG: Cognitive Decoupling and Semantic-Aware Cropping for Complex Document Understanding](/202607/29/2607.24554v1-decorag-cognitive-decoupling-and-semantic-aware-cropping-for-complex-document-understanding)  
+   标签：评分：7.0/10、query:llm-halluc
+   evidence：缓解多模态图RAG中的灾难性幻觉
+4. [Rethinking CD: A Reproducibility Study and Extension on the Ineffectiveness of Contrastive Decoding at Mitigating Object Hallucinations in MLLMs](/202607/29/2607.25196v1-rethinking-cd-a-reproducibility-study-and-extension-on-the-ineffectiveness-of-contrastive-decoding-at-mitigating-object-hallucinations-in-mllms)  
+   标签：评分：7.0/10、query:llm-halluc
+   evidence：缓解多模态大模型中的物体幻觉
+5. [Towards Faithful Sentimental Image Captioning via Evidence-Aware Multi-Agent Reasoning](/202607/29/2607.25789v1-towards-faithful-sentimental-image-captioning-via-evidence-aware-multi-agent-reasoning)  
+   标签：评分：7.0/10、query:llm-halluc
+   evidence：通过多智能体推理缓解图像描述中的幻觉
+6. [Melo: A Production LLM-Powered Music Recommendation Agent](/202607/29/2607.23718v1-melo-a-production-llm-powered-music-recommendation-agent)  
    标签：评分：6.0/10、query:llm-halluc
-   evidence：通过指标跟踪缓解多模态大语言模型中的幻觉
-3. [Evidence Attribution in Visual Document Understanding without Coordinates or Region Labels](/202607/28/2607.24651v1-evidence-attribution-in-visual-document-understanding-without-coordinates-or-region-labels)  
-   标签：评分：6.0/10、query:llm-halluc
-   evidence：研究与缓解视觉语言模型中的归因幻觉
+   evidence：通过推理时实体接地缓解LLM智能体中的实体幻觉
 
 
 <div class="dpr-home-promo-card">

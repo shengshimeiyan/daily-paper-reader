@@ -1,0 +1,1275 @@
+Title: Rethinking CD: A Reproducibility Study and Extension on the Ineffectiveness of Contrastive Decoding at Mitigating Object Hallucinations in MLLMs
+
+URL Source: https://arxiv.org/pdf/2607.25196v1
+
+Published Time: Wed, 29 Jul 2026 00:24:15 GMT
+
+Number of Pages: 42
+
+Markdown Content:
+# Rethinking CD: A Reproducibility Study and Extension on the Ineffectiveness of Contrastive Decoding at Mitigating Object Hallucinations in MLLMs 
+
+Arnav Bendre 1 arnav_b@hre.iitr.ac.in Department of Hydro and Renewable Energy Indian Institute of Technology, Roorkee 
+
+Guneesh Gupta 1 guneesh_g@ee.iitr.ac.in Department of Electrical Engineering Indian Institute of Technology, Roorkee 
+
+Kavish Grover 1 kavish_g@me.iitr.ac.in Department of Mechanical Engineering Indian Institute of Technology, Roorkee 
+
+Chayan Aggarwall 1 chayan_a@ma.iitr.ac.in Department of Mathematics Indian Institute of Technology, Roorkee 
+
+Shreyansh Modi 2 shreyansh_m@ee.iitr.ac.in Department of Electrical Engineering Indian Institute of Technology, Roorkee 
+
+Abstract 
+
+Contrastive decoding (CD) (Li et al., 2023a) has been proposed as a training-free strategy for mitigating object hallucinations in multimodal large language models (MLLMs), with reported gains on benchmarks such as POPE (Li et al., 2023b). However, recent work has questioned whether these gains reflect genuine improvements in visual grounding. In this study, we reproduce and extend the findings of “The Mirage of Performance Gains: Why Contrastive Decoding Fails to Mitigate Object Hallucinations in MLLMs.” (Yin et al., 2026). Specifically, we test the claim that CD induces a unidirectional output distribution shift in discriminative datasets and examine its generalizability across datasets. We also verify that the adaptive plausibility constraint (APC) reduces sampling to greedy search on both discriminative and generative benchmarks. Beyond reproduction, we rigorously study the effects of CD across generative and discriminative datasets. We conduct several experiments that provide additional insights: we analyze the logit distributions induced by different CD strategies on generative datasets, propose a proxy method and compare its performance against CD techniques, and investigate how hallucination signals propagate through each layer of the expert and amateur models. Experimental results across MME, POPE, and CHAIR using LLaVA and Qwen validate the original claims and show that the apparent improvements from CD are often spurious and do not consistently translate into stronger visual grounding for reducing hallucinations. These findings challenge the effectiveness of current contrastive decoding strategies and motivate the development of more reliable approaches for mitigating hallucinations in MLLMs. 
+
+> 1Contributed equally.
+> 2Contributed equally.
+
+1arXiv:2607.25196v1 [cs.LG] 28 Jul 2026 1 Introduction 
+
+The advent of large Vision-Language Models (VLMs)(Bordes et al., 2024) significantly transformed the field of computer vision by enabling a wide range of tasks, including image classification, captioning, and visual question answering, with recent open-source suites narrowing the gap to commercial multimodal systems. Despite these advances, VLMs and multimodal large language models (MLLMs) (Liang et al., 2025) still hallucinate by generating outputs that are unsupported by the visual input. Rohrbach et al. (2019) identify object hallucinations as a key failure mode, and show that models may incorrectly affirm objects that are absent from an image. Such errors reflect weak visual grounding and can be risky in high-stakes settings such as autonomous driving and healthcare. Recent mitigation work includes robust instruction tuning and hallucination detection methods. Contrastive Decoding (CD) (Li et al., 2023a) is a training-free inference strategy for reducing hallucinated generations. Rather than updating model parameters, CD contrasts predictions from the original visual input with a hallucination-prone counterpart and suppresses tokens favored mainly by the latter. Methods such as Visual Contrastive Decoding (Leng et al., 2023), Instruction Contrastive Decoding (Wang et al., 2024), and Self-Introspective Decoding (Huo et al., 2025) instantiate this idea with different contrastive signals. This motivates our evaluation of whether CD genuinely improves visual grounding in MLLMs. Yin et al. (2026) question whether CD genuinely reduces object hallucinations in MLLMs. Unlike prior evaluations that interpret gains on benchmarks such as POPE as evidence of better visual grounding, they show that these improvements can arise from misleading decoding effects, including unidirectional shifts in output distributions and the adaptive plausibility constraint. They further introduce spurious-improvement baselines that reproduce CD-like gains without directly addressing hallucination. We therefore conduct a reproducibility study of their analysis and extend it to additional models to evaluate whether CD’s gains reflect true hallucination mitigation. Our work aims to address the following goals: 
+
+• [Reproducibility Study] Reproducing the results from the original paper: We reproduce and verify the two central claims of Yin et al. (2026) on newer models (LLaVA-v1.5-7B, LLaVA-v1.5-13B, and Qwen2.5-VL-7B) and across POPE (GQA, MSCOCO, A-OKVQA), MME, and CHAIR. First, we confirm that contrastive decoding induces a unidirectional bias toward “Yes” outputs whose accuracy gains are matched, or exceeded, by non-visual controls (PBA, OLM). Second, we verify that the adaptive plausibility constraint, applied in isolation, degrades sampling into an approximation of greedy search and recovers most of CD’s reported improvement. 
+
+• [Extended Work] Decomposing spurious gains and stress-testing label balance: Moving past aggregate accuracy, we decompose the No →Yes flips induced by CD into genuine corrections and injected hallucinations, reporting flip precision, TP recall, and a hallucination-injection rate, and show that the non-visual controls are statistically indistinguishable from actual CD methods. We further stress-test discrimination with 25/75 and 75/25 label-ratio variants of POPE evaluated under a balanced-accuracy metric, demonstrating that CD’s apparent gains track the class balance rather than any genuine improvement in visual grounding. 
+
+• [Extended Work] Generation-level analysis of the plausibility constraint: Using the Jac-card similarity between decoding outputs, we provide direct, generation-level evidence that raising the adaptive plausibility threshold progressively converts sampled generations into greedy ones, that the pull is specifically toward greedy rather than toward a typical sample, and that at the small thresholds real methods use, VCD’s output is already dominated by the inherited greedy-biasing mask rather than the contrastive image term. 
+
+• [Extended Work] Mechanistic dissection of whether and where CD intervenes: Through logit-level analyses of the expert, amateur, and contrastive distributions, we show that the per-token contrastive adjustment d = E − A fails to selectively suppress hallucinated tokens, often amplifying them. We corroborate this with a novel Gaussian-noise proxy that discards the amateur branch 2entirely yet shows similar results to CD on CHAIR, and with a bucket analysis showing CD has almost no effect on hallucination mitigation. 
+
+• [Extended Work] Layer-wise logit-lens analysis of the decision: Using the logit lens over all transformer layers, we show that although object presence becomes linearly decodable from intermediate layers, CD’s shift is non-selective at every depth: it reinforces the false “Yes” for the vast majority of hallucinations and acts as a uniform translation of the Yes-vs-No margin rather than a correction of the mechanism that produces the hallucination. 
+
+2 Related Work 
+
+While object hallucination in Multimodal Large Language Models (MLLMs) has been widely studied since its identification by Rohrbach et al. (2019) and Dai et al. (2023) , the efficacy of training-free contrastive decoding strategies remains a critical point of contention. In this section, we review the progression of hallucination mitigation techniques focusing on VCD and SID and position the recent critique by Yin et al. (2026) within this broader context. 
+
+2.1 Hallucination in VLMs 
+
+Generation hallucinations have been extensively studied within the broader field of language modeling. Prior to the advent of Large Language Models (LLMs), the natural language processing community primarily defined hallucination as the generation of nonsensical content or outputs that strictly deviated from their source material. However, in the realm of Vision-Language Models (VLMs), this phenomenon is well-documented as “object hallucination” (Rohrbach et al., 2019). It manifests as detailed, fluent, and coherent responses that inaccurately reflect the visual context, yielding plausible outputs that include erroneous objects, attributes, and relations that do not match or are entirely missing from the images. Historically, mitigating object hallucination in traditional VLMs involved architectural interventions such as fine-grained contrastive learning (Liu et al., 2024), ROI feature fusion (Kuo et al., 2023), and the curtailment of co-occurrence patterns via data augmentation. Yet, the distinct training paradigms and model architec-tures characterizing contemporary Large Vision-Language Models (LVLMs) present unique complications. The transition to auto-regressive decoding approaches in modern LVLMs makes adapting these traditional strategies significantly more challenging. Consequently, modern auto-regressive models remain highly sus-ceptible to hallucinations driven by an over-reliance on unimodal language priors and underlying statistical biases. 
+
+2.2 Contrastive Decoding Strategies 
+
+A prominent, training-free approach to mitigating MLLM hallucinations is contrastive decoding, a paradigm that penalizes hallucination-prone tokens by comparing a model’s standard output probabilities against those generated under degraded conditions (Li et al., 2023a). Techniques in this vein generally operate by manipu-lating different input modalities to construct these penalized distributions. For instance, Visual Contrastive Decoding (VCD) applies noise to image inputs to counteract the model’s over-reliance on linguistic priors and statistical training biases. Conversely, Instruction Contrastive Decoding (ICD) alters textual prompts to intentionally expose and subsequently suppress multimodal misalignments. This underlying philosophy, isolating hallucinatory artifacts via input perturbation, has inspired a broad taxonomy of advanced variants, including Self-Introspective Decoding (SID) , Adaptive Focal-Contrast De-coding (HALC) (Chen et al., 2024) , and Visual Layer Fusion Contrastive Decoding (VaLiD) (Wang et al., 2025) . These techniques have seen widespread adoption primarily due to their state-of-the-art performance on discriminative evaluation metrics like the POPE benchmark. However, a central motivation of this re-producibility study is to rigorously test the validity of these techniques. As we will explore, the apparent quantitative gains achieved by these contrastive methods may represent superficial artifacts of the decoding constraints themselves, rather than a genuine resolution of object hallucination. 33 Scope of Reproducibility 
+
+This study aims to examine and validate the results demonstrated by Yin et al. (2026). Our primary objective is to confirm that the apparent performance improvements of contrastive decoding strategies are actually driven by blunt statistical adjustments rather than genuine hallucination mitigation, by meticulously reproducing their experimental procedures. The main claims we aim to verify are as follows: 
+
+• Claim 1: Contrastive decoding induces a unidirectional bias towards “Yes” outputs. 
+
+• Claim 2: Adaptive constraints deceptively degrade sampling into greedy search. 
+
+4 Methodology 
+
+This section describes the experimental methodology used to reproduce the central claims of Yin et al. (2026). Our goal is to evaluate whether contrastive decoding (CD) genuinely mitigates object hallucinations in multimodal large language models (MLLMs), or whether its reported gains mainly arise from shifts in the output distribution. Following the original study, we compare standard decoding and three contrastive decoding baselines against two deliberately spurious adjustment methods that alter the tendency to answer “Yes” or “No” without improving visual grounding. 
+
+4.1 Problem Formulation 
+
+Object hallucination refers to the failure mode in which an MLLM mentions, confirms, or reasons about objects that are not supported by the visual input. In the discriminative setting considered in the original study, this often appears as an incorrect affirmative response to a yes/no question about an absent object. In the generative setting, hallucination appears when a caption or free-form response contains objects that are not present in the image. Let v denote the visual input, x the textual instruction or question, and y = ( y1, . . . , y T ) the generated response. A standard MLLM parameterized by θ defines an auto-regressive distribution over output tokens as 
+
+pθ (y | v, x ) = 
+
+> T
+
+∏
+
+> t=1
+
+pθ (yt | v, x, y <t ), (1) where y<t denotes the previously generated tokens. Vanilla decoding selects the next token directly from this distribution, either by greedy search or by sampling. This standard distribution serves as the reference point for evaluating whether contrastive decoding changes visual grounding or merely changes the model’s output preference. 
+
+4.2 Baseline Contrastive Methods 
+
+Vanilla decoding. Vanilla decoding uses the original MLLM distribution without constructing an auxil-iary or perturbed input. At each step, the model predicts the next token according to 
+
+pθ (yt | v, x, y <t ) = softmax( zθ (yt | v, x, y <t )) , (2) where zθ denotes the logits produced by the model. Under greedy decoding, the output token is 
+
+arg max yt pθ (yt | v, x, y <t ).
+
+Contrastive decoding as an inference method. Contrastive decoding (CD) (Li et al., 2023a) is a training-free inference procedure that combines the next-token distributions of an expert model and a weaker, hallucination-prone amateur model. At each decoding step, CD rewards tokens supported by the expert 
+
+while penalizing tokens that are also favored by the amateur , with α controlling the strength of this penalty. An adaptive plausibility constraint further restricts generation to tokens that remain sufficiently likely under 4the expert distribution. CD therefore changes only the decoding rule and does not require parameter updates or additional training. The generic procedure is summarized in Algorithm 1. 
+
+Algorithm 1 Contrastive Decoding (CD) 
+
+Require: Trained model pθ with logit function ℓθ
+
+Require: Input x
+
+Require: Perturbation operator P(·)
+
+Require: Amplification factor α
+
+Require: Plausibility threshold β
+
+Require: Max decoding length Tx′ ← P (x) ▷ Construct perturbed counterpart of the input 
+
+y<1 ← ∅ 
+
+for t = 1 to T do 
+
+ℓorig ← ℓθ (yt | x, y <t ) ▷ Logits under original input 
+
+ℓpert ← ℓθ (yt | x′, y <t ) ▷ Logits under perturbed input 
+
+porig ← softmax( ℓorig )
+
+Vhead ← { yt : porig (yt) ≥ β · max w porig (w) } ▷ Adaptive plausibility constraint 
+
+s(yt) ← (1 + α) ℓorig (yt) − α ℓ pert (yt) ▷ Contrastive logit 
+
+yt ∼ softmax (s(·)) restricted to Vhead 
+
+if yt = <EOS> then break end if end for return y1: t
+
+Visual Contrastive Decoding. Visual Contrastive Decoding (VCD) (Leng et al., 2023) contrasts the output distribution conditioned on the original image with an amateur distribution conditioned on a visually perturbed image. Following the original method reproduced by Yin et al. (2026), the perturbed visual input is produced by adding visual Gaussian noise, yielding a degraded image v′. The contrastive logits are computed as 
+
+zvcd (yt) = (1 + α)zθ (yt | v, x, y <t ) − αz θ (yt | v′, x, y <t ), (3) where α is a hyperparameter controlling the strength of the perturbation, and the corresponding contrastive distribution is 
+
+pvcd (yt | v, v ′, x, y <t ) = softmax( zvcd (yt)) . (4) The intended effect is to suppress tokens that remain likely under the noisy visual condition and are therefore attributed to language priors rather than visual evidence. 
+
+Instruction Contrastive Decoding. Instruction Contrastive Decoding (ICD) (Wang et al., 2024) con-structs the amateur distribution by perturbing the instruction rather than the image. Specifically, the textual instruction is modified with negative prefixes to produce a hallucination-prone counterpart x′. ICD then contrasts the logits produced under the original instruction with those produced under the altered instruction: 
+
+zicd (yt) = (1 + α)zθ (yt | v, x, y <t ) − αz θ (yt | v, x ′, y <t ), (5) 
+
+picd (yt | v, x, x ′, y <t ) = softmax( zicd (yt)) . (6) This procedure treats the original instruction-conditioned model as the expert and the negatively prompted model as the amateur. 
+
+Self-Introspective Decoding. Self-Introspective Decoding (SID) (Huo et al., 2025) constructs the con-trastive signal internally from the same MLLM. The method adaptively prunes early decoder layers to isolate 5low-attention image tokens and obtain an amateur distribution that is intended to rely less on the relevant visual evidence. The contrastive logits are then formed analogously: 
+
+zsid (yt) = (1 + α)zθ (yt | v, x, y <t ) − αz amateur (yt | v, x, y <t ), (7) 
+
+psid (yt | v, x, y <t ) = softmax( zsid (yt)) . (8) Across VCD, ICD, and SID, the reproduced methodology treats CD as a logit-level contrast between an expert distribution and a hallucination-prone amateur distribution. 
+
+4.3 Adaptive Plausibility Constraint 
+
+The adaptive plausibility constraint (APC) (Li et al., 2023a) restricts the candidate next-token set to tokens that remain sufficiently likely under the original MLLM distribution. Its purpose is to prevent contrastive decoding from assigning high probability to implausible tokens that arise only from the logit subtraction. Following the original formulation, the head vocabulary at decoding step t is 
+
+Vhead (y<t ) = 
+
+{
+
+yt ∈ V : pθ (yt | v, x, y <t ) ≥ β max  
+
+> w∈V
+
+pθ (w | v, x, y <t )
+
+}
+
+, (9) where β is the truncation threshold and V is the vocabulary. The final contrastive distribution is truncated as 
+
+pcd (yt | v, x, y <t ) = 
+
+
+
+exp( zcd (yt)) 
+
+∑ 
+
+> w∈V head (y<t )
+
+exp( zcd (w)) , yt ∈ V head (y<t ),
+
+0, yt /∈ V head (y<t ).
+
+(10) Following the original paper, we reproduce the analysis showing that APC can reduce sampling-based CD to greedy-like decoding. Since APC assigns zero probability to tokens outside Vhead , sampling is restricted to the original model’s high-probability region and collapses when this set is dominated by the top token. This test helps determine whether CD gains stem from visual grounding or from the truncation constraint. 
+
+4.4 Spurious Improvement Methods 
+
+The original paper introduces spurious improvement methods to test whether CD gains arise from output-distribution shifts rather than improved visual grounding. In model–dataset settings with a strong “No” bias, CD’s unidirectional shift toward “Yes” can balance yes/no predictions and improve POPE scores without improving object recognition. The authors therefore compare CD against controls that induce similar distributional shifts without contrastive visual evidence. 
+
+Prompt-Based Adjustment. Prompt-Based Adjustment (PBA) modifies only the instruction. For each yes/no object-existence query, the prompt is augmented with the exact phrase “Answer Yes if possible.” This directly encourages affirmative responses and serves as a prompting-only baseline for testing whether CD-like gains can be obtained by changing the response prior. 
+
+Output Layer Modification. Output Layer Modification (OLM) operates at the final answer decision. Let pθ (Yes | v, x ) and pθ (No | v, x ) denote the model probabilities assigned to the two answer tokens. OLM changes the decision only for uncertain examples satisfying 
+
+|pθ (Yes | v, x ) − pθ (No | v, x )| < τ. (11) Within this margin, the output decision is adjusted to alter the yes/no distribution. We reproduce the authors’ PBA and OLM analyses to verify whether the reported CD improvements can be matched by these output-bias controls, supporting the claim that the gains are spurious rather than evidence of improved visual grounding. For conformity, we use τ as 0.5, as mentioned in the original code. 64.5 Experimental Settings and Datasets 
+
+To address model obsolescence, we evaluate LLaVA-v1.5-7B (Liu et al., 2023), LLaVA-v1.5-13B (Liu et al., 2023), and QwenVL-2.5-7B (Bai et al., 2025) in place of the models used in the original study. The original paper compares CD methods against vanilla decoding and forced distribution-adjustment methods on POPE; accordingly, we reproduce comparisons among vanilla decoding, VCD, ICD, SID, PBA, and OLM under the same object-hallucination evaluation framework. We also reproduce the standalone application of the adaptive plausibility constraint (APC) to isolate the effect of the constraint from the full CD objective. All the reproducibility experiments are conducted with the same hyperparameters and settings as the original paper and were all performed on an L4 GPU. The primary discriminative benchmark used is POPE, which evaluates object hallucination through binary object-presence questions of the form asking whether a queried object appears in the image. Each split is balanced between positive questions, where the queried object is present, and negative questions, where the queried object is absent; hallucination is reflected by incorrectly answering “Yes” to negative samples. We consider COCO-based (Lin et al., 2015), GQA-based (Hudson & Manning, 2019) and A-OKVQA-based (Schwenk et al., 2022) POPE subsets, each with random, popular, and adversarial splits. The random split samples absent objects uniformly, the popular split samples frequently occurring objects as negatives, and the adversarial split selects absent objects that are semantically or contextually likely to co-occur with the image content. This leads to the hallucinations in adversarial splits being more prevalent. In the COCO set-ting, these are COCO-Random, COCO-Popular, and COCO-Adversarial; the GQA and A-OKVQA subsets follow the same split structure. These subsets are central to the reproduction because the original analy-sis shows that different model–dataset pairs can exhibit inherent answer biases. Consequently, shifting the yes/no distribution toward a more balanced prediction profile can improve POPE scores without necessarily improving visual grounding. We also reproduce evaluations on MME (Fu et al., 2025) for broader discriminative assessment and CHAIR (Rohrbach et al., 2019)/LLaVA-Bench (Liu et al., 2023) for generative object-hallucination behavior. Across these settings, we evaluate greedy decoding and sampling, with particular attention to whether APC changes sampling-based CD into greedy-like decoding. This setup allows us to test whether CD’s reported gains persist across models, datasets, and decoding strategies, or whether they are better explained by output-distribution shifts and constraint effects. 
+
+5 Results and Analysis 
+
+As stated in Section 3, a major objective of our study is to reproduce the results and claims mentioned in the original study by Yin et al. (2026). This section details our efforts to replicate those findings and provides a comparative analysis of our reproduced results against the original paper. 
+
+5.1 Claim 1: Contrastive decoding induces a unidirectional bias toward “Yes” outputs [Partially Reproduced] 
+
+To evaluate the first claim of Yin et al. (2026), we test whether the apparent gains of contrastive decoding on POPE arise from a unidirectional adjustment of the output distribution, which simply biases the model towards producing more "Yes" outputs, leading to a balanced distribution on certain datasets. Table 1 shows accuracy, F1 score, and the proportion of Yes predictions for each decoding method across the Random, Popular, and Adversarial POPE subsets. We evaluate both LLaVA-v1.5-7B and Qwen2.5-VL-7B on POPE questions constructed from GQA, MSCOCO, and A-OKVQA images. Full experimental details are provided in section 4. The affirmative shift is most pronounced for LLaVA-v1.5-7B: VCD and SID consistently increase the Yes rate relative to greedy decoding, particularly on the Adversarial subset. OLM, despite being a non-visual control, produces shifts of comparable magnitude. The corresponding shifts for Qwen2.5-VL-7B are substantially smaller, indicating that the effect depends on both the decoding method and the underlying model. 7Table 1: Main values are percentages (POPE point estimates). Gray parenthetical values denote absolute percentage-point changes relative to greedy decoding within the same dataset, model, and subset. The highest accuracy and F1 score in each block are bold. 
+
+Random Popular Adversarial Dataset Model Method Acc. F1 Yes (%) Acc. F1 Yes (%) Acc. F1 Yes (%) 
+
+GQA LLaVA-7B Greedy 89.73 (0.00) 89.31 (0.00) 46.00 (0.00) 84.13 (0.00) 84.38 (0.00) 51.60 (0.00) 80.87 (0.00) 81.75 (0.00) 54.87 (0.00) 
+
+VCD 88.00 (-1.73) 88.26 (-1.05) 52.20 (+6.20) 81.97 (-2.16) 83.37 (-1.01) 58.43 (+6.83) 78.43 (-2.44) 80.78 (-0.97) 62.23 (+7.36) 
+
+ICD 89.27 (-0.46) 88.64 (-0.67) 44.47 (-1.53) 84.20 (+0.07) 84.14 (-0.24) 49.60 (-2.00) 81.07 (+0.20) 81.56 (-0.19) 52.67 (-2.20) 
+
+SID 89.03 (-0.70) 89.04 (-0.27) 50.10 (+4.10) 83.77 (-0.36) 84.58 (+0.20) 55.30 (+3.70) 79.73 (-1.14) 81.42 (-0.33) 59.07 (+4.20) 
+
+PBA 89.83 (+0.10) 89.73 (+0.42) 48.97 (+2.97) 83.27 (-0.86) 84.14 (-0.24) 55.53 (+3.93) 80.50 (-0.37) 81.99 (+0.24) 58.30 (+3.43) 
+
+OLM 88.93 (-0.80) 89.39 (+0.08) 54.33 (+8.33) 79.07 (-5.06) 81.67 (-2.71) 64.20 (+12.60) 75.07 (-5.80) 78.91 (-2.84) 68.20 (+13.33) 
+
+Qwen-7B Greedy 91.03 (0.00) 90.51 (0.00) 44.50 (0.00) 87.23 (0.00) 87.04 (0.00) 48.50 (0.00) 84.37 (0.00) 84.58 (0.00) 51.37 (0.00) 
+
+VCD 90.87 (-0.16) 90.37 (-0.14) 44.87 (+0.37) 86.33 (-0.90) 86.22 (-0.82) 49.20 (+0.70) 83.83 (-0.54) 84.09 (-0.49) 51.63 (+0.26) 
+
+ICD 90.67 (-0.36) 90.13 (-0.38) 44.53 (+0.03) 86.47 (-0.76) 86.23 (-0.81) 48.27 (-0.23) 83.87 (-0.50) 84.06 (-0.52) 51.20 (-0.17) 
+
+SID 91.17 (+0.14) 90.77 (+0.26) 45.70 (+1.20) 86.63 (-0.60) 86.66 (-0.38) 50.23 (+1.73) 84.07 (-0.30) 84.50 (-0.08) 52.80 (+1.43) 
+
+PBA 91.27 (+0.24) 90.79 (+0.28) 44.87 (+0.37) 87.20 (-0.03) 87.06 (+0.02) 48.93 (+0.43) 84.33 (-0.04) 84.61 (+0.03) 51.80 (+0.43) 
+
+OLM 92.07 (+1.04) 91.92 (+1.41) 48.20 (+3.70) 87.00 (-0.23) 87.41 (+0.37) 53.27 (+4.77) 84.23 (-0.14) 85.13 (+0.55) 56.03 (+4.66) 
+
+MSCOCO LLaVA-7B Greedy 87.03 (0.00) 85.54 (0.00) 39.70 (0.00) 85.93 (0.00) 84.51 (0.00) 40.80 (0.00) 83.40 (0.00) 82.20 (0.00) 43.27 (0.00) 
+
+VCD 88.23 (+1.20) 87.60 (+2.06) 44.90 (+5.20) 86.37 (+0.44) 85.98 (+1.47) 47.23 (+6.43) 82.37 (-1.03) 82.57 (+0.37) 51.17 (+7.90) 
+
+ICD 86.63 (-0.40) 84.93 (-0.61) 38.70 (-1.00) 85.30 (-0.63) 83.62 (-0.89) 39.77 (-1.03) 83.13 (-0.27) 81.61 (-0.59) 41.73 (-1.54) 
+
+SID 88.30 (+1.27) 87.42 (+1.88) 43.03 (+3.33) 85.97 (+0.04) 85.26 (+0.75) 45.23 (+4.43) 82.40 (-1.00) 82.15 (-0.05) 48.60 (+5.33) 
+
+PBA 88.17 (+1.14) 87.00 (+1.46) 41.03 (+1.33) 86.43 (+0.50) 85.38 (+0.87) 42.77 (+1.97) 83.73 (+0.33) 82.94 (+0.74) 45.33 (+2.06) 
+
+OLM 89.47 (+2.44) 88.99 (+3.45) 45.67 (+5.97) 87.17 (+1.24) 86.90 (+2.39) 47.97 (+7.17) 82.87 (-0.53) 83.24 (+1.04) 52.20 (+8.93) 
+
+Qwen-7B Greedy 88.57 (0.00) 87.23 (0.00) 39.57 (0.00) 87.57 (0.00) 86.27 (0.00) 40.57 (0.00) 86.70 (0.00) 85.49 (0.00) 41.63 (0.00) 
+
+VCD 89.03 (+0.46) 87.84 (+0.61) 40.17 (+0.60) 87.87 (+0.30) 86.73 (+0.46) 41.47 (+0.90) 86.80 (+0.10) 85.72 (+0.23) 42.47 (+0.84) 
+
+ICD 88.23 (-0.34) 86.80 (-0.43) 39.17 (-0.40) 87.17 (-0.40) 85.81 (-0.46) 40.43 (-0.14) 86.27 (-0.43) 84.97 (-0.52) 41.40 (-0.23) 
+
+SID 88.97 (+0.40) 87.78 (+0.55) 40.30 (+0.73) 87.70 (+0.13) 86.57 (+0.30) 41.57 (+1.00) 86.27 (-0.43) 85.23 (-0.26) 43.00 (+1.37) 
+
+PBA 89.00 (+0.43) 87.78 (+0.55) 40.00 (+0.43) 88.00 (+0.43) 86.81 (+0.54) 41.00 (+0.43) 87.00 (+0.30) 85.90 (+0.41) 42.20 (+0.57) 
+
+OLM 90.63 (+2.06) 89.85 (+2.62) 42.30 (+2.73) 89.33 (+1.76) 88.60 (+2.33) 43.60 (+3.03) 87.57 (+0.87) 86.97 (+1.48) 45.43 (+3.80) 
+
+A-OKVQA LLaVA-7B Greedy 88.83 (0.00) 88.31 (0.00) 45.50 (0.00) 85.33 (0.00) 85.19 (0.00) 49.00 (0.00) 78.93 (0.00) 80.01 (0.00) 55.40 (0.00) 
+
+VCD 87.57 (-1.26) 87.73 (-0.58) 51.37 (+5.87) 82.80 (-2.53) 83.73 (-1.46) 55.73 (+6.73) 76.23 (-2.70) 78.86 (-1.15) 62.43 (+7.03) 
+
+ICD 88.23 (-0.60) 87.53 (-0.78) 44.37 (-1.13) 85.13 (-0.20) 84.71 (-0.48) 47.20 (-1.80) 79.23 (+0.30) 79.86 (-0.15) 53.10 (-2.30) 
+
+SID 88.03 (-0.80) 87.94 (-0.37) 49.23 (+3.73) 83.77 (-1.56) 84.21 (-0.98) 52.83 (+3.83) 77.60 (-1.33) 79.54 (-0.47) 59.47 (+4.07) 
+
+PBA 89.43 (+0.60) 89.18 (+0.87) 47.70 (+2.20) 85.00 (-0.33) 85.31 (+0.12) 52.13 (+3.13) 78.13 (-0.80) 79.94 (-0.07) 59.00 (+3.60) 
+
+OLM 88.47 (-0.36) 88.79 (+0.48) 52.87 (+7.37) 82.03 (-3.30) 83.56 (-1.63) 59.30 (+10.30) 73.93 (-5.00) 77.80 (-2.21) 67.40 (+12.00) 
+
+Qwen-7B Greedy 91.13 (0.00) 90.66 (0.00) 44.93 (0.00) 89.07 (0.00) 88.73 (0.00) 47.00 (0.00) 83.03 (0.00) 83.53 (0.00) 53.03 (0.00) 
+
+VCD 91.17 (+0.04) 90.76 (+0.10) 45.63 (+0.70) 88.70 (-0.37) 88.43 (-0.30) 47.63 (+0.63) 83.20 (+0.17) 83.68 (+0.15) 52.93 (-0.10) 
+
+ICD 90.43 (-0.70) 89.87 (-0.79) 44.43 (-0.50) 88.33 (-0.74) 87.90 (-0.83) 46.40 (-0.60) 82.37 (-0.66) 82.77 (-0.76) 52.37 (-0.66) 
+
+SID 91.33 (+0.20) 90.98 (+0.32) 46.13 (+1.20) 89.07 (0.00) 88.89 (+0.16) 48.40 (+1.40) 83.37 (+0.34) 84.02 (+0.49) 54.10 (+1.07) 
+
+PBA 91.30 (+0.17) 90.86 (+0.20) 45.23 (+0.30) 89.00 (-0.07) 88.72 (-0.01) 47.53 (+0.53) 82.97 (-0.06) 83.55 (+0.02) 53.57 (+0.54) 
+
+OLM 92.10 (+0.97) 91.94 (+1.28) 47.97 (+3.04) 89.67 (+0.60) 89.71 (+0.98) 50.40 (+3.40) 83.13 (+0.10) 84.23 (+0.70) 56.93 (+3.90) 
+
+The claim does not extend to ICD. The unidirectional account holds for the two methods evaluated by Yin et al. (2026), but not for ICD. The original authors did not test the unidirectional bias towards ’Yes’ claim on ICD, and the results show that the claim does not extend to ICD. Across the 18 model–dataset– split cells of Table 1, ICD’s Yes rate is negative relative to greedy decoding in 17 cells; the single exception, 
+
++0 .03 points on GQA/Qwen/Random, is indistinguishable from zero. ICD’s largest affirmative shift is +0 .03 
+
+points, whereas VCD reaches +7 .90 . Perturbing the instruction rather than the image therefore reverses the polarity of the distributional shift, and no single direction characterises contrastive decoding as a class. The reversal is not accompanied by a corresponding change in accuracy. ICD’s accuracy delta stays within 
+
+[−0.76 , +0 .30] points in every cell, a narrower band than VCD’s [−2.70 , +1 .20] : it is close to accuracy-neutral relative to greedy decoding despite moving the output distribution in the opposite direction. Under the sampling baseline of Table 3, ICD’s gains likewise fall within the range produced by the adaptive plausibility constraint applied alone. The direction of the shift is thus a property of the perturbation modality rather than of the mechanism through which these methods affect POPE accuracy, and a claim about the sign of the shift cannot by itself explain the observed gains. We return to this in Section 8. Table 1 shows that the evaluated decoding interventions generally shift the output distribution toward Yes ,although the magnitude of this shift varies across models, datasets, and POPE subsets. The shift can improve class balance when the baseline underpredicts affirmative responses, but it can also overcorrect the distribution; consequently, improvements in accuracy and F1 score are inconsistent. These results reproduce the core finding that apparent gains from contrastive decoding on discriminative benchmarks can arise from a directional output-distribution shift rather than from improved visual grounding. 8Table 2 shows the performance of contrastive decoding methods on generative and discriminative bench-marks. We use LLaVA-1.5-7B model. We can see a drop of 21.5 points in NoCaps (Agrawal et al., 2019) evaluation under VCD. Table 2: Performance of contrastive decoding methods on other benchmarks. Gray parenthetical values indicate changes relative to greedy decoding. 
+
+Method MME-P ↑ MME-C ↑ CHAIR-S ↓ CHAIR-I ↓ NoCaps(CIDEr) ↑ LLaVA-Bench ↑
+
+Greedy 1483.74 (0.0) 289.64 (0.0) 50.0 (0.0) 13.9 (0.0) 106.5 (0.0) 62.1 (0.0) 
+
+VCD 1426.71 (-57.03) 286.07 (-3.57) 55.0 (+5.0) 15.6 (+1.7) 85.0 (-21.5) 61.9 (-0.2) 
+
+SID 1447.99 (-35.75) 286.07 (-3.57) 54.2 (+4.2) 15.1 (+1.2) 88.8 (-17.7) 63.4 (+1.3) 
+
+5.2 Claim 2: Adaptive constraints deceptively degrade sampling into greedy search. [Reproduced] 
+
+To validate the secondary claim of Yin et al. (2026), which posits that the adaptive plausibility constraint functionally degrades the sampling strategy into an approximation of greedy search, we meticulously repli-cated their standalone constraint evaluation. This involved applying the adaptive plausibility constraint in strict isolation (denoted as sample †) while utilizing standard auto-regressive sampling as the baseline decoding strategy. 9Table 3: Main values are POPE point estimates; point estimates are computed from 10,000 stratified boot-strap resamples. Gray parenthetical values are absolute percentage-point changes relative to regular sampling within the same dataset, model, and POPE subset. The sample † rows are bold to highlight the indepen-dently applied APC condition. 
+
+Random Popular Adversarial Dataset Model Method Acc. Yes (%) Acc. Yes (%) Acc. Yes (%) 
+
+GQA LLaVA-7B sample 85.53 (0.00) 46.20 (0.00) 79.17 (0.00) 52.63 (0.00) 75.23 (0.00) 55.70 (0.00) 
+
+VCD 88.03 (+2.50) 51.10 (+4.90) 80.80 (+1.63) 57.60 (+4.97) 77.00 (+1.77) 61.47 (+5.77) 
+
+ICD 87.50 (+1.97) 45.23 (-0.97) 80.50 (+1.33) 50.77 (-1.86) 78.27 (+3.04) 53.47 (-2.23) 
+
+SID 87.47 (+1.94) 48.07 (+1.87) 81.23 (+2.06) 54.57 (+1.94) 77.77 (+2.54) 59.03 (+3.33) 
+
+sample † 87.13 (+1.60) 45.93 (-0.27) 81.27 (+2.10) 51.80 (-0.83) 78.23 (+3.00) 55.10 (-0.60) 
+
+LLaVA-13B sample 84.27 (0.00) 42.40 (0.00) 78.90 (0.00) 46.43 (0.00) 77.00 (0.00) 49.20 (0.00) 
+
+VCD 87.37 (+3.10) 43.03 (+0.63) 82.97 (+4.07) 47.77 (+1.34) 79.40 (+2.40) 50.07 (+0.87) 
+
+ICD 86.03 (+1.76) 41.57 (-0.83) 79.90 (+1.00) 46.17 (-0.26) 78.67 (+1.67) 48.93 (-0.27) 
+
+SID 86.13 (+1.86) 41.40 (-1.00) 80.50 (+1.60) 46.97 (+0.54) 78.90 (+1.90) 49.37 (+0.17) 
+
+sample † 85.73 (+1.46) 41.07 (-1.33) 80.40 (+1.50) 45.00 (-1.43) 77.97 (+0.97) 47.77 (-1.43) 
+
+Qwen-7B sample 89.17 (0.00) 44.23 (0.00) 85.80 (0.00) 47.87 (0.00) 83.03 (0.00) 50.63 (0.00) 
+
+VCD 90.27 (+1.10) 44.93 (+0.70) 86.43 (+0.63) 49.03 (+1.16) 83.80 (+0.77) 51.93 (+1.30) 
+
+ICD 90.07 (+0.90) 44.33 (+0.10) 86.53 (+0.73) 48.20 (+0.33) 82.50 (-0.53) 51.37 (+0.74) 
+
+SID 89.77 (+0.60) 47.50 (+3.27) 84.07 (-1.73) 52.20 (+4.33) 82.00 (-1.03) 54.60 (+3.97) 
+
+sample † 90.43 (+1.26) 44.90 (+0.67) 86.57 (+0.77) 47.63 (-0.24) 83.37 (+0.34) 50.90 (+0.27) 
+
+A-OKVQA LLaVA-7B sample 84.07 (0.00) 46.13 (0.00) 80.63 (0.00) 49.43 (0.00) 76.47 (0.00) 54.00 (0.00) 
+
+VCD 87.37 (+3.30) 50.30 (+4.17) 82.60 (+1.97) 54.53 (+5.10) 76.87 (+0.40) 61.20 (+7.20) 
+
+ICD 86.80 (+2.73) 45.27 (-0.86) 83.87 (+3.24) 47.87 (-1.56) 78.03 (+1.56) 54.70 (+0.70) 
+
+SID 87.37 (+3.30) 48.63 (+2.50) 82.93 (+2.30) 52.27 (+2.84) 76.80 (+0.33) 58.60 (+4.60) 
+
+sample † 86.73 (+2.66) 45.67 (-0.46) 83.50 (+2.87) 49.23 (-0.20) 76.77 (+0.30) 55.63 (+1.63) 
+
+LLaVA-13B sample 85.47 (0.00) 42.67 (0.00) 82.63 (0.00) 43.83 (0.00) 77.40 (0.00) 49.67 (0.00) 
+
+VCD 87.43 (+1.96) 43.97 (+1.30) 85.93 (+3.30) 45.80 (+1.97) 79.90 (+2.50) 51.57 (+1.90) 
+
+ICD 86.70 (+1.23) 41.83 (-0.84) 85.03 (+2.40) 43.37 (-0.46) 78.40 (+1.00) 50.93 (+1.26) 
+
+SID 85.97 (+0.50) 41.90 (-0.77) 84.93 (+2.30) 45.13 (+1.30) 78.13 (+0.73) 50.40 (+0.73) 
+
+sample † 86.27 (+0.80) 41.60 (-1.07) 83.87 (+1.24) 43.73 (-0.10) 78.83 (+1.43) 51.03 (+1.36) 
+
+Qwen-7B sample 90.07 (0.00) 44.93 (0.00) 88.50 (0.00) 47.30 (0.00) 81.60 (0.00) 53.40 (0.00) 
+
+VCD 91.40 (+1.33) 45.67 (+0.74) 88.90 (+0.40) 48.43 (+1.13) 82.33 (+0.73) 53.53 (+0.13) 
+
+ICD 90.20 (+0.13) 44.60 (-0.33) 88.33 (-0.17) 46.27 (-1.03) 82.13 (+0.53) 52.47 (-0.93) 
+
+SID 91.10 (+1.03) 47.77 (+2.84) 88.63 (+0.13) 50.83 (+3.53) 82.23 (+0.63) 56.03 (+2.63) 
+
+sample † 90.93 (+0.86) 45.20 (+0.27) 89.17 (+0.67) 46.90 (-0.40) 83.37 (+1.77) 52.77 (-0.63) 
+
+MSCOCO LLaVA-7B sample 83.63 (0.00) 39.30 (0.00) 81.73 (0.00) 39.93 (0.00) 79.83 (0.00) 44.43 (0.00) 
+
+VCD 88.23 (+4.60) 44.03 (+4.73) 85.63 (+3.90) 46.50 (+6.57) 82.00 (+2.17) 50.33 (+5.90) 
+
+ICD 86.17 (+2.54) 38.83 (-0.47) 84.07 (+2.34) 39.93 (0.00) 81.87 (+2.04) 42.53 (-1.90) 
+
+SID 87.67 (+4.04) 42.07 (+2.77) 85.67 (+3.94) 44.00 (+4.07) 81.97 (+2.14) 47.77 (+3.34) 
+
+sample † 86.57 (+2.94) 40.50 (+1.20) 84.47 (+2.74) 41.67 (+1.74) 81.93 (+2.10) 43.73 (-0.70) 
+
+LLaVA-13B sample 85.03 (0.00) 37.37 (0.00) 83.50 (0.00) 38.43 (0.00) 81.33 (0.00) 40.60 (0.00) 
+
+VCD 86.80 (+1.77) 39.07 (+1.70) 86.10 (+2.60) 40.03 (+1.60) 84.57 (+3.24) 42.43 (+1.83) 
+
+ICD 85.60 (+0.57) 37.67 (+0.30) 85.03 (+1.53) 38.50 (+0.07) 83.70 (+2.37) 39.70 (-0.90) 
+
+SID 85.87 (+0.84) 37.27 (-0.10) 84.77 (+1.27) 38.57 (+0.14) 83.10 (+1.77) 39.83 (-0.77) 
+
+sample † 85.50 (+0.47) 37.30 (-0.07) 84.37 (+0.87) 38.10 (-0.33) 83.13 (+1.80) 39.87 (-0.73) 
+
+Qwen-7B sample 88.30 (0.00) 39.50 (0.00) 86.53 (0.00) 40.33 (0.00) 84.70 (0.00) 42.17 (0.00) 
+
+VCD 89.33 (+1.03) 40.13 (+0.63) 88.03 (+1.50) 41.43 (+1.10) 86.20 (+1.50) 42.87 (+0.70) 
+
+ICD 87.73 (-0.57) 38.80 (-0.70) 86.97 (+0.44) 40.50 (+0.17) 85.70 (+1.00) 41.57 (-0.60) 
+
+SID 89.20 (+0.90) 42.53 (+3.03) 88.43 (+1.90) 43.90 (+3.57) 86.80 (+2.10) 45.67 (+3.50) 
+
+sample † 88.03 (-0.27) 38.90 (-0.60) 87.33 (+0.80) 40.80 (+0.47) 86.60 (+1.90) 41.73 (-0.44) 
+
+As shown in Table 3, our evaluation measures overall accuracy and the proportion of “Yes” responses across the Random, Popular, and Adversarial categories of the POPE benchmark. All experimental details are provided in Section 4. This comparison tests whether applying the constraint in isolation produces improve-10 ments comparable to those of contrastive decoding while primarily shifting the output distribution rather than improving visual grounding. Our results show that the standalone application of the constraint (which has no relation to hallucination mitigation) yields an approximate 1.5 percentage points improvement. These results are consistent with the findings of Yin et al. (2026). APC alone fully accounts for SID and roughly 69% of VCD’s accuracy. 
+
+6 Additional Investigative Experiments 
+
+6.1 Novel Claim Verification Experiments 6.1.1 Analysis of Flips Due to CD 
+
+The original study compares different CD methods against the baseline on the POPE dataset using only aggregate accuracy, without decomposing the affected instances. We conduct this experiment to determine whether the No →Yes flips induced by CD methods are semantically related to the ground-truth label, or whether they are simply a consequence of the unidirectional output-distribution shift toward Yes identified by Yin et al. (2026). We analyze the behavior of LLaVA-1.5-7B on the POPE dataset. Specifically, we focus on cases in which greedy decoding answers No to a POPE object-existence question, while a given decoding method changes the answer to Yes . We refer to these cases as No →Yes flips. This experiment was conducted on an L4 GPU. Each flip is labeled against the POPE ground-truth annotation as follows: 
+
+• True-positive (TP) flip: the ground-truth answer is Yes , so the flip corrects a genuine greedy-decoding error. 
+
+• False-positive (FP) flip: the ground-truth answer is No , so the flip turns a previously correct answer into an incorrect one. For each method, we report the following: 
+
+• Raw TP/FP counts and flip precision , defined as TP /(TP + FP) .
+
+• The hallucination-injection rate (calibration), defined as FP /N , where N is the number of greedy No answers eligible to flip. 
+
+• The TP recall , defined as TP/M, where M is the total number of correctable errors available in a given subset i.e., the number of greedy No answers whose ground-truth label is Yes. This measures the fraction of genuine hallucinations a method actually recovers, independent of how many errors it also introduces, and is comparable across methods regardless of how aggressively each one flips. 
+
+• Results for two genuine CD methods, VCD and SID, alongside two non-visual controls from the ablation suite of Yin et al. (2026): PBA and OLM. Both controls are designed by Yin et al. (2026) to have “no explicit connection to mitigating hallucinations”, and therefore serve as a lower bound for what a non-grounding-based intervention can achieve. We exclude ICD as it does produces negligible No to Yes flips. The results are shown in Section 7.1.1. 
+
+6.1.2 Analyzing the Effect of Dataset Label Imbalance on VLM Performance 
+
+The standard POPE benchmark has 1,500 YES and 1,500 NO questions per split per dataset (50/50 balance). Yin et al. (2026) shows, on this balanced benchmark, that VCD and SID inflate the YES response rate and that the same accuracy gains are reproduced by YES-inflating baselines (PBA, OLM) that have no hallucination-mitigation mechanism. In this experiment we check whether the YES-inflation improves the 11 model’s discriminative ability, or does it merely move the model’s decision threshold such that accuracy rises or falls depending on the label ratio. We test this with two interventions applied to the POPE. In the 25/75 Yes/No ratio (500 YES, 1500 NO), the True Negative pool is large. In the 75/25 Yes/No ratio (1500 YES, 500 NO), the False Negative pool is large. For the 25/75 regime, we discard two of the three YES-labeled questions per image, so that each image keeps one YES question and all three NO questions. Aggregated over the split this yields a 25 YES / 75 NO benchmark in which negatives dominate. For the 75/25 regime,we discard two of the three NO-labeled questions per image, keeping all three YES questions and a single NO question, producing a 75 YES / 25 NO benchmark in which positives dominate. We evaluate two vision-language models LLaVA-v1.5-7B 
+
+(Liu et al., 2023) and Qwen2.5-VL-7B-Instruct (Bai et al., 2025) on this perturbed dataset. The set of removed questions is chosen once and then applied identically to every decoding method (Baseline, VCD, SID, PBA, OLM) and to all three POPE splits, so all methods are always scored on exactly the same questions and any change in accuracy can only come from the shift in label balance. We also check the TPR and TNR simultaneously in this experiment by using balanced accuracy = ( T P R +
+
+T N R )/2 as an evaluation metric equivalent to the binary AUC at a single operating point. Balanced accuracy is immune to label ratio by construction. If VCD and SID only shift the YES threshold, their balanced accuracy relative to baseline will be flat or negative in both regimes simultaneously. If they genuinely improve discrimination, their balanced accuracy will exceed baseline in both regimes. The results are shown in Section 7.1.2. 
+
+6.1.3 Verification of APC sampling into Greedy Search using Jaccard Similarity Analysis. 
+
+Jaccard similarity For two finite sets A and B, the Jaccard index is defined as 
+
+J( A, B ) = |A ∩ B||A ∪ B| ∈ [0 , 1] , J( ∅, ∅) ≜ 1, (12) that is, the number of elements common to both sets divided by the number of distinct elements occurring in either. We apply this index to generated text by mapping a response y to the set T (y) of unique sub-word token identifiers assigned to it by the model’s own tokenizer, so that the similarity between two responses 
+
+yA and yB is J( T (yA), T (yB )) .
+
+Experiment The experiment compares the text a model produces under different decoding rules and the similarity between the text is measured using Jaccard similarity of their sub-word tokens. For each question we compute J between the answer of the condition being tested and the answer of a reference condition (greedy or direct sampling), then average over the questions. Being a set metric it ignores token order and repetition. As robustness checks we also report two stricter variants (Section 7.1.3): a bigram version over adjacent token pairs, which is order-sensitive, and a content-word version that removes common English stopwords. The second claim of Yin et al. (2026) is that the gains reported for contrastive decoding (CD) come from the Adaptive Plausibility Constraint (APC). Our hypothesis: as the APC threshold β goes from 0 to 1, the lexical overlap (measured by Jaccard index) between APC-augmented sampling and greedy decoding should rise towards identity, while its overlap with direct sampling should stay low and comparatively flat. We evaluate two vision-language models, both with different tokenizers, LLaVA-v1.5-7B having Senten-cePiece (Kudo & Richardson, 2018) and BPE Qwen2.5-VL-7B-Instruct having (Bai et al., 2025). Both run on LLaVA-Bench (In-the-Wild) . Each model is evaluated under 17 decoding conditions on the same prompts and a 14 -point sweep of the APC threshold β from 0.000 to 1.000 applied on top of the direct sampling; and VCD with default β = 0 .1.The results are shown in Section 7.1.3. 12 6.2 Novel Additional Insight Experiments 6.2.1 Per-Token Distribution Analysis of the Contrastive Adjustment 
+
+Contrastive decoding methods, including VCD and SID, construct the decoding score by linearly combining an expert and an amateur logit at each generation step: Let θ denote the parameters of the VLM, and let zθ (yt | · ) denote the logit vector produced by the model at decoding step t, conditioned on the context specified in (·). Given a clean visual input v, a textual query 
+
+x, and the previously generated tokens y<t , contrastive decoding methods construct a contrastive logit 
+
+zcd by combining an expert distribution, conditioned on the original, unperturbed input, with an amateur 
+
+distribution, conditioned on a perturbed input v′ (or x′) that is deliberately impoverished with respect to visual grounding. The general form is 
+
+zcd (yt) = (1 + α) zθ (yt | v, x, y <t ) − α z θ (yt | v∗, x ∗, y <t ), (13) where α > 0 is the amplification coefficient and (v∗, x ∗) denotes the method-specific perturbed context described below. At the commonly used setting α = 1 , both reduce to the form 
+
+zcd (yt)∣∣α=1 = 2 zθ (yt | v, x, y <t ) − zθ (yt | v∗, x ∗, y <t ) = zθ (yt | v, x, y <t ) + dt, (14) where 
+
+dt = zθ (yt | v, x, y <t ) − zθ (yt | v∗, x ∗, y <t ) (15) is the expert–amateur logit gap at step t.For notational convenience in the analysis that follows, we write C := zcd (yt) for the contrastive logit, 
+
+E := zθ (yt | v, x, y <t ) for the expert logit, and A := zθ (yt | v∗, x ∗, y <t ) for the amateur logit, with the dependence on t left implicit. The quantity d is therefore exactly the adjustment that contrastive decoding adds to the plain expert score at every candidate token. The stated purpose of the VCD ideally is to push down logits of tokens which correspond to hallucinated objects relative to those of the real object related tokens. By using LLaVA-v1.5-7B (Liu et al., 2023) and Qwen2.5-VL-7B-Instruct (Bai et al., 2025) on CHAIR (Rohrbach et al., 2019), we measure the sign and magnitude of d separately. At each decoding step, observing the top 10 token predictions and their logits, each token is segregated into categories of hallucinated object related and real object related and the tokens which do not fall under these categories are ignored. For each eligible object based candidate token in the top 10 list, expert logit E and amateur logit A at that step is observed and contrastive adjustment d = E − A is recorded. Because E and A are taken at the same step and position, d is a within-step paired difference and can be pooled across steps. We report the full per-token distribution of d across all relevant time steps. The data of sign and magnitude of d separately for all the hallucinated object related tokens and the real object related tokens specifically is displayed in a bar graph for all the eligible chosen tokens which we count by n calling it index . We extend this analysis to look separately at the data of the emitted token logits only across the expert pool and the amateur pool. The emitted token recorded is the one which emits into the caption after the CD is applied. We present this data in the separate bargraphs as well. To test whether the amateur branch’s contribution to CD reflects a structured, hallucination-targeted signal or an unstructured perturbation, we construct a Proxy method that discards the amateur branch entirely and replaces it with Gaussian noise applied to the same logits. The results are shown in Section 7.2.1. 
+
+6.2.2 Analyzing Object Faithfulness via Token Probability Distributions 
+
+Contrastive decoding (CD) aims to improve visual grounding by penalizing an amateur model’s hallucinations against an expert model. If this mechanism functions as intended, the resulting CD distribution should assign 13 greater probability mass to genuinely present objects and less to hallucinated candidates relative to the expert baseline. We directly test this hypothesis by tracking shifts in probability mass across object-level token classes between the expert and final CD distributions. We extract token logits from the expert, amateur, and CD models across 500 MSCOCO (Lin et al., 2015) images. Using CHAIR (Rohrbach et al., 2019) ground-truth annotations and the COCO-80 object vocabulary 
+
+Vobj (including synonyms), we classify generated objects as either present (V+) or hallucinated (V−). To optimize computation and remove insignificant tail probabilities, we truncate the distributions to the top 30 logits prior to applying the softmax operation, zeroing out the remainder. For each evaluated decoding step, all three model branches are conditioned on the same autoregressive context generated by CD. We specifically isolate decoding steps where the model is actively choosing between object candidates rather than generating syntactic filler, by filtering for time steps where the argmax token belongs to Vobj . Empirical analysis of these steps confirms that significant probability mass is overwhelmingly concentrated within the top 5 tokens (Gu et al., 2026). For each selected step t, we partition the top-5 object tokens into present and hallucinated buckets, sum their probabilities, and normalize so they sum to 1: 
+
+ˆp+ 
+
+> t
+
+= S+
+
+> t
+
+S+ 
+
+> t
+
++ S−
+
+> t
+
+, ˆp− 
+
+> t
+
+= 1 − ˆp+ 
+
+> t
+
+, (16) where S+ 
+
+> t
+
+and S− 
+
+> t
+
+are the total probability mass assigned to present and hallucinated tokens respectively. Averaging across all N valid decoding steps gives the global expected probability of selecting a correct versus hallucinated object: 
+
+¯p+ = 1
+
+N
+
+> N
+
+∑
+
+> t=1
+
+ˆp+ 
+
+> t
+
+, ¯p− = 1 − ¯p+. (17) We report per-branch estimates of ¯p+ alongside 95% confidence intervals from a cluster bootstrap ( B =10 ,000 ), resampling images rather than individual steps to respect the correlation between steps sharing the same caption and ground-truth object set. These marginal intervals characterize the uncertainty of each branch in isolation and establish the absolute scale of the distributions, but they are not designed for branch comparisons. Since all three branches are evaluated on the exact same steps of the same images, branch differences are tested using a paired bootstrap: a single image resample is applied to all branches within each replicate, so the shared image-sampling variance cancels and the resulting interval captures only the uncertainty of the difference itself. An effective CD mechanism should satisfy: 
+
+¯p+ 
+
+> CD
+
+> ¯p+ 
+
+> expert
+
+and ¯p− 
+
+> CD
+
+< ¯p−
+
+> expert
+
+. (18) The results are shown in Section 7.2.2. 
+
+6.2.3 Layer-wise Logit-Lens Selectivity Analysis 
+
+Contrastive decoding subtracts a degraded amateur branch from the expert to push the model away from hallucinated answers. If this works as intended, then at the token where the model commits to an answer the subtraction should be selective : it should lower the score of answers that are actually hallucinations while leaving correct answers unchanged. A shift that moves every answer by the same amount, regardless of whether it is a hallucination, is not a correction but a uniform translation of the decision. Such a translation is not inert — it is benchmark-effective whenever the model’s Yes/No threshold is miscalibrated, which is precisely the distributional-shift account we test — so the question is not whether a uniform shift can raise accuracy (it can) but whether CD’s shift is anything more than uniform. This experiment tests which of the two it is by looking inside the model, at the representation it uses to decide. 
+
+Layer-wise decision margins. We restrict the test to the questions the model answers “Yes,” the only answers on which an object hallucination can occur, and split them into hallucinations H (object absent, 14 model says Yes) and correct calls T (object present, model says Yes). To read a decision off a layer we use the model’s own head (the logit lens; nostalgebraist, 2020, with the calibrated variant of Belrose et al., 2023): apply the final RMSNorm and unembedding to the layer’s hidden state, restrict to the “Yes”/“No” tokens, and take the margin mℓ = max Yes zℓ − max No zℓ, positive when the model would answer “Yes.” Running this on the clean (expert) and noised (amateur) passes gives mEℓ , m Aℓ ; since CD forms (1 + α)zE − αz A and the margin is linear in the logits, 
+
+mcd ℓ = mEℓ + α ∆ℓ, ∆ℓ = mEℓ − mAℓ , (19) so ∆ℓ is one number per sample per layer: the log-odds CD adds to the decision, negative when it suppresses “Yes” (the correcting direction on a hallucination) and positive when it reinforces it. The decomposition equation 19 holds at the answer token provided the adaptive plausibility constraint (APC) retains both “Yes” and “No” there; we return to this in the limitations. 
+
+Probes. We fit two linear probes (Alain & Bengio, 2016), each a logistic regression on the per-layer hidden state hℓ at the final prompt-token position, with features standardized per layer and evaluated by 5-fold stratified cross-validation using out-of-fold probabilities, so that no sample is ever scored by a model trained on it. Probe A (presence). Fit on all |H ∪ T | = 3 ,710 “Yes”-answered samples, with binary target the object’s presence ( T present = 1 , H absent = 0 ). Its per-layer AUC measures how linearly object presence — the exact quantity that separates a hallucinated “Yes” from a correct one — is available in the representation, and it therefore defines the upper bound on the information a selective CD could exploit. 
+
+Probe B (hallucination decodability). Fit only on the 4,500 object-absent questions (ground-truth “No”; comprising the 257 on which the model hallucinated a “Yes” and the 4,243 it correctly rejected), with binary target whether the model produced the false “Yes.” Its per-layer AUC (Experiment 1) measures how early the hallucination itself becomes linearly decodable, independent of any CD shift. Both probes report AUC as a function of depth. 
+
+Experiment 1 (direct test). Layer-wise analysis is the natural lens here because the final answer is nothing more than a readout of a hidden state: the decision is formed inside the stack, at whatever depth the hallucination signal becomes linearly present, and only then projected to the “Yes”/“No” tokens. If CD genuinely corrected the hallucination, its effect should be largest at, or at least track, the layer where the hallucination is decided. We plot, per layer, Probe B’s hallucination decodability against CD’s mean effect 
+
+∆ℓ on H. This first cut is not decisive on its own for two reasons. First, the residual stream is additive (Elhage et al., 2021): a shift written at any layer propagates to the output, so a mismatch between where the hallucination is decoded and where ∆ℓ peaks does not by itself prove CD acts in the wrong place. Second, ∆ℓ
+
+is a group-mean magnitude; a large average shift says nothing about whether CD distinguishes hallucinated from correct answers, which is what a correction must do. 
+
+Experiment 2 (selectivity). To remove both problems we test, at every layer, whether ∆ℓ carries hallucination-specific information rather than where it is largest. Since H is absent and T present, telling them apart is exactly object presence, so Probe A is the matched baseline for what a selective CD would need. We report a layer-wise selectivity AUC: whether −∆ℓ ranks H above T for suppression ( 0.5 if blind), with an image-question bootstrap CI at every layer, together with the fraction of H with ∆ℓ > 0 and the amateur branch’s own presence signal (the AUC of mAℓ for ranking T over H, with mEℓ as reference; if the amateur branch never forms the presence distinction, ∆ℓ cannot inherit it). Because these are layer-resolved and concern information content, a null result at every depth rules out a selective correction written at a layer we did not examine. 
+
+Experiment 3 (oracle calibration and sensitivity bound). A null selectivity AUC admits two read-ings: either CD’s shift is genuinely non-selective, or the metric is itself too insensitive to detect selectivity even when present. We separate them in two steps. (a) Ceiling. Using Probe A’s out-of-fold presence probability ˆp+(i), we define the predicted absence ˆa(i) = 1 − ˆp+(i) and the oracle shift ∆oracle  
+
+> i
+
+= −ˆa(i)
+
+— a shift that suppresses “Yes” in proportion to predicted absence — and pass it through the identical selectivity pipeline. If the oracle scores near 1 where CD scores near 0.5, the pipeline can demonstrably detect a selective shift. Because the stored tensors are the per-layer margins, Probe A is fit here on the 
+
+33 -dimensional margin vector rather than the full hidden state; since presence is even more decodable from 15 the hidden state (Probe A AUC 0.99 ), the reported oracle value is a conservative lower bound on instrument sensitivity. (b) Power bound. The ceiling shows only that the metric can see a maximally selective shift, not how small an effect it would catch. We therefore inject a graded selective component, ∆s = ∆ CD + s ˆuoracle ,where ˆuoracle is the oracle direction scaled to unit mean magnitude so that s is read directly in log-odds, sweep s, and report the smallest s∗ at which selectivity clears the chance-plus-CI detection threshold. Stated against CD’s own mean shift magnitude, this converts the null from unbounded to bounded. 
+
+Experiment 4 (scalar-bias control). To make the “uniform translation” claim quantitative rather than interpretive, we sweep a single constant b added to every Yes −No decision margin (predict “Yes” iff mE 
+
+> readout
+
++
+
+b > 0) and plot POPE accuracy against b, marking where VCD’s realized accuracy and VCD’s mean shift (applied as a pure constant) land. If a zero-parameter scalar reproduces VCD’s gain, the gain is a threshold effect by construction. 
+
+Experimental details. We run POPE–COCO (Li et al., 2023b) ( 9,000 questions) on LLaVA-1.5-7B (Liu et al., 2023). For each question we take two single forward passes at T = 1 , a clean pass and a noised pass corrupted by diffusion noise at step 900 , the setting used by VCD (Leng et al., 2023), and store the logit-lens Yes/No margins at the final prompt-token position for all 33 layers. Of the 3,710 questions answered “Yes,” 
+
+|H| = 257 are hallucinations and |T | = 3 ,453 correct positives; the remaining 4,500 object-absent questions supply Probe B’s training set. Extraction ran on a single NVIDIA L4; the probes, the oracle, the scalar-bias sweep, and all analyses are offline on CPU. We use α = 1 , and verified the lens reproduces the true final logits to a mean absolute error of 1.7 × 10 −3 log-odds; as a global check, sign( mE
+
+> readout
+
+) agrees with the model’s emitted Yes/No answer on 99 .98% of questions. The results are shown in Section 7.2.3. 
+
+7 Results beyond the original paper 
+
+The following subsections detail our extended experiments investigating the effectiveness of contrastive de-coding and conducting mechanistic analysis. 
+
+7.1 Novel Claim Verification Experiments 7.1.1 Analysis of Flips Due to CD 
+
+Flip Precision The total flip count decomposed across all the three POPE subsets is shown in the Table 4. We can see that the spurious methods achieve comparable or even better precision than known contrastive decoding methods. Specifically, OLM (a spurious method with no semantic relation to the image) shows a 
+
+3.3pp increase in precision when compared to VCD. 
+
+On the FP degradation ratio. The three POPE subsets differ in the extent to which their negative objects can be inferred from language priors : adversarial negatives frequently co-occur with objects present in the image, popular negatives are globally frequent, and random negatives exhibit neither form of structure. The adversarial-to-random FP ratio of OLM ( 2.68 ×) is comparable to those of VCD ( 2.26 ×) and SID ( 2.86 ×). Because OLM is a post-hoc logit-thresholding rule that does not access the image, its subset sensitivity reflects structure already encoded in the base model’s output distribution. The comparable degradation observed for VCD and SID therefore suggests that their sensitivity to subset difficulty is likewise inherited from the base model’s language prior (Kang & Choi, 2023), rather than substantially corrected by the contrastive mechanism. TP counts remain approximately constant across subsets (e.g., OLM: 126/126/126; VCD: 115/114/109). This stability is consistent with the construction of POPE: the positive-question pool is derived from the same images and present objects across all three subsets, whereas only the negative-sampling strategy varies. The relevant asymmetry therefore lies in the FP counts: the rate at which each method introduces errors varies with the negative-sampling strategy, and the magnitude of this variation is comparable for the non-16 Table 4: No →Yes flip counts by method on POPE–COCO (LLaVA-1.5-7B, 500 images, 9,000 questions), across the three negative-sampling subsets (adversarial / popular / random), with flip precision pooled across subsets. Pooled over all subsets there are N = 5 ,287 greedy-“No” items eligible to flip, of which M = 1 ,048 
+
+are correctable errors. Brackets are image-level cluster bootstrap 95% CIs ( B = 10 ,000 ). The precision of an uninformed intervention is the base rate of Yes labels among eligible items, 19 .8% .Method TP (adv/pop/rand) FP (adv/pop/rand) Pooled flip precision 
+
+Contrastive decoding 
+
+VCD 115 / 114 / 109 138 / 91 / 61 53.8 [48.3, 59.2] 
+
+SID 81 / 82 / 87 106 / 68 / 37 54.2 [48.2, 60.0] 
+
+Non-visual controls 
+
+OLM 126 / 126 / 126 142 / 89 / 53 57.1 [51.9, 62.1] 
+
+PBA 36 / 37 / 37 26 / 22 / 3 68.3 [57.2, 77.6] †    
+
+> †PBA flips at roughly one third the rate of the other methods (TP recall 10 .5% vs. 32 .3% for VCD; Table 5), so its precision is measured at a substantially different operating point and is not directly comparable.
+
+visual control and the CD methods. These results provide no evidence that CD suppresses the co-occurrence-based language prior it is intended to mitigate. 
+
+TP Recall Table 5 TP recall, defined as the proportion of correctable false-negative errors (greedy No 
+
+responses with a ground-truth label of Yes ) corrected by each method. The CD methods recover a modest proportion of these errors, with pooled recalls of 32 .3% for VCD and 23 .9% for SID. Notably, OLM, a non-visual post-hoc logit-thresholding rule, achieves higher TP recall than either CD method on every subset (36 .0–36 .1% ; 36 .1% pooled). Thus, despite having no explicit visual grounding mechanism, OLM corrects a larger proportion of the base model’s false-negative errors. Table 5: TP recall (TP flips ÷ total correctable errors available), with image-level cluster bootstrap 95% CIs ( B = 10 ,000 ). OLM, a non-visual control, recovers more of the base model’s false-negative errors than either contrastive method on every subset. Method Adversarial Popular Random Pooled VCD 32.9 [27.9, 38.0] 32.7 [27.9, 37.7] 31.2 [26.3, 36.3] 32.3 [27.7, 37.0] 
+
+SID 23.1 [18.8, 27.6] 23.5 [18.9, 28.0] 24.9 [20.6, 29.5] 23.9 [20.1, 27.7] 
+
+OLM 36.0 [31.0, 41.1] 36.1 [31.1, 41.1] 36.1 [31.1, 41.1] 36.1 [31.1, 41.1] 
+
+PBA 10.3 [7.1, 13.7] 10.6 [7.4, 14.1] 10.6 [7.4, 14.1] 10.5 [7.2, 13.9] 
+
+Hallucination Injection Rate Table 6 reports the hallucination-injection rate, defined as the proportion of greedy No responses incorrectly changed to Yes by each method. The pooled rates are substantial for both CD methods ( 5.49% for VCD and 3.99% for SID). These values are comparable to the OLM rate of 5.37% , with VCD performing slightly worse, whereas PBA has a markedly lower rate of 0.96% . For every method, the rate also increases from the random to the adversarial subset (e.g., from 3.37% to 8.11% 
+
+for VCD), consistent with the increasing influence of the co-occurrence structure induced by the negative-sampling strategy. Together with the TP-recall results, these findings show that the CD methods correct fewer false-negative errors than OLM while introducing new hallucinations at comparable rates. 17 Table 6: Hallucination-injection rate, with image-level cluster bootstrap 95% CIs ( B = 10 ,000 )Method Adversarial Popular Random Pooled Adv/Rand ratio VCD 8.11 [6.85, 9.42] 5.12 [4.06, 6.27] 3.37 [2.54, 4.26] 5.49 [4.74, 6.27] 2.26 ×[1.73, 3.06] 
+
+SID 6.23 [5.09, 7.45] 3.83 [2.93, 4.77] 2.05 [1.38, 2.78] 3.99 [3.35, 4.67] 2.86 ×[2.00, 4.38] 
+
+OLM 8.34 [7.03, 9.71] 5.01 [3.98, 6.10] 2.93 [2.14, 3.78] 5.37 [4.64, 6.15] 2.68 ×[1.99, 3.76] 
+
+PBA 1.53 [0.99, 2.13] 1.24 [0.74, 1.76] 0.17 [0.00, 0.38] 0.96 [0.67, 1.29] –‡
+
+> ‡
+
+PBA produces only 3 false-positive flips on the random subset, so its ratio ( 8.67 ×, CI [3 .33 , 31 .00] ) is not interpretable and is omitted. 
+
+Taken together, these results substantially weaken the case that contrastive decoding performs genuine, visually-grounded hallucination correction on POPE. CD methods do exceed a random-flipping baseline, but so do two controls with no explicit visual grounding mechanism, and on flip precision and TP recall these non-visual controls are statistically indistinguishable from VCD and SID. The one dimension where CD’s behavior varies systematically, the hallucination-injection rate across subsets, tracks the same degradation ratio as OLM’s, indicating that this sensitivity originates in the base model’s pre-existing language prior, which the contrastive mechanism itself claims to fix. Collectively, these findings are consistent with CD acting as a directional shift of the output distribution along an axis already present in the base model, rather than as a mechanism that meaningfully suppresses the co-occurrence priors it is designed to mitigate. 
+
+7.1.2 Analyzing the Effect of Dataset Label Imbalance on VLM Performance 
+
+Table 7: 25/75 POPE test LLaVA-v1.5-7B across GQA , COCO , and A-OKVQA . Accuracy is reported with a 95% bootstrap confidence interval (10,000 resamples over the 2,000 questions; ± half-width). Best accuracy per split–dataset cell in bold .
+
+Split Method GQA COCO A-OKVQA YES Resp. ∆ Perf. YES Resp. ∆ Perf. YES Resp. ∆ Perf. FN →TP TN →FP Yes% Acc% (95% CI) FN →TP TN →FP Yes% Acc% (95% CI) FN →TP TN →FP Yes% Acc% (95% CI) Random Baseline ref ref 26.2 91.85 ±1.2 ref ref 20.6 91.60 ±1.2 ref ref 26.5 91.45 ±1.2 
+
+VCD +23 +119 33.4 87.05 ±1.5 +41 +60 25.7 90.65 ±1.3 +18 +107 32.7 87.00 ±1.5 
+
+SID +19 +72 30.8 89.20 ±1.4 +21 +31 23.2 91.10 ±1.2 +3 +68 30.0 88.20 ±1.4 
+
+PBA +16 +43 29.2 90.50 ±1.3 +13 +3 21.4 92.10 ±1.2 +12 +24 28.2 90.85 ±1.3 
+
+OLM +34 +137 34.8 86.70 ±1.5 +48 +53 25.7 91.35 ±1.2 +30 +116 33.8 87.15 ±1.5 
+
+Popular Baseline ref ref 34.6 83.45 ±1.6 ref ref 22.2 89.95 ±1.3 ref ref 31.7 86.20 ±1.5 
+
+VCD +26 +135 42.7 78.00 ±1.8 +45 +90 29.0 87.70 ±1.4 +15 +139 39.4 80.00 ±1.7 
+
+SID +17 +61 38.6 81.25 ±1.7 +24 +66 26.8 87.85 ±1.4 +4 +81 35.9 82.35 ±1.7 
+
+PBA +16 +72 39.1 80.65 ±1.7 +13 +22 24.0 89.50 ±1.3 +12 +52 34.9 84.20 ±1.6 
+
+OLM +34 +265 49.6 71.90 ±2.0 +48 +89 29.1 87.90 ±1.4 +30 +204 43.4 77.50 ±1.9 
+
+Adversarial Baseline ref ref 39.6 78.55 ±1.8 ref ref 26.0 86.20 ±1.5 ref ref 41.3 76.60 ±1.9 
+
+VCD +21 +147 47.9 72.25 ±2.0 +41 +134 34.8 81.55 ±1.7 +17 +146 49.5 70.15 ±2.0 
+
+SID +17 +80 44.4 75.40 ±1.9 +27 +95 32.1 82.80 ±1.6 +3 +81 45.5 72.70 ±1.9 
+
+PBA +16 +57 43.2 76.50 ±1.9 +13 +26 28.0 85.55 ±1.5 +12 +66 45.2 73.90 ±1.9 
+
+OLM +34 +287 55.6 65.90 ±2.1 +47 +142 35.4 81.45 ±1.7 +30 +255 55.5 65.35 ±2.1 
+
+18 Table 8: 25/75 POPE test Qwen2.5-VL-7B across GQA , COCO , and A-OKVQA . Accuracy is reported with a 95% bootstrap confidence interval (10,000 resamples over the 2,000 questions; ± half-width). Best accuracy per split–dataset cell in bold .
+
+Split Method GQA COCO A-OKVQA YES Resp. ∆ Perf. YES Resp. ∆ Perf. YES Resp. ∆ Perf. FN →TP TN →FP Yes% Acc% (95% CI) FN →TP TN →FP Yes% Acc% (95% CI) FN →TP TN →FP Yes% Acc% (95% CI) Random Baseline ref ref 24.3 94.15 ±1.0 ref ref 20.1 93.55 ±1.1 ref ref 24.9 94.25 ±1.0 
+
+VCD 0 +8 24.8 93.75 ±1.0 +10 +2 20.6 93.95 ±1.1 +2 +10 25.6 93.85 ±1.1 
+
+SID +4 +16 25.4 93.55 ±1.1 +9 +5 20.8 93.75 ±1.0 +4 +15 25.9 93.70 ±1.1 
+
+PBA +2 +2 24.6 94.15 ±1.0 +5 0 20.3 93.80 ±1.0 0 +2 25.1 94.15 ±1.0 
+
+OLM +24 +40 27.6 93.35 ±1.1 +29 +10 22.0 94.50 ±1.0 +21 +31 27.6 93.75 ±1.1 
+
+Popular Baseline ref ref 30.2 88.35 ±1.4 ref ref 21.6 92.05 ±1.2 ref ref 28.1 91.15 ±1.2 
+
+VCD −3 +24 31.3 87.00 ±1.5 +8 +9 22.4 92.00 ±1.2 +1 +15 28.8 90.45 ±1.3 
+
+SID +3 +35 32.1 86.75 ±1.5 +9 +13 22.7 91.85 ±1.2 +4 +21 29.3 90.30 ±1.3 
+
+PBA +1 +7 30.6 88.05 ±1.4 +5 0 21.8 92.30 ±1.2 0 +9 28.5 90.70 ±1.3 
+
+OLM +23 +75 35.1 85.75 ±1.5 +29 +19 23.9 92.55 ±1.1 +21 +42 31.2 90.10 ±1.3 
+
+Adversarial Baseline ref ref 34.5 84.05 ±1.6 ref ref 23.0 90.60 ±1.3 ref ref 37.1 82.10 ±1.7 
+
+VCD −2 +12 35.0 83.35 ±1.6 +7 +11 23.9 90.40 ±1.3 0 −4 36.9 82.30 ±1.7 
+
+SID +3 +26 36.0 82.90 ±1.6 +9 +27 24.8 89.70 ±1.3 +4 +11 37.9 81.75 ±1.7 
+
+PBA +1 +7 34.9 83.75 ±1.6 +5 +4 23.4 90.65 ±1.2 0 +9 37.5 81.65 ±1.7 
+
+OLM +23 +72 39.3 81.60 ±1.7 +29 +44 26.7 89.85 ±1.3 +21 +57 41.0 80.30 ±1.8 
+
+Table 9: 75/25 POPE test LLaVA-v1.5-7B across GQA , COCO , and A-OKVQA . Accuracy is reported with a 95% bootstrap confidence interval (10,000 resamples over the 2,000 questions; ± half-width). Best accuracy per split–dataset cell in bold .
+
+Split Method GQA COCO A-OKVQA YES Resp. ∆ Perf. YES Resp. ∆ Perf. YES Resp. ∆ Perf. FN →TP TN →FP Yes% Acc% (95% CI) FN →TP TN →FP Yes% Acc% (95% CI) FN →TP TN →FP Yes% Acc% (95% CI) Random Baseline ref ref 66.1 87.50 ±1.4 ref ref 58.2 81.85 ±1.7 ref ref 64.8 86.75 ±1.5 
+
+VCD +67 +51 72.0 88.30 ±1.4 +96 +18 63.9 85.75 ±1.5 +69 +34 69.9 88.50 ±1.4 
+
+SID +51 +31 70.2 88.50 ±1.3 +69 +12 62.3 84.70 ±1.6 +44 +22 68.0 87.85 ±1.4 
+
+PBA +46 +16 69.2 89.00 ±1.4 +37 +1 60.2 83.65 ±1.6 +42 +6 67.2 88.55 ±1.4 
+
+OLM +113 +49 74.2 90.70 ±1.3 +126 +17 65.4 87.30 ±1.5 +105 +40 72.0 90.00 ±1.3 
+
+Popular Baseline ref ref 68.0 85.55 ±1.5 ref ref 58.9 81.20 ±1.7 ref ref 66.6 84.90 ±1.6 
+
+VCD +70 +48 74.0 86.65 ±1.5 +103 +27 65.4 85.00 ±1.6 +63 +45 72.0 85.80 ±1.6 
+
+SID +50 +21 71.6 87.00 ±1.5 +67 +24 63.4 83.35 ±1.6 +34 +22 69.4 85.50 ±1.5 
+
+PBA +46 +32 72.0 86.25 ±1.5 +37 +6 61.1 82.75 ±1.6 +42 +16 69.5 86.20 ±1.5 
+
+OLM +113 +92 78.3 86.60 ±1.5 +126 +26 66.5 86.20 ±1.5 +105 +67 75.2 86.80 ±1.5 
+
+Adversarial Baseline ref ref 69.9 83.70 ±1.6 ref ref 59.5 80.50 ±1.8 ref ref 69.8 81.65 ±1.7 
+
+VCD +74 +39 75.5 85.45 ±1.6 +103 +49 67.1 83.20 ±1.6 +65 +55 75.8 82.15 ±1.7 
+
+SID +46 +32 73.8 84.40 ±1.6 +65 +34 64.5 82.05 ±1.7 +41 +25 73.2 82.45 ±1.7 
+
+PBA +46 +14 72.9 85.30 ±1.6 +36 +8 61.7 81.90 ±1.6 +42 +21 73.0 82.70 ±1.7 
+
+OLM +113 +86 79.8 85.05 ±1.5 +126 +50 68.3 84.30 ±1.6 +105 +79 79.0 82.95 ±1.6 
+
+Table 7. Across nearly every method, the unmodified Baseline attains the highest accuracy and TN2FP is quite larger than FN2TP. VCD and SID monotonically increase the yes percentage relative to baseline and are comparable to PBA and OLM methods. A similar trend can be recognized in Table 8 up to a certain extent. Table 9 and Table 10 show that the trend reverses relative to the 25/75 setting. FN2TP dominates over TN2FP in almost all the cases. We still notice the monotonic rise of YES percentage of VCD and SID and are quite comparable with PBA and OLM. 19 Table 10: 75/25 POPE test Qwen2.5-VL-7B across GQA , COCO , and A-OKVQA . Accuracy is reported with a 95% bootstrap confidence interval (10,000 resamples over the 2,000 questions; ± half-width). Best accuracy per split–dataset cell in bold .                                                                                                                                                                                                                                                       
+
+> Split Method GQA COCO A-OKVQA YES Resp. ∆Perf. YES Resp. ∆Perf. YES Resp. ∆Perf. FN →TP TN →FP Yes% Acc% (95% CI) FN →TP TN →FP Yes% Acc% (95% CI) FN →TP TN →FP Yes% Acc% (95% CI) Random Baseline ref ref 65.0 88.30 ±1.4 ref ref 58.9 83.35 ±1.6 ref ref 65.5 88.60 ±1.4
+> VCD +3 +2 65.2 88.35 ±1.4 +16 059.7 84.15 ±1.6 +11 +3 66.2 89.00 ±1.4
+> SID +20 +5 66.2 89.05 ±1.4 +17 +1 59.8 84.15 ±1.6 +21 +1 66.6 89.60 ±1.3
+> PBA +9 −165.4 88.80 ±1.4 +13 059.5 84.00 ±1.6 +7 −165.8 89.00 ±1.4
+> OLM +71 +13 69.2 91.20 ±1.2 +72 +3 62.6 86.80 ±1.5 +60 +9 69.0 91.15 ±1.2
+> Popular Baseline ref ref 66.5 87.05 ±1.5 ref ref 59.2 82.95 ±1.6 ref ref 66.6 87.45 ±1.5
+> VCD −3+6 66.7 86.60 ±1.5 +18 060.2 83.85 ±1.6 +4 +3 67.0 87.50 ±1.5
+> SID +17 +6 67.7 87.60 ±1.4 +17 +4 60.3 83.60 ±1.6 +21 +5 68.0 88.25 ±1.4
+> PBA +6 +3 67.0 87.20 ±1.4 +13 −159.9 83.65 ±1.6 +7 +2 67.1 87.70 ±1.4
+> OLM +68 +17 70.8 89.60 ±1.3 +72 +7 63.2 86.20 ±1.5 +60 +12 70.2 89.85 ±1.4
+> Adversarial Baseline ref ref 68.4 85.20 ±1.5 ref ref 59.8 82.75 ±1.6 ref ref 69.2 84.85 ±1.6
+> VCD −4+3 68.3 84.85 ±1.6 +14 +4 60.7 83.25 ±1.6 +1 −169.2 84.95 ±1.6
+> SID +17 +6 69.5 85.75 ±1.5 +14 +11 61.0 82.90 ±1.6 +21 +3 70.5 85.75 ±1.5
+> PBA +6 +2 68.8 85.40 ±1.5 +13 +1 60.5 83.35 ±1.6 +7 +5 69.8 84.95 ±1.6
+> OLM +68 +23 73.0 87.45 ±1.5 +70 +15 64.0 85.50 ±1.6 +60 +19 73.2 86.90 ±1.5
+
+Table 11: Average balanced accuracy relative to baseline (averaged across Random, Popular, Adversarial splits). Negative score means that the method hurts discrimination. 
+
+Dataset Model VCD SID PBA OLM 
+
+25/75 (500 YES / 1500 NO) GQA LLaVA-7B -2.12 -0.60 -0.31 -4.26 Qwen-7B -0.66 -0.52 -0.04 +0.06 AOKVQA LLaVA-7B -2.69 -2.22 -0.38 -3.39 Qwen-7B -0.13 -0.12 -0.22 +0.36 COCO LLaVA-7B +1.08 +0.27 +0.73 +1.61 Qwen-7B +0.59 +0.40 +0.46 +2.09 75/25 (1500 YES / 500 NO) GQA LLaVA-7B -2.26 -1.17 -0.53 -3.80 Qwen-7B -0.41 -0.03 -0.10 +0.13 AOKVQA LLaVA-7B -2.28 -0.98 -0.03 -2.70 Qwen-7B -0.01 +0.40 -0.03 +0.67 COCO LLaVA-7B +0.22 -0.10 +0.72 +1.10 Qwen-7B +0.40 +0.00 +0.23 +1.54 
+
+Table 11 shows that in most of the cases the average balanced accuracy scores for VCD and SID are negative, thus no improvement in hallucination mitigation is provided effectively. Deviation from this trend is seen in COCO dataset. 
+
+Inference It is noticeable and confirmed that the behaviour in 25/75 regime experiment is almost the mirror opposite of 75/25 regime experiment in terms of FN2TP and TN2FP trends and the accuracy scores. One striking observation is that Yes percentage increases in almost all the methods over all datasets, splits and methods for VCD and SID. Similarity is seen between VCD, SID methods and PBA, OLM methods. In the 25 /75 setup, the True Negative (TN) pool is vast. Therefore, a forced YES-inflation majorly converts TNs into False positives (FPs), causing accuracy to dip. In the 75 /25 setup, the False Negative (FN) pool is 20 vast. The exact same YES-inflation now converts those FNs into True Positives (TPs), artificially inflating accuracy. The Balanced Accuracy scores are majorly negative suggesting that the methods are actually underperform-ing. In COCO dataset, we observe the opposite trend where VCD and SID are seen to have positive Balanced accuracy scores but we observe that the OLM and PBA are showing positive average balanced accuracy too. This can be related to Table 1 where we see that LLaVA’s baseline Yes-rate on COCO is 39.7% versus 46.0% on GQA. COCO is where the model is most No-biased, so it has the most headroom before Yes-inflation overshoots the balanced optimum. 
+
+7.1.3 Verification of APC sampling into Greedy Search using Jaccard Similarity Analysis. 
+
+Similarity to greedy increases with β. Table 12 and Figure 1 report the sweep. On both models, similarity to greedy search increases as β grows, and the bootstrap confidence intervals of the β=0 and β=1 
+
+endpoints are disjoint. At VCD’s default β=0 .1, APC output is already closer to greedy than the plain sampling is, so the constraint takes effect well below its extreme. Table 12: APC vs. greedy. Mean token-wise Jaccard similarity index between APC-augmented sampling and greedy search over the 60 LLaVA-Bench (In-the-Wild) questions, with paired bootstrap 95% CIs ( 10 ,000 
+
+resamples over the 60 questions). The two columns use different tokenizers and are not directly comparable, so no cross-model difference is reported. 
+
+LLaVA-v1.5-7B Qwen2.5-VL-7B APC β
+
+0.000 0.3371 [0.2913, 0.3893] 0.3713 [0.3268, 0.4218] 
+
+0.025 0.3470 [0.3018, 0.3984] 0.3650 [0.3248, 0.4125] 
+
+0.050 0.3606 [0.3198, 0.4070] 0.4327 [0.3783, 0.4931] 
+
+0.075 0.3689 [0.3265, 0.4168] 0.4388 [0.3881, 0.4952] 
+
+0.100 0.4027 [0.3481, 0.4628] 0.4274 [0.3768, 0.4841] 
+
+0.200 0.3992 [0.3551, 0.4485] 0.4763 [0.4250, 0.5340] 
+
+0.300 0.4182 [0.3667, 0.4757] 0.4850 [0.4286, 0.5473] 
+
+0.400 0.4524 [0.4006, 0.5086] 0.4943 [0.4419, 0.5504] 
+
+0.500 0.5016 [0.4501, 0.5566] 0.5219 [0.4658, 0.5841] 
+
+0.600 0.5051 [0.4569, 0.5568] 0.5506 [0.4950, 0.6113] 
+
+0.700 0.5138 [0.4606, 0.5711] 0.5757 [0.5168, 0.6382] 
+
+0.800 0.5804 [0.5240, 0.6383] 0.6192 [0.5566, 0.6831] 
+
+0.900 0.6668 [0.6093, 0.7249] 0.7308 [0.6724, 0.7871] 
+
+1.000 0.9683 [0.9354, 0.9931] 0.7785 [0.7211, 0.8344] 
+
+The trend reflects a specific pull towards greedy rather than generic variance reduction. At every tested β
+
+and on both models, APC output is closer to greedy than to the sampler it is layered on (Table 13), and a paired bootstrap on the per-question (greedy − sampling) difference confirms the gap is significant in every case (all 95% CIs exclude 0; gap +0 .06 to +0 .12 , widening with β). Tightening the constraint therefore it moves generation towards greedy, not towards a typical sample. 21 Figure 1: APC threshold β vs. mean Jaccard similarity, for LLaVA-v1.5-7B (left) and Qwen2.5-VL-7B (right), with bootstrap 95% CI bands. Similarity to greedy (red) climbs steeply while similarity to direct sampling (blue) stays flat; the dotted vertical marks VCD’s default β=0 .1.Table 13: APC vs. greedy and vs. direct sampling , with paired bootstrap 95% CIs. 
+
+LLaVA-v1.5-7B Qwen2.5-VL-7B APC β vs. Greedy vs. Sampling Diff. vs. Greedy vs. Sampling Diff. 
+
+0.075 0.3689 [0.3265, 0.4168] 0.3069 [0.2678, 0.3519] +0 .0620 [+0.0362, +0.0900] 0.4388 [0.3881, 0.4952] 0.3427 [0.3021, 0.3885] +0 .0961 [+0.0622, +0.1379] 
+
+0.100 0.4027 [0.3481, 0.4628] 0.3135 [0.2725, 0.3614] +0 .0892 [+0.0609, +0.1211] 0.4274 [0.3768, 0.4841] 0.3445 [0.2993, 0.3963] +0 .0830 [+0.0488, +0.1214] 
+
+0.200 0.3992 [0.3551, 0.4485] 0.3117 [0.2710, 0.3579] +0 .0875 [+0.0583, +0.1151] 0.4763 [0.4250, 0.5340] 0.3702 [0.3176, 0.4311] +0 .1061 [+0.0747, +0.1404] 
+
+0.300 0.4182 [0.3667, 0.4757] 0.3068 [0.2687, 0.3510] +0 .1114 [+0.0828, +0.1440] 0.4850 [0.4286, 0.5473] 0.3661 [0.3163, 0.4235] +0 .1189 [+0.0871, +0.1551] 
+
+We recompute the endpoints under two stricter metrics (Table 14). Content-word Jaccard (stopwords re-moved) is nearly unchanged, so the overlap is content-bearing rather than function-word coincidence; order-sensitive bigram Jaccard shows the same convergence from a much lower baseline. On every metric the β=0 
+
+and β=1 CIs are disjoint. A paired bootstrap of the ( β=1 − β=0 ) difference is always significant, on both models and under all three metrics. Table 15 compares VCD against greedy, against APC at VCD’s own β=0 .1, and against direct sampling. On both models VCD is closest to greedy and furthest from sampling ( J( VCD , Greedy ) > J( VCD , APC 0.1) >
+
+J( VCD , Sample )). 22 Table 14: Metrics showing similarity to greedy search , with paired bootstrap 95% CIs. The conver-gence shown by the unigram metric also holds under an order-sensitive metric (bigram) and after stopword removal (content-word). The Diff. column is the paired bootstrap of the per-question ( β=1 − β=0 ) differ-ence 
+
+Model Metric β = 0 (sampling) β = 1 (greedy-equivalent) Diff. 
+
+LLaVA Unigram (headline) 0.3371 [0.2912, 0.3900] 0.9683 [0.9363, 0.9931] +0 .6312 [+0.5756, +0.6825] 
+
+LLaVA Bigram 0.1866 [0.1384, 0.2451] 0.9577 [0.9150, 0.9902] +0 .7712 [+0.7050, +0.8284] 
+
+LLaVA Content-word 0.2692 [0.2216, 0.3250] 0.9629 [0.9256, 0.9919] +0 .6918 [+0.6336, +0.7457] 
+
+Qwen Unigram (headline) 0.3713 [0.3264, 0.4221] 0.7785 [0.7210, 0.8344] +0 .4073 [+0.3444, +0.4676] 
+
+Qwen Bigram 0.1968 [0.1473, 0.2562] 0.6958 [0.6176, 0.7717] +0 .4990 [+0.4187, +0.5763] 
+
+Qwen Content-word 0.3330 [0.2806, 0.3934] 0.7520 [0.6877, 0.8150] +0 .4194 [+0.3465, +0.4912] 
+
+Table 15: VCD vs. three comparison references , with paired bootstrap 95% CIs. 
+
+Comparison LLaVA-v1.5-7B Qwen2.5-VL-7B 
+
+VCD vs. Greedy search 0.3977 [0.3527, 0.4466] 0.4305 [0.3708, 0.4971] 
+
+VCD vs. APC ( β = 0 .1) 0.3705 [0.3228, 0.4235] 0.3974 [0.3449, 0.4579] 
+
+VCD vs. Direct sampling 0.3055 [0.2666, 0.3496] 0.3587 [0.3011, 0.4243] 
+
+Diff. greedy − sampling +0 .0923 [+0.0640, +0.1218] +0 .0718 [+0.0409, +0.1065] 
+
+Diff. greedy − APC( β=0 .1) +0 .0272 [+0.0009, +0.0514] +0 .0331 [+0.0077, +0.0602] 
+
+Summary Taken together, Tables 12 to 15 give direct, generation-level evidence for the second claim of Yin et al. (2026): raising β progressively converts sampled generations into greedy ones, the pull is towards greedy specifically. At the small β real methods use, the output is already greedy-biased. 23 7.2 Novel Additional Insight experiments 7.2.1 Per-Token Distribution Analysis of the Contrastive Adjustment 
+
+Figure 2: Per-time step contrastive adjustment d = E − A over the expert’s top-10 object candidates, for LLaVA-1.5-7B. Left column: real objects; right column: hallucinated objects. Top row: VCD; bottom row: SID. Red bars are amplified ( d > 0), blue bars are suppressed ( d < 0); the dashed line marks the group mean. 
+
+Figure 2 (LLaVA, top-10). On LLaVA the contrastive adjustment d = E − A is small and positive for both groups (VCD: +0 .133 real, +0 .164 hallucinated; SID: +0 .218 real, +0 .114 hallucinated), so contrastive decoding on average amplifies object logits rather than suppressing them. Hallucinated objects are not pushed down relative to real ones: under VCD they are amplified slightly more, and under SID both are amplified with no meaningful gap. We infer that on LLaVA the contrastive term gives no selective suppression of hallucinations; its effect on object tokens is a small, non-discriminative upward nudge. 
+
+Figure 3 (Qwen, top-10) On Qwen the adjustment is negative overall, so contrastive decoding lowers object logits, but it lowers real objects far more than hallucinated object related tokens (VCD: −0.984 real vs. −0.429 hallucinated; SID: −0.674 vs. −0.172 ), and a larger share of hallucinated tokens is amplified ( 36% 
+
+vs. 25% positive under VCD). We infer that the suppression is aimed the wrong way: the tokens it pushes down hardest are the correct ones, while hallucinations are comparatively spared, which is the opposite of the method’s stated goal. 
+
+Figure 4 (LLaVA, emitted words). Restricting to the object words the model actually wrote (emitted words tokens): emitted hallucinated words receive a much larger positive adjustment than real words (VCD: 
+
++0 .789 vs. +0 .264 ; SID: +0 .684 vs. +0 .296 ), stronger amplification of hallucinations. We infer that, far from suppressing the hallucinations it emits, contrastive decoding increases them more than it boosts the real objects. 
+
+Figure 5 (Qwen, emitted words). On Qwen the emitted-word token analysis: real object words are strongly suppressed while hallucinated words sit near zero or are amplified comparitively(VCD: −1.283 
+
+real vs. −0.097 hallucinated; SID: −0.747 real vs. +0 .429 hallucinated, where hallucinations are pushed 24 Figure 3: Per-time step contrastive adjustment d = E − A over the expert’s top-10 object candidates, for Qwen2.5-VL-7B. Layout as in Figure 2. 
+
+Figure 4: Contrastive adjustment d = E − A on emitted object words, for LLaVA-1.5-7B. Layout as in Figure 2. up as real objects are pushed down). We infer that the contrastive term actively works against grounding here, penalising the correct objects the model emits while leaving or making hallucinations more likely comparitively, consistent with Qwen’s degraded CHAIR scores. 25 Figure 5: Contrastive adjustment d = E − A on emitted object words, for Qwen2.5-VL-7B. Layout as in Figure 2. Visual inspection of the logit distributions suggests that the contrastive adjustment d = E − A does not exhibit a clearly targeted, content-dependent structure; instead, it resembles a small, approximately zero-centered perturbation applied to the expert logits E. This observation motivates a proxy method that replaces the amateur-derived adjustment with Gaussian noise calibrated to the empirical scale of d and adds it directly to the expert logits. We evaluate this proxy on the standard CHAIR benchmark and compare its performance with VCD and SID. If the Gaussian perturbation yields outcomes comparable to those of the CD methods, this would indicate that the amateur branch provides little benefit beyond that of a generic logit perturbation, despite the proxy having no explicit connection to visual grounding or hallucination mitigation. We discard the amateur branch entirely. Starting from the plain expert logits E, we add independent random gaussian noise to the logits of object related tokens only, with magnitude matched to the measured distribution of d for the real method, and then apply the same adaptive plausibility constraint and greedy decoding. The proxy has no access to the degraded image and performs no contrast; it only sees the expert logits and adds a random noise on each logit under consideration. We evaluate it on the standard CHAIR benchmark under identical conditions and compare against the real VCD and SID runs. 
+
+Table 16 inference: Proxy lands in the similar CHAIR band as the real methods on LLaVA and stays near greedy on Qwen. We infer that an expert only model by even adding random gaussian noise to it performs equivalently ,if not better, than the real VCD and real SID methods. With 95% bootstrap confidence intervals, Proxy falls in the same CHAIR band as the real methods. On LLaVA its intervals overlap with those of both VCD and SID, and on Qwen it overlaps greedy while sitting at or below the real methods. The intervals of VCD and SID themselves overlap greedy on both models, so neither method shows a statistically distinguishable reduction in hallucination. 26 Table 16: Proxy against the real methods on CHAIR benchmark. Greedy is the baseline; VCD and SID are the real contrastive methods. Proxy discards the amateur branch and instead injects Gaussian noise 
+
+N (μ, σ 2) into the expert’s object-category logits, with (μ, σ ) (shown in brackets) matched to the measured adjustment d = E − A of VCD. Lower is better ( ↓). Values in square brackets are 95% image-level bootstrap confidence intervals over the 500 images ( B = 10 ,000 resamples). 
+
+Model Setting CHAIR-S ↓ CHAIR-I ↓
+
+LLaVA-1.5-7B Greedy 50 .0 [45 .6, 54 .4] 13 .9 [12 .5, 15 .3] 
+
+VCD (Real) 55 .0 [50 .6, 59 .4] 15 .6 [14 .1, 17 .0] 
+
+SID (Real) 54 .2 [49 .8, 58 .6] 15 .1 [13 .7, 16 .6] 
+
+Proxy ( μ=+0 .199 , σ =0 .853 ) 52 .4 [48 .0, 56 .6] 14 .8 [13 .3, 16 .3] 
+
+Qwen2.5-VL-7B Greedy 30 .8 [26 .7, 34 .8] 7.7 [6 .5, 8.9] 
+
+VCD (Real) 36 .4 [32 .4, 40 .6] 10 .5 [8 .9, 12 .1] 
+
+SID (Real) 38 .4 [34 .2, 42 .6] 10 .5 [9 .1, 12 .0] 
+
+Proxy ( μ=−0.846 , σ =1 .531 ) 30 .8 [26 .8, 34 .8] 8.2 [6 .9, 9.5] 
+
+7.2.2 Analyzing Object Faithfulness via Token Probability Distributions 
+
+Table 17: Normalized probability mass assigned to present (REAL) and hallucinated (HALL) object candi-dates, with 95% bootstrap confidence intervals ( B = 10 ,000 , resampling over 500 images). HALL = 1 −REAL by construction, so its interval is the mirror of REAL’s. 
+
+Model Method Branch REAL HALL 
+
+LLaVA-v1.5-7B VCD Expert 0.84027 [0.82599, 0.85478] 0.15973 [0.14522, 0.17401] 
+
+CD 0.83964 [0.82509, 0.85426] 0.16036 [0.14574, 0.17491] 
+
+SID Expert 0.84459 [0.82988, 0.85897] 0.15541 [0.14103, 0.17012] 
+
+CD 0.84381 [0.82911, 0.85829] 0.15619 [0.14171, 0.17089] 
+
+Qwen2.5-VL-7B-Instruct VCD Expert 0.89641 [0.88077, 0.91116] 0.10359 [0.08884, 0.11923] 
+
+CD 0.88893 [0.87239, 0.90440] 0.11107 [0.09560, 0.12761] 
+
+SID Expert 0.89615 [0.88190, 0.90989] 0.10385 [0.09011, 0.11810] 
+
+CD 0.89083 [0.87613, 0.90531] 0.10917 [0.09469, 0.12387] 
+
+Table 18: Paired bootstrap differences in REAL mass ( B = 10 ,000 , same image resample applied to both branches per replicate). An interval excluding zero indicates a genuine branch difference. 
+
+Model Method CD − Expert 
+
+LLaVA-v1.5-7B VCD −0.00064 [−0.00331 , +0 .00215 ]
+
+SID −0.00078 [−0.00344 , +0 .00188 ]
+
+Qwen2.5-VL-7B-Instruct VCD −0.00747 [−0.01074 , −0.00439 ]
+
+SID −0.00532 [−0.00841 , −0.00235 ]
+
+Table 17 reports the absolute probability mass assigned to present and hallucinated object tokens for the Expert and CD branches across both models and methods. The confidence intervals are narrow (roughly 27 ±0.015 ), confirming that these estimates are stable across the 500 images. Importantly, this table describes each branch in isolation. The overlapping intervals between Expert and CD are not the basis for any comparative claim, as branches evaluated on the same steps share image-sampling variance that inflates each marginal interval. Branch comparisons are deferred entirely to Table 18. Table 18 reports the paired difference CD − Expert in REAL mass, where a single image resample is applied to both branches within each bootstrap replicate so that shared variance cancels. This is the direct test of whether contrastive decoding shifts probability mass toward present objects. The results are unambiguous across both architectures: 
+
+• LLaVA-v1.5-7B. Under both VCD and SID, the paired differences are statistically indistinguish-able from zero, with confidence intervals that comfortably straddle zero ( [−0.00331 , +0 .00215] and 
+
+[−0.00344 , +0 .00188] respectively). The intervals are also narrow enough to rule out any practically meaningful shift. This is a bounded null result, the intervals are also narrow enough to rule out any practically meaningful shift. W e are not merely failing to detect an effect, but can confidently say the effect is negligibly small if it exists at all. 
+
+• Qwen2.5-VL-7B-Instruct. Under both VCD and SID, the confidence intervals exclude zero en-tirely ( [−0.01074 , −0.00439] and [−0.00841 , −0.00235] respectively), indicating a statistically signif-icant shift, but in the wrong direction. Contrastive decoding measurably reduces the probability mass assigned to present objects relative to the expert baseline. Taken together, these results show that contrastive decoding does not achieve its intended effect at the object token level. Where the effect is negligible (LLaVA), it is provably so; where it is non-negligible (Qwen), it moves the distribution in the direction opposite to its theoretical motivation. In neither case does the contrastive step increase the likelihood of selecting a ground-truth object over a hallucinated one. 
+
+7.2.3 Layer-wise Logit-Lens Selectivity Analysis 
+
+We now report the layer-wise logit-lens analysis of Section 6.2.3, which asks whether CD’s shift is selective — lowering the margin of hallucinated “Yes” answers while leaving correct ones unchanged — or a uniform translation of the Yes-vs-No decision. 
+
+Experiment 1 (direct test). Figure 6 shows that the hallucination is decodable from layer 12 (Probe B AUC → 1.0), while CD’s effect is near zero until then, peaks at layer 19 (∆ = +17 .9), and decays to +3 .32 
+
+at the readout. Two features stand out: CD’s effect is offset several layers past where the hallucination is settled, and it is positive at every layer, i.e. it reinforces the false “Yes” rather than suppressing it. On its own this is only suggestive: by the additivity argument the depth offset need not imply CD acts in the wrong place, and a positive mean does not establish that CD treats hallucinated and correct answers alike. 
+
+Experiment 2 (selectivity). Figure 7, Figure 8, and Table 19 settle both points. Object presence is decodable from layer 8 (Probe A AUC crosses 0.95 , rising to 0.99 ; even the 1-D margin separates H from 
+
+T at AUC 0.86 ), so the information a selective CD would need is present. Yet CD’s selectivity never leaves 
+
+[0 .40 , 0.60] at any depth and is 0.52 at the readout ( 95% bootstrap CI is [0 .49 , 0.55] ); its shift reinforces the false “Yes” for 96 .5% of hallucinations at the readout, with the fraction pushed toward “Yes” locking near 
+
+0.95 from layer 17 . The amateur branch keeps a weaker but real presence signal at the readout ( 1-D margin AUC 0.71 vs. the clean 0.86 ), so CD is not blind for lack of a signal; it simply does not encode presence at any depth. Across all 33 layers not one clears chance in the suppression direction, and the multiplicity cuts in favor of the null: 33 independent chances to find a selective peak, none found. Because the selectivity is null at every layer, the additivity loophole is closed. The raw selectivity has one mechanical confound worth removing: ∆ℓ = mEℓ − mAℓ is correlated with mEℓ ,and mEℓ itself separates H from T at the readout by a standardized mean difference of 1.28 (means 1.11 vs. 
+
+3.14 ), so apparent selectivity could ride that channel alone. Regressing ∆ℓ on mEℓ and re-scoring the residual (Figure 8, red) moves readout selectivity from 0.52 to 0.42 : once the expert-margin channel is removed, 28 Figure 6: Experiment 1 (direct test). Hallucination decodability (orange, left axis) is complete by layer 12 ,while CD’s mean effect ∆ℓ on H (green, right axis, log-odds) is near zero until then, peaks at layer 19 , and stays positive throughout, i.e. CD reinforces the false “Yes.” Suggestive but not conclusive: additivity means the depth offset is not decisive, and a group-mean magnitude does not establish selectivity. CD’s residual shift ranks correct answers above hallucinations for suppression, the opposite of a correction. Two limitations remain: this is the single forced yes/no token, not free-form generation, and it isolates the contrastive term mE + α∆ (the decoder also applies the plausibility mask of Section 4.3); changing α scales 
+
+∆ but cannot flip its sign, so no α recovers suppression once ∆ > 0 for 96 .5% of cases. 
+
+Experiment 3 (oracle calibration and sensitivity bound). The obvious objection to a null selectivity is that the metric might simply be unable to see selectivity at all. Passing the oracle shift of equation 19’s companion (Section 6.2.3) through the identical pipeline, the oracle, built only from Probe A’s presence direction, attains a selectivity AUC of 0.89 at the readout, against CD’s 0.52 and a 0.50 chance floor (Table 19). The instrument therefore does register a genuinely selective shift; CD’s 0.52 is a measured null, not a blind spot of the metric. To bound the metric’s power , the graded sweep of Figure 9 injects a selective component ∆s = ∆ CD + s ˆuoracle and finds that selectivity clears the detection threshold at s∗ ≈ 0.10 
+
+log-odds, only 2.7% of CD’s own mean shift magnitude ( |∆| = 3 .64 log-odds). A selective component 36 ×
+
+smaller than CD’s actual shift would therefore have been detected; CD’s is below it. The null is bounded, not merely unobserved. 
+
+Experiment 4 (a scalar bias reproduces the gain). Figure 10 makes the “uniform translation” quan-titative. A single constant added to the decision margin peaks POPE at 86 .86% (b∗ = +0 .85 log-odds), against expert decoding at 85 .49% and VCD’s own realized 85 .04% ; VCD’s mean shift applied as a pure constant already gives 86 .48% . A zero-parameter threshold move matches or exceeds VCD, so its benchmark effect is a threshold effect by construction — exactly what the mechanistic null predicts. 29 Figure 7: Experiment 2 (selectivity). (1) Presence (the H-vs-T distinction) is decodable from layer 8
+
+(Probe A, blue), yet CD’s selectivity (green) stays at chance. (2) The amateur branch’s presence signal is degraded but not absent. (3) The fraction of H pushed toward “Yes” locks near 0.95 from layer 17 (95% 
+
+Wilson interval). (4) Hallucination status explains under 1% of the variance of ∆ℓ at all depths. 
+
+Figure 10: Experiment 4 (scalar-bias control). POPE–COCO accuracy vs. a constant bias b added to every Yes −No margin. The best single scalar ( b∗ = +0 .85 , 86 .86% ) exceeds VCD’s realized accuracy ( 85 .04% ,dashed) and the expert baseline ( 85 .49% ); VCD’s mean shift as a pure scalar (diamond) recovers 86 .48% .30 Figure 8: Per-layer selectivity AUC of −∆ℓ ranking H above T for suppression, with 95% bootstrap CI band (raw, blue). Residualizing ∆ℓ on the expert margin mEℓ (red) — which itself separates H/T at SMD 1.28 
+
+— pushes readout selectivity from 0.52 to 0.42 , below chance. |H| = 257 , |T | = 3 ,453 .
+
+Figure 9: Experiment 3 (sensitivity bound). Selectivity AUC as a function of a selective component s
+
+(log-odds) injected on top of CD’s own shift. The metric crosses the chance-plus-CI detection threshold at 
+
+s∗ ≈ 0.10 log-odds, 2.7% of CD’s mean shift magnitude ( 3.64 log-odds); CD’s shift is thus 36 × larger than the smallest detectable selective effect. CD’s observed selectivity ( 0.52 , red point at s = 0 ) sits at chance; the by-construction oracle reaches AUC 0.89 .31 Table 19: Numerical results for the logit-lens analysis ( α = 1 ), from the per-sample logit-lens margins over all 9,000 POPE–COCO questions on LLaVA-1.5-7B. The upper block reproduces the direct and selectivity analysis; the lower block reports the sensitivity bound and the scalar-bias control. Bootstrap intervals are question-level ( B = 2 ,000 resamples)                                                                         
+
+> Quantity Value Answered “Yes”: hallucinated H/ correct T257 /3453
+> Object-absent (Probe B training set): hallucinated / correct-reject 257 /4243
+> Hallucination decodable (Probe B AUC →1.0) from layer 12
+> Presence decodable (Probe A AUC ≥0.95 ) from layer 8
+> Presence AUC: Probe A (hidden state) / in-population 1-D margin 0.99 /0.86
+> Selectivity AUC of −∆ℓ(CD): range / readout [0 .40 ,0.60] /0.52
+> readout 95% bootstrap CI [0 .49 ,0.55]
+> readout, residualized on mEℓ0.42
+> mEgap T −H at readout (SMD) 1.28
+> Presence AUC at readout, all samples: clean / noisy branch 0.94 /0.78
+> Fraction of Hwith ∆>0at readout 0.965
+> Mean shift ∆at readout: H/ all +3 .32 /+ 1 .23
+> Selectivity AUC of −∆ℓ(oracle, readout) / chance floor 0.89 /0.50
+> Detection threshold s∗/ CD mean |∆|(log-odds) 0.10 /3.64
+> Scalar bias: expert / best b∗/ VCD realized (POPE acc %) 85 .49 /86 .86 /85 .04
+
+What we infer From layer 8 the model carries a clean linear representation of object presence — exactly what separates a hallucinated “Yes” from a correct one, but CD’s shift never uses it: its selectivity sits at chance (below chance once the mE channel is removed) while a presence-based oracle run through the same metric reaches 0.89 , a selective component 36 × smaller would have been detected, and where it acts most strongly it pushes hallucinations further toward “Yes.” A single scalar bias reproduces its entire POPE gain. Contrastive decoding therefore does not correct hallucinations at the point of decision; it applies a uniform, one-sided translation of the Yes-vs-No margin, blind to whether an answer is a hallucination, benchmark-effective only because the base threshold is miscalibrated. Any measured reduction is a threshold effect rather than a correction of the mechanism that produces the hallucination, consistent with the distributional-shift account of Yin et al. (2026) reproduced in Section 5.1. 
+
+8 Discussion 
+
+8.1 Conclusion 
+
+Reproducing Yin et al. (2026) on a newer model suite (LLaVA-v1.5-7B/13B, Qwen2.5-VL-7B) across GQA, MSCOCO, and A-OKVQA on the POPE benchmark, MME, and CHAIR, we test both central claims: the apparent POPE gains of VCD and SID are due to unidirectional shift of the output distribution, and the adaptive plausibility constraint applied alone recovers most of the reported improvement by collapsing sampling toward greedy decoding. Our extensions strengthen this account by showing directly why it holds. CD corrects fewer genuine errors than a non-visual control while injecting hallucinations at a comparable rate; its gains vanish under balanced accuracy, once the metric no longer rewards a shifted threshold; a Gaussian-noise proxy that discards the amateur branch matches CD on CHAIR; and although object presence is linearly decodable from layer 8, CD’s shift is non-selective at every depth and is reproduced in full by a single scalar bias on the decision margin. Contrastive decoding thus acts as a uniform, one-sided translation of the Yes-versus-No margin, benchmark-effective only when the base threshold is miscalibrated, not a correction of the mechanism that produces hallucinations. One observation refines the original framing: the unidirectional shift toward "Yes" holds for VCD and SID but reverses for ICD while staying accuracy-neutral, indicating that the direction of the shift is a property of the perturbation modality rather than of the paradigm, a documented anomaly we leave as an open question. Overall, our study affirms and extends the foundational result: current contrastive decoding 32 strategies should not be relied upon as hallucination mitigation, and the mechanistic tools used here offer a template for auditing whether future training-free interventions act on grounding or merely on the decision boundary. 
+
+8.2 Broader Impact 
+
+The hallucination problem in MLLMs refers to the generation of outputs that are factually incorrect or misaligned with the visual input. Because these outputs are fluent, confident, and syntactically indistin-guishable from grounded ones, they carry no surface signal of their own unreliability, and a reader has little basis for catching them without independently checking the image. This becomes consequential wherever such models are placed in a decision loop in certain cases like Medical Report Generation, Insurance and disaster-damage assessment, Autonomous Driving, Judicial evidence in cases of crime etc. Contrastive decoding methods are widely recognized as an effective approach to addressing object hallucina-tion in generative models with up to 40 new CD variants being introduced last year. Our study encourages inquiry against the effectiveness of these methods in hallucination mitigation. Thus the risk of hallucinated returns from MLLMs still remains high. In conclusion, while our reproducibility study affirms the foundational work of Yin et al. (2026), it also accentuates the necessity for deeper investigation into hallucination mitigation strategies. A comprehensive understanding of this phenomenon is crucial for developing effective measures to protect against hallucina-tions in VLMs. 
+
+8.3 Limitations and Future Works 
+
+We tried to reproduce the key results of Yin et al. (2026) and conducted extensive ablations. While CD methods induce a unidirectional shift in the output distribution in discriminative datasets, this shift is not always biased toward "yes," complicating the original paper’s framing. Our analysis is subject to several limitations. Computational constraints restricted the scale of some exper-iments, as inference on LLaVA-v1.5-7B/13B and Qwen2.5-VL-7B is memory and compute intensive. Due to this, we were not able to show the results of LLava-v1.5-13B in Table 1. We were also not able to show the seeded runs in the Gaussian noise proxy experiment (Table-16). Extending our ablations to inference-time strategies beyond VCD and SID was infeasible on our infrastructure. Qwen2.5-VL’s incompatibility with a dual-branch KV cache Pope et al. (2022) forced us to compute the amateur branch without caching. Our initial cached implementation diverged from the exact uncached computation by up to 5.6 in output logits, well above the noise floor, which would have silently corrupted results had we relied on it; we report only uncached numbers which was computationally expensive. Our layer-wise analysis also speaks only to the final-layer intervention point at which CD operates, and our ICD-reversal finding remains without a confirmed mechanistic explanation pending seed-robustness checks. Future work could examine how perturbation nature and magnitude relates to shift direction, and evaluate training-based mitigation approaches alongside the inference-time methods studied here. Several seeded runs can also be computed in the Gaussian noise proxy experiment (Table-16) to consolidate it. 
+
+8.4 Communication with Original authors 
+
+No direct communication could be established with the original authors during the reproducibility process. We attempted to contact the authors of the original study via email but no response was received. 
+
+References 
+
+Harsh Agrawal, Karan Desai, Yufei Wang, Xinlei Chen, Rishabh Jain, Mark Johnson, Dhruv Batra, Devi Parikh, Stefan Lee, and Peter Anderson. nocaps: novel object captioning at scale. In 2019 IEEE/CVF International Conference on Computer Vision (ICCV) , pp. 8947–8956. IEEE, October 2019. doi: 10.1109/ iccv.2019.00904. URL http://dx.doi.org/10.1109/ICCV.2019.00904 .33 Guillaume Alain and Yoshua Bengio. Understanding intermediate layers using linear classifier probes. arXiv preprint arXiv:1610.01644 , 2016. URL https://arxiv.org/abs/1610.01644 .Shuai Bai, Keqin Chen, Xuejing Liu, Jialin Wang, Wenbin Ge, Sibo Song, Kai Dang, Peng Wang, Shijie Wang, Jun Tang, Humen Zhong, Yuanzhi Zhu, Mingkun Yang, Zhaohai Li, Jianqiang Wan, Pengfei Wang, Wei Ding, Zheren Fu, Yiheng Xu, Jiabo Ye, Xi Zhang, Tianbao Xie, Zesen Cheng, Hang Zhang, Zhibo Yang, Haiyang Xu, and Junyang Lin. Qwen2.5-vl technical report, 2025. URL https://arxiv.org/abs/ 2502.13923 .Nora Belrose, Zach Furman, Logan Smith, Danny Halawi, Igor Ostrovsky, Lev McKinney, Stella Biderman, and Jacob Steinhardt. Eliciting latent predictions from transformers with the tuned lens. arXiv preprint arXiv:2303.08112 , 2023. URL https://arxiv.org/abs/2303.08112 .Florian Bordes, Richard Yuanzhe Pang, Anurag Ajay, Alexander C. Li, Adrien Bardes, Suzanne Petryk, Oscar Mañas, Zhiqiu Lin, Anas Mahmoud, Bargav Jayaraman, Mark Ibrahim, Melissa Hall, Yunyang Xiong, Jonathan Lebensold, Candace Ross, Srihari Jayakumar, Chuan Guo, Diane Bouchacourt, Haider Al-Tahan, Karthik Padthe, Vasu Sharma, Hu Xu, Xiaoqing Ellen Tan, Megan Richards, Samuel Lavoie, Pietro Astolfi, Reyhane Askari Hemmat, Jun Chen, Kushal Tirumala, Rim Assouel, Mazda Moayeri, Arjang Talattof, Kamalika Chaudhuri, Zechun Liu, Xilun Chen, Quentin Garrido, Karen Ullrich, Aishwarya Agrawal, Kate Saenko, Asli Celikyilmaz, and Vikas Chandra. An introduction to vision-language modeling, 2024. URL 
+
+https://arxiv.org/abs/2405.17247 .Zhaorun Chen, Zhuokai Zhao, Hongyin Luo, Huaxiu Yao, Bo Li, and Jiawei Zhou. Halc: Object hallucination reduction via adaptive focal-contrast decoding, 2024. URL https://arxiv.org/abs/2403.00425 .Wenliang Dai, Zihan Liu, Ziwei Ji, Dan Su, and Pascale Fung. Plausible may not be faithful: Probing object hallucination in vision-language pre-training, 2023. URL https://arxiv.org/abs/2210.07688 .Nelson Elhage, Neel Nanda, Catherine Olsson, Tom Henighan, Nicholas Joseph, Ben Mann, Amanda Askell, Yuntao Bai, Anna Chen, Tom Conerly, Nova DasSarma, Dawn Drain, Deep Ganguli, Zac Hatfield-Dodds, Danny Hernandez, Andy Jones, Jackson Kernion, Liane Lovitt, Kamal Ndousse, Dario Amodei, Tom Brown, Jack Clark, Jared Kaplan, Sam McCandlish, and Christopher Olah. A mathematical framework for transformer circuits. Transformer Circuits Thread , 2021. URL https://transformer-circuits.pub/ 2021/framework/index.html .Chaoyou Fu, Peixian Chen, Yunhang Shen, Yulei Qin, Mengdan Zhang, Xu Lin, Jinrui Yang, Xiawu Zheng, Ke Li, Xing Sun, Yunsheng Wu, Rongrong Ji, Caifeng Shan, and Ran He. Mme: A comprehensive evaluation benchmark for multimodal large language models, 2025. URL https://arxiv.org/abs/2306. 13394 .Jia Gu, Liang Pang, Huawei Shen, and Xueqi Cheng. D-models and e-models: Diversity-stability trade-offs in the sampling behavior of large language models, 2026. URL https://arxiv.org/abs/2601.17865 .Drew A. Hudson and Christopher D. Manning. Gqa: A new dataset for real-world visual reasoning and compositional question answering, 2019. URL https://arxiv.org/abs/1902.09506 .Fushuo Huo, Wenchao Xu, Zhong Zhang, Haozhao Wang, Zhicheng Chen, and Peilin Zhao. Self-introspective decoding: Alleviating hallucinations for large vision-language models, 2025. URL https://arxiv.org/ abs/2408.02032 .Cheongwoong Kang and Jaesik Choi. Impact of co-occurrence on factual knowledge of large language models, 2023. URL https://arxiv.org/abs/2310.08256 .Taku Kudo and John Richardson. Sentencepiece: A simple and language independent subword tokenizer and detokenizer for neural text processing, 2018. URL https://arxiv.org/abs/1808.06226 .Weicheng Kuo, Yin Cui, Xiuye Gu, AJ Piergiovanni, and Anelia Angelova. F-vlm: Open-vocabulary object detection upon frozen vision and language models, 2023. URL https://arxiv.org/abs/2209.15639 .34 Sicong Leng, Hang Zhang, Guanzheng Chen, Xin Li, Shijian Lu, Chunyan Miao, and Lidong Bing. Mitigating object hallucinations in large vision-language models through visual contrastive decoding, 2023. URL 
+
+https://arxiv.org/abs/2311.16922 .Xiang Lisa Li, Ari Holtzman, Daniel Fried, Percy Liang, Jason Eisner, Tatsunori Hashimoto, Luke Zettle-moyer, and Mike Lewis. Contrastive decoding: Open-ended text generation as optimization, 2023a. URL 
+
+https://arxiv.org/abs/2210.15097 .Yifan Li, Yifan Du, Kun Zhou, Jinpeng Wang, Wayne Xin Zhao, and Ji-Rong Wen. Evaluating object hallucination in large vision-language models, 2023b. URL https://arxiv.org/abs/2305.10355 .Chia Xin Liang, Pu Tian, Caitlyn Heqi Yin, Yao Yua, Wei An-Hou, Li Ming, Xinyuan Song, Tianyang Wang, Ziqian Bi, and Ming Liu. A comprehensive survey and guide to multimodal large language models in vision-language tasks, 2025. URL https://arxiv.org/abs/2411.06284 .Tsung-Yi Lin, Michael Maire, Serge Belongie, Lubomir Bourdev, Ross Girshick, James Hays, Pietro Perona, Deva Ramanan, C. Lawrence Zitnick, and Piotr Dollár. Microsoft coco: Common objects in context, 2015. URL https://arxiv.org/abs/1405.0312 .Haotian Liu, Chunyuan Li, Qingyang Wu, and Yong Jae Lee. Visual instruction tuning, 2023. URL https: //arxiv.org/abs/2304.08485 .Yufang Liu, Tao Ji, Changzhi Sun, Yuanbin Wu, and Aimin Zhou. Investigating and mitigating object hallucinations in pretrained vision-language (clip) models, 2024. URL https://arxiv.org/abs/2410. 03176 .nostalgebraist. Interpreting GPT: The logit lens. LessWrong, 2020. https://www.lesswrong.com/posts/ AcKRB8wDpdaN6v6ru/interpreting-gpt-the-logit-lens .Reiner Pope, Sholto Douglas, Aakanksha Chowdhery, Jacob Devlin, James Bradbury, Anselm Levskaya, Jonathan Heek, Kefan Xiao, Shivani Agrawal, and Jeff Dean. Efficiently scaling transformer inference, 2022. URL https://arxiv.org/abs/2211.05102 .Anna Rohrbach, Lisa Anne Hendricks, Kaylee Burns, Trevor Darrell, and Kate Saenko. Object hallucination in image captioning, 2019. URL https://arxiv.org/abs/1809.02156 .Dustin Schwenk, Apoorv Khandelwal, Christopher Clark, Kenneth Marino, and Roozbeh Mottaghi. A-okvqa: A benchmark for visual question answering using world knowledge, 2022. URL https://arxiv. org/abs/2206.01718 .Jiaqi Wang, Yifei Gao, and Jitao Sang. Valid: Mitigating the hallucination of large vision language models by visual layer fusion contrastive decoding, 2025. URL https://arxiv.org/abs/2411.15839 .Xintong Wang, Jingheng Pan, Liang Ding, and Chris Biemann. Mitigating hallucinations in large vision-language models with instruction contrastive decoding, 2024. URL https://arxiv.org/abs/2403.18715 .Hao Yin, Guangzong Si, and Zilei Wang. The mirage of performance gains: Why contrastive decoding fails to mitigate object hallucinations in mllms?, 2026. URL https://arxiv.org/abs/2504.10020 .
+
+A Appendix 
+
+A.1 Model and Experimentation Details A.1.1 Models 
+
+LLaVA-v1.5-7B is the model used by Yin et al. (2026), and we retain it so that our reproduction is measured against the same substrate as the original analysis. It is a decoder-only architecture in which a CLIP ViT-L/14-336px vision encoder produces a patch-grid representation of the image, a learned linear projector maps 35 that representation into the language model’s embedding space, and a Vicuna-7B-v1.5 backbone consumes the resulting visual tokens as an ordinary prefix. Because the encoder operates at a fixed 336 × 336 input resolution, the visual prefix is always exactly 576 tokens long, irrespective of the aspect ratio or content of the image; the visual budget is therefore a constant of the architecture rather than a property of the input, which makes step counts directly comparable across images. Prompts are formatted with the vicuna_v1 
+
+conversation template. Text is tokenised by the LLaMA SentencePiece tokenizer over a vocabulary of 32 ,000 
+
+sub-words.The model is run in float16 throughout, with the sdpa attention kernel. 
+
+Qwen2.5-VL-7B-Instruct is included to test whether the effects we observe survive a substantially different multimodal design rather than being an artefact of LLaVA’s particular architecture. It replaces the fixed-resolution encoder with a native dynamic-resolution ViT that ingests the image at its own aspect ratio, applies 2 × 2 patch merging to compress the token stream, and encodes position with a three-dimensional multimodal RoPE (mRoPE) spanning the temporal and both spatial axes. The consequence for our setup is that the visual prefix is image-dependent rather than constant: under our bounds of min_pixels = 256 ·28 ·28 
+
+and max_pixels = 1280 · 28 · 28 it averages roughly 266 tokens. Text is tokenised by a Qwen2 byte-level BPE tokenizer over a vocabulary of 151 ,643 , some 4.7× larger than LLaVA’s. Common object nouns are correspondingly far more often single tokens. The model is run in bfloat16 with the sdpa kernel. Taken together the two models differ in visual tokenisation, textual tokenisation, positional encoding, nu-merical precision, and baseline yes/no calibration. 
+
+A.1.2 Contrastive decoding methods 
+
+Visual Contrastive Decoding (VCD) VCD builds the amateur branch by corrupting the image while leaving the prompt untouched, on the reasoning that a model forced to describe an uninformative image must fall back on language priors, so subtracting that branch should remove the prior-driven component of the expert’s prediction. The corruption is forward diffusion: we use VCD’s released sigmoid noise schedule over T = 1000 steps unchanged, giving v′ = √¯αT v + √1 − ¯αT ϵ with ϵ ∼ N (0 , I ), evaluated at the noise step reported per experiment in Table 20. The noise is drawn once per image and held fixed for every step of that image’s generation. 
+
+Self-Introspective Decoding (SID) SID builds the amateur branch from the same model and the same image, degrading visual grounding internally by starving the deeper layers of visual evidence. To maintain conformity with the (Yin et al., 2026) and adapt to a faithfull reproduction of the original study ,we set 
+
+AGG_LAYER = 2 and ATTENTION_RANK = 72 of 576 , meaning a random 12 .5% subset of image tokens is kept ,drawn once per image; layers 0–1 attend to the full image, and from layer 2 onward all non-kept image tokens are masked out. On Qwen2.5-VL the SID’s hook masks attention through the eager path that is numerically broken for this model. We therefore reproduce the same intervention under sdpa by injecting, at every layer ≥ AGG_LAYER ,a causal 4D additive mask that sets the non-kept image key-columns to −∞ . Since this is our code, we verified it behaves as specified in both directions: the injected mask demonstrably changes the amateur logits relative to no masking at all ( |∆| = 0 .77 over the expert’s top-30 candidates), and it differs from masking at every layer ( |∆| = 2 .01 ), confirming that layers 0–1 genuinely remain unmasked as the recipe requires. Qwen applies the same 72 /576 fraction to that image’s dynamic visual-token count rather than a fixed count of 72 tokens. 
+
+A.2 CHAIR Analysis Details 
+
+At every step we log the top-30 ids and logits for expert, amateur, contrastive (pre-APC) and post-APC scores, plus the APC cutoff, emitted token id and per-candidate APC-survival flag: 60 ,094 /59 ,271 steps for LLaVA (VCD/SID), 93 ,652 /94 ,081 for Qwen. We store ids and logits of them .
+
+Object attribution. Labels come from standard CHAIR applied to the generated caption text , never to individual sub-word tokens: words are singularized, multi-word categories collapsed ( “teddy bear” , “dining table” ), and matched to MSCOCO-80 through the synonym dictionary ( man/woman/guy → person ). A36 Table 20: Hyperparameters for the three experiments. The plausibility threshold β and VCD’s noise step vary by experiment and are given per column.                                     
+
+> (1) CHAIR analysis (2) Jaccard Analysis (3) Label imbalance Analysis
+> Data and decoding
+> Benchmark CHAIR on MSCOCO
+> val2017
+> LLaVA-Bench (In-the-Wild) POPE: GQA, COCO, A-OKVQA Size 500 images (fixed ids, fixed order)
+> 60 questions 2,000 questions per split,
+> ×3splits Prompt “Describe this image in detail.” benchmark prompts, unmodified POPE object-existence queries
+> max_new_tokens 256 512 1024
+> Contrastive decoding
+> Amplification α1.01.01.0
+> Threshold β0.2swept 0.000 –1.000 (14 pts); VCD 0.10.2
+> VCD noise step 500 900 900
+> Controls and scope
+> OLM margin τ——0.5
+> Methods compared Greedy, VCD, SID, Proxy A Greedy, sampling, APC sweep, VCD Baseline, VCD, SID, PBA, OLM Models LLaVA-7B, Qwen-7B LLaVA-7B, Qwen-7B LLaVA-7B, Qwen-7B
+
+mention is real iff its category is in the image’s ground truth, else hallucinated . Each mention maps back to the step producing its first token via incremental detokenization. 
+
+Environment PyTorch 2.8.0+cu128, qwen-vl-utils ; one NVIDIA L4 (24 GB). LLaVA runs both branches in a manual KV-cached loop; Qwen caches the expert but recomputes the amateur cache-less each step, because a hand-rolled mRoPE second-branch cache diverged from the exact computation by up to 5.6 logits (mean 2.8) which is far beyond fp16 noise. 
+
+A.3 Balanced Accuracy evaluation metric used for Dataset Label Imbalance Analysis 
+
+Standard accuracy is Acc = ( T P + T N )/(T P + T N + F P + F N ), where YES predicted on YES ground truth is TP; NO predicted on NO ground truth is TN; YES predicted on NO ground truth is FP; NO predicted on YES ground truth is FN. This metric is class-balance-sensitive. Balanced accuracy removes this sensitivity: Bal Acc = T P R + T N R 
+
+2 = 12
+
+( T P T P + F N + T N T N + F P 
+
+)
+
+.
+
+For binary classifiers with hard YES/NO outputs this equals the AUC of the two-point ROC curve implied by a single decision threshold: 12 (1 + T P R − F P R ) = Bal Acc. A method that only shifts the threshold changes TPR and TNR in opposite directions; if the shift moves past the balanced optimum, net balanced accuracy decreases. A method that genuinely improves discrimination increases both TPR and TNR simultaneously, raising balanced accuracy in all regimes. We note that within a single ratio regime balanced accuracy is exactly invariant to the class proportion, whereas across the two regimes the retained question subsets differ (500 vs. 1,500 YES questions), so the small residual balanced-accuracy differences reported between 25/75 and 75/25 reflect this change of subsample rather than any threshold effect. Our primary discrimination test is therefore the method-minus-baseline balanced accuracy computed within each regime, which is fully confound-free because both quantities are measured on the identical question set. 37 A.4 LLava-Bench Evaluation 
+
+LLava-Bench Evaluation has been done by Claude Opus 4.8 to compute the standard metric. 
+
+A.5 Reproduced Claims with Confidence Intervals 
+
+Table 21: POPE results across datasets, models, and negative-sampling strate-gies. All values are percentages. Gray values are absolute percentage-point changes relative to greedy decoding within the same dataset, model, and sub-set; greedy is the reference row and therefore carries no delta. The highest accuracy and F1 in each block are bold. 95% bootstrap confidence intervals for every entry are reported. 
+
+Method Random Popular Adversarial 
+
+Acc. F1 Yes% Acc. F1 Yes% Acc. F1 Yes% 
+
+GQA · LLaVA-v1.5-7B Greedy 89.73 89.31 46.00 84.13 84.38 51.60 80.87 81.75 54.87 VCD 88.00 −1.73 88.26 −1.05 52.20 +6.20 81.97 −2.16 83.37 −1.01 58.43 +6.83 78.43 −2.44 80.78 −0.97 62.23 +7.36 
+
+ICD 89.27 −0.46 88.64 −0.67 44.47 −1.53 84.20 +0.07 84.14 −0.24 49.60 −2.00 81.07 +0.20 81.56 −0.19 52.67 −2.20 
+
+SID 89.03 −0.70 89.04 −0.27 50.10 +4.10 83.77 −0.36 84.58 +0.20 55.30 +3.70 79.73 −1.14 81.42 −0.33 59.07 +4.20 
+
+PBA 89.83 +0.10 89.73 +0.42 48.97 +2.97 83.27 −0.86 84.14 −0.24 55.53 +3.93 80.50 −0.37 81.99 +0.24 58.30 +3.43 
+
+OLM 88.93 −0.80 89.39 +0.08 54.33 +8.33 79.07 −5.06 81.67 −2.71 64.20 +12.60 75.07 −5.80 78.91 −2.84 68.20 +13.33 
+
+GQA · Qwen2.5-VL-7B Greedy 91.03 90.51 44.50 87.23 87.04 48.50 84.37 84.58 51.37 VCD 90.87 −0.16 90.37 −0.14 44.87 +0.37 86.33 −0.90 86.22 −0.82 49.20 +0.70 83.83 −0.54 84.09 −0.49 51.63 +0.26 
+
+ICD 90.67 −0.36 90.13 −0.38 44.53 +0.03 86.47 −0.76 86.23 −0.81 48.27 −0.23 83.87 −0.50 84.06 −0.52 51.20 −0.17 
+
+SID 91.17 +0.14 90.77 +0.26 45.70 +1.20 86.63 −0.60 86.66 −0.38 50.23 +1.73 84.07 −0.30 84.50 −0.08 52.80 +1.43 
+
+PBA 91.27 +0.24 90.79 +0.28 44.87 +0.37 87.20 −0.03 87.06 +0.02 48.93 +0.43 84.33 −0.04 84.61 +0.03 51.80 +0.43 
+
+OLM 92.07 +1.04 91.92 +1.41 48.20 +3.70 87.00 −0.23 87.41 +0.37 53.27 +4.77 84.23 −0.14 85.13 +0.55 56.03 +4.66 
+
+MSCOCO · LLaVA-v1.5-7B Greedy 87.03 85.54 39.70 85.93 84.51 40.80 83.40 82.20 43.27 VCD 88.23 +1.20 87.60 +2.06 44.90 +5.20 86.37 +0.44 85.98 +1.47 47.23 +6.43 82.37 −1.03 82.57 +0.37 51.17 +7.90 
+
+ICD 86.63 −0.40 84.93 −0.61 38.70 −1.00 85.30 −0.63 83.62 −0.89 39.77 −1.03 83.13 −0.27 81.61 −0.59 41.73 −1.54 
+
+SID 88.30 +1.27 87.42 +1.88 43.03 +3.33 85.97 +0.04 85.26 +0.75 45.23 +4.43 82.40 −1.00 82.15 −0.05 48.60 +5.33 
+
+PBA 88.17 +1.14 87.00 +1.46 41.03 +1.33 86.43 +0.50 85.38 +0.87 42.77 +1.97 83.73 +0.33 82.94 +0.74 45.33 +2.06 
+
+OLM 89.47 +2.44 88.99 +3.45 45.67 +5.97 87.17 +1.24 86.90 +2.39 47.97 +7.17 82.87 −0.53 83.24 +1.04 52.20 +8.93 
+
+MSCOCO · Qwen2.5-VL-7B Greedy 88.57 87.23 39.57 87.57 86.27 40.57 86.70 85.49 41.63 VCD 89.03 +0.46 87.84 +0.61 40.17 +0.60 87.87 +0.30 86.73 +0.46 41.47 +0.90 86.80 +0.10 85.72 +0.23 42.47 +0.84 
+
+ICD 88.23 −0.34 86.80 −0.43 39.17 −0.40 87.17 −0.40 85.81 −0.46 40.43 −0.14 86.27 −0.43 84.97 −0.52 41.40 −0.23 
+
+SID 88.97 +0.40 87.78 +0.55 40.30 +0.73 87.70 +0.13 86.57 +0.30 41.57 +1.00 86.27 −0.43 85.23 −0.26 43.00 +1.37 
+
+PBA 89.00 +0.43 87.78 +0.55 40.00 +0.43 88.00 +0.43 86.81 +0.54 41.00 +0.43 87.00 +0.30 85.90 +0.41 42.20 +0.57 
+
+OLM 90.63 +2.06 89.85 +2.62 42.30 +2.73 89.33 +1.76 88.60 +2.33 43.60 +3.03 87.57 +0.87 86.97 +1.48 45.43 +3.80 
+
+A-OKVQA · LLaVA-v1.5-7B Greedy 88.83 88.31 45.50 85.33 85.19 49.00 78.93 80.01 55.40 VCD 87.57 −1.26 87.73 −0.58 51.37 +5.87 82.80 −2.53 83.73 −1.46 55.73 +6.73 76.23 −2.70 78.86 −1.15 62.43 +7.03 
+
+ICD 88.23 −0.60 87.53 −0.78 44.37 −1.13 85.13 −0.20 84.71 −0.48 47.20 −1.80 79.23 +0.30 79.86 −0.15 53.10 −2.30 
+
+SID 88.03 −0.80 87.94 −0.37 49.23 +3.73 83.77 −1.56 84.21 −0.98 52.83 +3.83 77.60 −1.33 79.54 −0.47 59.47 +4.07 
+
+PBA 89.43 +0.60 89.18 +0.87 47.70 +2.20 85.00 −0.33 85.31 +0.12 52.13 +3.13 78.13 −0.80 79.94 −0.07 59.00 +3.60 
+
+OLM 88.47 −0.36 88.79 +0.48 52.87 +7.37 82.03 −3.30 83.56 −1.63 59.30 +10.30 73.93 −5.00 77.80 −2.21 67.40 +12.00 
+
+A-OKVQA · Qwen2.5-VL-7B Greedy 91.13 90.66 44.93 89.07 88.73 47.00 83.03 83.53 53.03 VCD 91.17 +0.04 90.76 +0.10 45.63 +0.70 88.70 −0.37 88.43 −0.30 47.63 +0.63 83.20 +0.17 83.68 +0.15 52.93 −0.10 
+
+ICD 90.43 −0.70 89.87 −0.79 44.43 −0.50 88.33 −0.74 87.90 −0.83 46.40 −0.60 82.37 −0.66 82.77 −0.76 52.37 −0.66 
+
+SID 91.33 +0.20 90.98 +0.32 46.13 +1.20 89.07 88.89 +0.16 48.40 +1.40 83.37 +0.34 84.02 +0.49 54.10 +1.07 
+
+PBA 91.30 +0.17 90.86 +0.20 45.23 +0.30 89.00 −0.07 88.72 −0.01 47.53 +0.53 82.97 −0.06 83.55 +0.02 53.57 +0.54 
+
+OLM 92.10 +0.97 91.94 +1.28 47.97 +3.04 89.67 +0.60 89.71 +0.98 50.40 +3.40 83.13 +0.10 84.23 +0.70 56.93 +3.90 
+
+38 Table 22: POPE accuracy and “Yes” response rates under regular sampling, con-trastive decoding, and the independently applied adaptive plausibility constraint. Main values are POPE point estimates; the small bracketed values below each esti-mate are 95% bootstrap confidence intervals (10,000 resamples, stratified by ground-truth label). 
+
+Random Popular Adversarial Dataset Model Method Acc. Yes (%) Acc. Yes (%) Acc. Yes (%) 
+
+GQA LLaVA-7B sample 85.53 (0.00) [84.30, 86.77] 46.20 (0.00) [45.00, 47.40] 79.17 (0.00) [77.70, 80.57] 52.63 (0.00) [51.20, 54.13] 75.23 (0.00) [73.73, 76.77] 55.70 (0.00) [54.20, 57.27] VCD 88.03 (+2.50) [86.87, 89.17] 51.10 (+4.90) [49.93, 52.27] 80.80 (+1.63) [79.43, 82.17] 57.60 (+4.97) [56.23, 59.00] 77.00 (+1.77) [75.53, 78.47] 61.47 (+5.77) [60.03, 62.90] ICD 87.50 (+1.97) [86.30, 88.67] 45.23 (-0.97) [44.07, 46.40] 80.50 (+1.33) [79.10, 81.90] 50.77 (-1.86) [49.37, 52.20] 78.27 (+3.04) [76.80, 79.77] 53.47 (-2.23) [52.03, 54.93] SID 87.47 (+1.94) [86.27, 88.67] 48.07 (+1.87) [46.87, 49.23] 81.23 (+2.06) [79.83, 82.63] 54.57 (+1.94) [53.17, 55.97] 77.77 (+2.54) [76.30, 79.20] 59.03 (+3.33) [57.60, 60.50] 
+
+sample † 87.13 (+1.60) [85.97, 88.33] 
+
+45.93 (-0.27) [44.73, 47.13] 
+
+81.27 (+2.10) [79.87, 82.63] 
+
+51.80 (-0.83) [50.37, 53.20] 
+
+78.23 (+3.00) [76.77, 79.67] 
+
+55.10 (-0.60) [53.67, 56.57] LLaVA-13B sample 84.27 (0.00) [83.00, 85.53] 42.40 (0.00) [41.13, 43.67] 78.90 (0.00) [77.43, 80.33] 46.43 (0.00) [44.97, 47.90] 77.00 (0.00) [75.50, 78.50] 49.20 (0.00) [47.70, 50.70] VCD 87.37 (+3.10) [86.17, 88.50] 43.03 (+0.63) [41.90, 44.17] 82.97 (+4.07) [81.63, 84.33] 47.77 (+1.34) [46.43, 49.13] 79.40 (+2.40) [77.97, 80.87] 50.07 (+0.87) [48.63, 51.53] ICD 86.03 (+1.76) [84.83, 87.23] 41.57 (-0.83) [40.40, 42.77] 79.90 (+1.00) [78.47, 81.30] 46.17 (-0.26) [44.73, 47.60] 78.67 (+1.67) [77.23, 80.13] 48.93 (-0.27) [47.47, 50.40] SID 86.13 (+1.86) [84.93, 87.33] 41.40 (-1.00) [40.20, 42.60] 80.50 (+1.60) [79.10, 81.93] 46.97 (+0.54) [45.57, 48.37] 78.90 (+1.90) [77.43, 80.33] 49.37 (+0.17) [47.93, 50.83] 
+
+sample † 85.73 (+1.46) [84.53, 86.93] 
+
+41.07 (-1.33) [39.83, 42.27] 
+
+80.40 (+1.50) [79.00, 81.83] 
+
+45.00 (-1.43) [43.57, 46.40] 
+
+77.97 (+0.97) [76.50, 79.43] 
+
+47.77 (-1.43) [46.30, 49.27] Qwen-7B sample 89.17 (0.00) [88.07, 90.23] 44.23 (0.00) [43.10, 45.33] 85.80 (0.00) [84.53, 87.07] 47.87 (0.00) [46.63, 49.13] 83.03 (0.00) [81.67, 84.37] 50.63 (0.00) [49.30, 52.00] VCD 90.27 (+1.10) [89.20, 91.27] 44.93 (+0.70) [43.87, 46.00] 86.43 (+0.63) [85.20, 87.63] 49.03 (+1.16) [47.80, 50.27] 83.80 (+0.77) [82.43, 85.07] 51.93 (+1.30) [50.60, 53.27] ICD 90.07 (+0.90) [89.00, 91.10] 44.33 (+0.10) [43.27, 45.40] 86.53 (+0.73) [85.33, 87.73] 48.20 (+0.33) [47.00, 49.40] 82.50 (-0.53) [81.10, 83.87] 51.37 (+0.74) [50.03, 52.73] SID 89.77 (+0.60) [88.67, 90.80] 47.50 (+3.27) [46.43, 48.60] 84.07 (-1.73) [82.77, 85.37] 52.20 (+4.33) [50.90, 53.50] 82.00 (-1.03) [80.63, 83.33] 54.60 (+3.97) [53.23, 55.97] 
+
+sample † 90.43 (+1.26) [89.37, 91.43] 
+
+44.90 (+0.67) [43.83, 45.93] 
+
+86.57 (+0.77) [85.33, 87.73] 
+
+47.63 (-0.24) [46.40, 48.87] 
+
+83.37 (+0.34) [82.00, 84.67] 
+
+50.90 (+0.27) [49.60, 52.23] A-OKVQA LLaVA-7B sample 84.07 (0.00) [82.73, 85.40] 46.13 (0.00) [44.83, 47.43] 80.63 (0.00) [79.20, 82.00] 49.43 (0.00) [48.00, 50.87] 76.47 (0.00) [74.93, 77.97] 54.00 (0.00) [52.47, 55.53] VCD 87.37 (+3.30) [86.20, 88.57] 50.30 (+4.17) [49.10, 51.47] 82.60 (+1.97) [81.27, 83.93] 54.53 (+5.10) [53.20, 55.90] 76.87 (+0.40) [75.43, 78.30] 61.20 (+7.20) [59.70, 62.67] ICD 86.80 (+2.73) [85.63, 88.00] 45.27 (-0.86) [44.10, 46.43] 83.87 (+3.24) [82.57, 85.17] 47.87 (-1.56) [46.57, 49.20] 78.03 (+1.56) [76.57, 79.47] 54.70 (+0.70) [53.20, 56.17] SID 87.37 (+3.30) [86.23, 88.53] 48.63 (+2.50) [47.47, 49.77] 82.93 (+2.30) [81.60, 84.27] 52.27 (+2.84) [50.97, 53.63] 76.80 (+0.33) [75.30, 78.27] 58.60 (+4.60) [57.10, 60.13] 
+
+sample † 86.73 (+2.66) [85.53, 87.90] 
+
+45.67 (-0.46) [44.50, 46.87] 
+
+83.50 (+2.87) [82.20, 84.83] 
+
+49.23 (-0.20) [47.93, 50.57] 
+
+76.77 (+0.30) [75.27, 78.23] 
+
+55.63 (+1.63) [54.13, 57.17] LLaVA-13B sample 85.47 (0.00) [84.23, 86.67] 42.67 (0.00) [41.43, 43.90] 82.63 (0.00) [81.33, 84.00] 43.83 (0.00) [42.50, 45.20] 77.40 (0.00) [75.87, 78.87] 49.67 (0.00) [48.20, 51.13] VCD 87.43 (+1.96) [86.27, 88.57] 43.97 (+1.30) [42.77, 45.13] 85.93 (+3.30) [84.70, 87.17] 45.80 (+1.97) [44.57, 47.03] 79.90 (+2.50) [78.47, 81.33] 51.57 (+1.90) [50.13, 53.00] ICD 86.70 (+1.23) [85.53, 87.87] 41.83 (-0.84) [40.67, 43.00] 85.03 (+2.40) [83.80, 86.30] 43.37 (-0.46) [42.13, 44.57] 78.40 (+1.00) [76.93, 79.87] 50.93 (+1.26) [49.47, 52.40] SID 85.97 (+0.50) [84.73, 87.17] 41.90 (-0.77) [40.67, 43.10] 84.93 (+2.30) [83.67, 86.20] 45.13 (+1.30) [43.87, 46.40] 78.13 (+0.73) [76.67, 79.57] 50.40 (+0.73) [48.90, 51.87] 
+
+sample † 86.27 (+0.80) [85.07, 87.43] 
+
+41.60 (-1.07) [40.40, 42.80] 
+
+83.87 (+1.24) [82.57, 85.13] 
+
+43.73 (-0.10) [42.43, 45.03] 
+
+78.83 (+1.43) [77.33, 80.27] 
+
+51.03 (+1.36) [49.57, 52.50] Qwen-7B sample 90.07 (0.00) [89.00, 91.10] 44.93 (0.00) [43.87, 46.00] 88.50 (0.00) [87.37, 89.63] 47.30 (0.00) [46.13, 48.43] 81.60 (0.00) [80.20, 82.97] 53.40 (0.00) [52.03, 54.80] VCD 91.40 (+1.33) [90.40, 92.37] 45.67 (+0.74) [44.67, 46.67] 88.90 (+0.40) [87.77, 90.00] 48.43 (+1.13) [47.30, 49.53] 82.33 (+0.73) [81.00, 83.70] 53.53 (+0.13) [52.20, 54.90] ICD 90.20 (+0.13) [89.17, 91.23] 44.60 (-0.33) [43.53, 45.63] 88.33 (-0.17) [87.20, 89.43] 46.27 (-1.03) [45.13, 47.40] 82.13 (+0.53) [80.77, 83.50] 52.47 (-0.93) [51.07, 53.83] SID 91.10 (+1.03) [90.07, 92.10] 47.77 (+2.84) [46.77, 48.80] 88.63 (+0.13) [87.47, 89.73] 50.83 (+3.53) [49.67, 51.97] 82.23 (+0.63) [80.90, 83.57] 56.03 (+2.63) [54.70, 57.37] 
+
+sample † 90.93 (+0.86) [89.90, 91.93] 
+
+45.20 (+0.27) [44.17, 46.20] 
+
+89.17 (+0.67) [88.03, 90.27] 
+
+46.90 (-0.40) [45.80, 48.00] 
+
+83.37 (+1.77) [82.03, 84.67] 
+
+52.77 (-0.63) [51.43, 54.10] Continued on next page 
+
+39 Random Popular Adversarial Dataset Model Method Acc. Yes (%) Acc. Yes (%) Acc. Yes (%) 
+
+MSCOCO LLaVA-7B sample 83.63 (0.00) [82.37, 84.93] 39.30 (0.00) [38.03, 40.57] 81.73 (0.00) [80.40, 83.03] 39.93 (0.00) [38.60, 41.23] 79.83 (0.00) [78.40, 81.23] 44.43 (0.00) [43.03, 45.87] VCD 88.23 (+4.60) [87.07, 89.33] 44.03 (+4.73) [42.90, 45.20] 85.63 (+3.90) [84.33, 86.83] 46.50 (+6.57) [45.27, 47.73] 82.00 (+2.17) [80.60, 83.37] 50.33 (+5.90) [48.97, 51.67] ICD 86.17 (+2.54) [84.97, 87.33] 38.83 (-0.47) [37.67, 40.03] 84.07 (+2.34) [82.77, 85.30] 39.93 (0.00) [38.67, 41.17] 81.87 (+2.04) [80.53, 83.23] 42.53 (-1.90) [41.20, 43.90] SID 87.67 (+4.04) [86.53, 88.80] 42.07 (+2.77) [40.93, 43.23] 85.67 (+3.94) [84.40, 86.90] 44.00 (+4.07) [42.77, 45.20] 81.97 (+2.14) [80.57, 83.30] 47.77 (+3.34) [46.37, 49.13] 
+
+sample † 86.57 (+2.94) [85.37, 87.73] 
+
+40.50 (+1.20) [39.33, 41.70] 
+
+84.47 (+2.74) [83.20, 85.67] 
+
+41.67 (+1.74) [40.40, 42.93] 
+
+81.93 (+2.10) [80.57, 83.27] 
+
+43.73 (-0.70) [42.37, 45.10] LLaVA-13B sample 85.03 (0.00) [83.83, 86.20] 37.37 (0.00) [36.17, 38.57] 83.50 (0.00) [82.23, 84.77] 38.43 (0.00) [37.17, 39.67] 81.33 (0.00) [79.97, 82.67] 40.60 (0.00) [39.23, 41.97] VCD 86.80 (+1.77) [85.63, 87.93] 39.07 (+1.70) [37.90, 40.23] 86.10 (+2.60) [84.93, 87.30] 40.03 (+1.60) [38.87, 41.20] 84.57 (+3.24) [83.27, 85.83] 42.43 (+1.83) [41.13, 43.73] ICD 85.60 (+0.57) [84.43, 86.77] 37.67 (+0.30) [36.47, 38.83] 85.03 (+1.53) [83.87, 86.27] 38.50 (+0.07) [37.30, 39.70] 83.70 (+2.37) [82.43, 84.93] 39.70 (-0.90) [38.43, 40.93] SID 85.87 (+0.84) [84.70, 87.00] 37.27 (-0.10) [36.10, 38.40] 84.77 (+1.27) [83.53, 86.00] 38.57 (+0.14) [37.37, 39.80] 83.10 (+1.77) [81.80, 84.37] 39.83 (-0.77) [38.53, 41.13] 
+
+sample † 85.50 (+0.47) [84.33, 86.67] 
+
+37.30 (-0.07) [36.10, 38.47] 
+
+84.37 (+0.87) [83.13, 85.63] 
+
+38.10 (-0.33) [36.90, 39.33] 
+
+83.13 (+1.80) [81.83, 84.40] 
+
+39.87 (-0.73) [38.60, 41.17] Qwen-7B sample 88.30 (0.00) [87.20, 89.40] 39.50 (0.00) [38.40, 40.60] 86.53 (0.00) [85.37, 87.67] 40.33 (0.00) [39.17, 41.47] 84.70 (0.00) [83.43, 85.93] 42.17 (0.00) [40.90, 43.43] VCD 89.33 (+1.03) [88.27, 90.37] 40.13 (+0.63) [39.07, 41.17] 88.03 (+1.50) [86.90, 89.13] 41.43 (+1.10) [40.33, 42.53] 86.20 (+1.50) [85.00, 87.40] 42.87 (+0.70) [41.63, 44.07] ICD 87.73 (-0.57) [86.60, 88.83] 38.80 (-0.70) [37.70, 39.90] 86.97 (+0.44) [85.80, 88.13] 40.50 (+0.17) [39.33, 41.63] 85.70 (+1.00) [84.50, 86.93] 41.57 (-0.60) [40.33, 42.73] SID 89.20 (+0.90) [88.10, 90.30] 42.53 (+3.03) [41.47, 43.60] 88.43 (+1.90) [87.30, 89.53] 43.90 (+3.57) [42.80, 45.00] 86.80 (+2.10) [85.60, 88.00] 45.67 (+3.50) [44.47, 46.87] 
+
+sample † 88.03 (-0.27) [86.93, 89.10] 
+
+38.90 (-0.60) [37.83, 40.00] 
+
+87.33 (+0.80) [86.17, 88.47] 
+
+40.80 (+0.47) [39.67, 41.93] 
+
+86.60 (+1.90) [85.40, 87.77] 
+
+41.73 (-0.44) [40.53, 42.90] 
+
+A.6 Worked examples: contrastive decoding is ineffective at removing object hallucinations 
+
+We show two decoding steps where VCD emits a hallucinated object on LLaVA-1.5-7B on CHAIR. In each, the contrastive adjustment d = E − A is positive, so the contrastive score 2E − A amplifies the hallucinated token rather than suppressing it, and the adaptive plausibility constraint (APC) does not remove it. 
+
+Example 1: LLaVA-1.5-7B hallucinates “bear” 
+
+Hallucinated object: “bear” (COCO category bear ). 
+
+Figure 11: COCO image 47010. VCD caption generated by LLaVA-1.5-7B: “The image features a group of four giraffes walking together in an enclosure at a zoo. They are spread out, with one giraffe on the left side, another in the middle, and two more on the right side of the enclosure. The giraffes are walking near a dirt path, possibly exploring their surroundings or moving to a different area of the zoo. In addition to the giraffes, there is a brown bear visible in the scene, located on the right side of the enclosure. The bear appears to be observing the giraffes as they walk by. The zoo enclosure is surrounded by trees, providing a natural environment for the animals.” 40 Figure 12: Per-branch logits at the step that emits “bear”. The x-axis is the expert’s top tokens in a fixed order, identical across the three panels: the expert logit E, the amateur logit A, and the contrastive score 
+
+2E −A. The dashed line is the APC plausibility cutoff; hatched bars fall below it. The emitted (hallucinated) token is red. The expert ranks “bear” first and the amateur ranks it rank 2; since d = E − A = +3 .60 > 0,the contrastive score raises it rather than suppressing it, so it stays rank 1 and is emitted. Table 23: Expert top tokens at the same step, matching Figure 12, with the amateur logit A, the contrastive score 2E − A, and whether each token survives the APC cutoff ( 17 .47 ). The hallucinated token (bold) has both the highest expert logit and the highest contrastive score, so contrastive decoding leaves it at rank 1.                                                
+
+> Rank Token EA2E−AAPC
+> 0bear 19.08 15.48 22.68 kept
+> 1dog 17.55 14.10 20.99 kept 2animal 16.36 13.06 19.66 kept 3ted 15.94 13.12 18.76 kept 4and 15.87 15.44 16.30 masked 5bird 15.75 15.57 15.93 masked 6object 14.91 14.01 15.80 masked 7horse 14.50 13.62 15.38 masked
+
+41 Example 2: LLaVA-1.5-7B hallucinates “car” 
+
+Hallucinated object: “car” (COCO category car ). 
+
+Figure 13: COCO image 481582. VCD caption generated by LLaVA-1.5-7B: “The image features a group of people, including a woman and a man, interacting with a brown horse in a barn. The woman is petting the horse, while the man is smiling and laughing nearby. The horse appears to be enjoying the attention, as it stands close to the people. In the background, there are a few cars parked outside the barn, suggesting that the people might have arrived in their vehicles. Additionally, there is a handbag placed on the ground, possibly belonging to one of the people in the scene.” The object “car” in this caption is a hallucination: it is not present in the image. 
+
+Figure 14: Per-branch logits at the step that emits “car”. The x-axis is the expert’s top tokens in a fixed order, identical across the three panels: the expert logit E, the amateur logit A, and the contrastive score 
+
+2E −A. The dashed line is the APC plausibility cutoff; hatched bars fall below it. The emitted (hallucinated) token is red. The expert ranks “car” first and the amateur ranks it rank 8; since d = E − A = +6 .14 > 0,the contrastive score raises it rather than suppressing it, so it stays rank 1 and is emitted. Table 24: Expert top tokens at the same step, matching Figure 14, with the amateur logit A, the contrastive score 2E − A, and whether each token survives the APC cutoff ( 19 .84 ). The hallucinated token (bold) has both the highest expert logit and the highest contrastive score, so contrastive decoding leaves it at rank 1.                                                
+
+> Rank Token EA2E−AAPC
+> 0cars 21.45 15.31 27.59 kept
+> 1vehicles 19.36 13.16 25.55 kept 2other 19.33 18.70 19.95 kept 3more 18.72 18.33 19.11 masked 4people 17.05 16.06 18.03 masked 5ch 16.77 17.19 16.34 masked 6additional 16.72 16.20 17.23 masked 7objects 16.62 15.39 17.86 masked
+
+42

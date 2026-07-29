@@ -1,0 +1,254 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-29T21:30:21.370402+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 0,
+    "deep_cap": 6,
+    "deep_selected": 0,
+    "quick_candidates": 6,
+    "quick_skim_target": 11,
+    "quick_selected": 6
+  },
+  "deep_dive": [],
+  "quick_skim": [
+    {
+      "id": "2607.22716v1",
+      "source": "arxiv",
+      "title": "Visual Token Compression Enhances Robustness of MLLMs",
+      "abstract": "In this paper, we show for the first time that visual token pruning enhances the robustness of Multimodal Large Language Models (MLLMs), mitigating vulnerabilities such as jailbreak attacks and hallucinations. Given that vision and language modalities cannot be perfectly aligned, the misaligned visual tokens might act as out-of-distribution (OOD) inputs, leading to unpredictable outputs and introducing potential vulnerabilities. Building on this insight, we aim to enhance model robustness against jailbreaks and hallucinations by reducing OOD visual tokens at robust-pruning layers, while also reducing inference cost as a side benefit. Specifically, we measure the distance between each visual token and the language feature space. Then, visual tokens with large distances are identified as OOD tokens, which can be iteratively pruned. To demonstrate the effectiveness of our method, we evaluate it on seven diverse popular benchmarks. Notably, our method yields an average improvement of 13.29\\% in defending jailbreak attacks, consistently achieves competitive performance in mitigating hallucinations, and maintains strong results on general datasets like MME.",
+      "authors": [
+        "Shishen Gu",
+        "Jiequan Cui",
+        "Wenbo Hu",
+        "Zenglin Shi",
+        "Zhenzhen Hu",
+        "Richang Hong"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV",
+        "cs.LG"
+      ],
+      "published": "2026-07-21T15:52:30+00:00",
+      "link": "https://arxiv.org/pdf/2607.22716v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Mitigating hallucinations in MLLMs via visual token pruning",
+      "llm_evidence_cn": "通过视觉Token剪枝缓解多模态大模型幻觉",
+      "llm_evidence": "通过视觉Token剪枝缓解多模态大模型幻觉",
+      "canonical_evidence": "通过视觉Token剪枝缓解多模态大模型幻觉",
+      "llm_tldr_en": "Proposes visual token pruning to reduce out-of-distribution misaligned visual tokens, which enhances MLLM robustness and mitigates hallucinations and jailbreak attacks.",
+      "llm_tldr_cn": "针对多模态大语言模型中视觉和语言模态未对齐导致幻觉和越狱攻击的问题，本文提出通过视觉Token剪枝来减少分布外输入。实验表明，该方法在降低推理成本的同时，显著增强了模型对越狱攻击和幻觉的鲁棒性，为多模态模型安全提供了新视角。",
+      "llm_tldr": "针对多模态大语言模型中视觉和语言模态未对齐导致幻觉和越狱攻击的问题，本文提出通过视觉Token剪枝来减少分布外输入。实验表明，该方法在降低推理成本的同时，显著增强了模型对越狱攻击和幻觉的鲁棒性，为多模态模型安全提供了新视角。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.23718v1",
+      "source": "arxiv",
+      "title": "Melo: A Production LLM-Powered Music Recommendation Agent",
+      "abstract": "We describe Melo, an LLM-powered music recommendation agent deployed on NetEase Cloud Music. Melo is structured as a deterministic five-node state graph over heterogeneous tools, with a prompt- and state-machine-driven orchestration policy rather than a fine-tuned controller. At industrial scale, the bottleneck is not how smart the brain is but how the system detects and recovers from the mistakes that brain makes. Two production failure modes drove the design: entity hallucination, where the agent commits to interpretations unsupported by the live catalog or user-behavior index, and long-tail degradation, where over-constrained requests collapse to generic popular fallbacks. We address them with two complementary mechanisms. Inference-time entity grounding repurposes the production search index as a verification primitive that gates entity decisions before they propagate downstream. Reflective retry verbalizes failure reasons from a broken tool chain and feeds them into the next planning step, so the system can relax or revise constraints rather than fall back blindly. A one-month online A/B test across NetEase Cloud Music's playlist surfaces reports an over 2 pp lift in a primary playlist retention metric and a lift of over one minute in a core playlist engagement metric. Offline ablation isolates a 7.8 pp reduction in entity misidentification from the three-layer grounding stack on our evaluation set, and a triggered-session analysis on our evaluation set shows reflective retry firing on 5.8% of sessions with 59% process-level recovery. Our deployment experience suggests that progress on LLM-powered music recommendation at this scale depends as much on the named, ablatable runtime machinery that catches and corrects the brain's mistakes as on the brain itself: a hypothesis we offer for the community to test.",
+      "authors": [
+        "Shijia Wang",
+        "Da Guo",
+        "Qiang Xiao",
+        "Fanghui Bi",
+        "Weisheng Li",
+        "Dongjing Wang",
+        "Chuanjiang Luo"
+      ],
+      "primary_category": "cs.IR",
+      "categories": [
+        "cs.IR"
+      ],
+      "published": "2026-07-26T15:30:48+00:00",
+      "link": "https://arxiv.org/pdf/2607.23718v1",
+      "tags": [
+        "keyword:llm-halluc"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Mitigating entity hallucination in LLM agents via inference-time grounding",
+      "llm_evidence_cn": "通过推理时实体接地缓解LLM智能体中的实体幻觉",
+      "llm_evidence": "通过推理时实体接地缓解LLM智能体中的实体幻觉",
+      "canonical_evidence": "通过推理时实体接地缓解LLM智能体中的实体幻觉",
+      "llm_tldr_en": "LLM-powered agents often suffer from entity hallucination in production. Melo, a music recommendation agent, addresses this failure mode by proposing inference-time entity grounding, which repurposes retrieval to mitigate hallucinations and improve system reliability at industrial scale.",
+      "llm_tldr_cn": "大语言模型智能体在生产环境中常受实体幻觉问题的困扰。本文介绍了音乐推荐智能体Melo，针对实体幻觉和长尾退化两大失败模式，提出了推理时实体接地机制。该机制有效缓解了智能体产生不支持解释的幻觉问题，提升了工业级系统的可靠性。",
+      "llm_tldr": "大语言模型智能体在生产环境中常受实体幻觉问题的困扰。本文介绍了音乐推荐智能体Melo，针对实体幻觉和长尾退化两大失败模式，提出了推理时实体接地机制。该机制有效缓解了智能体产生不支持解释的幻觉问题，提升了工业级系统的可靠性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "6"
+    },
+    {
+      "id": "2607.24312v1",
+      "source": "arxiv",
+      "title": "CONSISTRE: A Unified Consistency-Aware Framework for Document-Level Relation Extraction with Large Language Models",
+      "abstract": "Document-level relation extraction (DocRE) aims to extract relations among multiple entities across extended contexts while maintaining consistency across predicted triples. Although large language models (LLMs) show remarkable reasoning capabilities in information extraction, their predictions are typically generated independently for each candidate triple and may violate fundamental relational constraints such as transitivity, symmetry, and functional uniqueness, leading to contradictory and unreliable outputs. We propose CONSISTRE, a unified consistency-aware framework for DocRE that addresses this limitation through two complementary tracks. The first operates at inference time for black-box LLMs, combining constraint-aware prompting, constraint-based verification, and iterative self-reflection to refine predictions without task-specific fine-tuning. The second injects consistency knowledge into smaller open-source models via a knowledge distillation and reinforcement learning pipeline: reasoning traces from a powerful teacher are distilled into a student via supervised fine-tuning, followed by GRPO alignment using a composite reward that jointly optimizes extraction performance and relational consistency. Together, the two tracks cover both API-accessible and locally deployable scenarios under a unified consistency formulation. Experiments on DocRED show that both tracks outperform their baselines, with the inference-time track achieving competitive F1 using off-the-shelf black-box LLMs and the training-time track substantially narrowing the gap between 7--8B open-source models and state-of-the-art proprietary LLMs at a fraction of their inference cost. Ablation studies confirm that explicit consistency modeling mitigates relational contradictions and enhances the reliability of LLM-based DocRE across both deployment paradigms.",
+      "authors": [
+        "Mingxuan Sun"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-07-27T11:56:29+00:00",
+      "link": "https://arxiv.org/pdf/2607.24312v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Maintaining consistency and avoiding contradictory outputs in document-level LLM extraction",
+      "llm_evidence_cn": "在文档级LLM提取中保持一致性并避免矛盾输出",
+      "llm_evidence": "在文档级LLM提取中保持一致性并避免矛盾输出",
+      "canonical_evidence": "在文档级LLM提取中保持一致性并避免矛盾输出",
+      "llm_tldr_en": "Proposes CONSISTRE, a consistency-aware framework for document-level relation extraction with LLMs, addressing contradictory and unreliable outputs by enforcing relational constraints at inference and training.",
+      "llm_tldr_cn": "大语言模型在文档级关系抽取中常因独立预测而违反传递性等关系约束，导致矛盾输出。本文提出CONSISTRE框架，通过黑盒推理时的约束和微调时的优化两条路径，增强预测的跨三元组一致性。实验表明该方法有效减少了矛盾输出，提升了文档级关系抽取的可靠性。",
+      "llm_tldr": "大语言模型在文档级关系抽取中常因独立预测而违反传递性等关系约束，导致矛盾输出。本文提出CONSISTRE框架，通过黑盒推理时的约束和微调时的优化两条路径，增强预测的跨三元组一致性。实验表明该方法有效减少了矛盾输出，提升了文档级关系抽取的可靠性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "factual consistency in text generation",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.24554v1",
+      "source": "arxiv",
+      "title": "DeCoRAG: Cognitive Decoupling and Semantic-Aware Cropping for Complex Document Understanding",
+      "abstract": "Advancing multimodal retrieval-augmented generation (RAG) for complex document understanding presents a formidable dual dilemma of accuracy and efficiency, particularly in graph RAG. Processing structurally sparse yet visually dense layouts, such as extracting a tiny data marker from a financial chart, often incurs computationally prohibitive token overhead while still triggering catastrophic hallucination. However, multimodal Graph RAG pipelines rely on graph-construction stages that assume Vision-Language Models (VLMs) can resolve sparse semantics within high-density layouts. We challenge this assumption, revealing that forcing VLMs to localize visual evidence, interpret semantics, and extract relations triggers a \"Visual Attention Sink,\" a mechanism driving catastrophic semantic loss, while full-page processing incurs massive computational overhead. Controlled interventions verify that this failure is boundary-driven rather than content-specific and that semantic anchoring mitigates it. To fundamentally correct this flawed paradigm, we introduce DeCoRAG, a multimodal Graph RAG pipeline that shifts knowledge processing from coupled visual-semantic reasoning to \"Cognitive Decoupling.\" Rather than passively processing raw pixels, its graph-construction stage establishes a macroscopic Semantic Anchor to neutralize the attention sink. This anchor subsequently drives our Region-Aware Pruning and Cropping (RAP-Crop) mechanism, shifting the reasoning space from dense, noisy backgrounds to purified, intent-driven semantic clusters. The resulting graph supports hybrid retrieval and answer generation. Across complex document benchmarks, DeCoRAG improves the semantic pass rate by up to 12.5 percentage points over the strongest baseline and generalizes to DocVQA. RAP-Crop reduces offline graph-construction prompt tokens by 40.8% without sacrificing end-to-end accuracy.",
+      "authors": [
+        "Shuo Wang",
+        "Kai Zhang",
+        "Wenyuan Huang",
+        "Yizheng Yu",
+        "Xia Liao",
+        "Junming Su",
+        "Qing Wang",
+        "Fang Xi"
+      ],
+      "primary_category": "cs.IR",
+      "categories": [
+        "cs.IR",
+        "cs.CV"
+      ],
+      "published": "2026-07-27T15:28:02+00:00",
+      "link": "https://arxiv.org/pdf/2607.24554v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Mitigating catastrophic hallucination in multimodal Graph RAG",
+      "llm_evidence_cn": "缓解多模态图RAG中的灾难性幻觉",
+      "llm_evidence": "缓解多模态图RAG中的灾难性幻觉",
+      "canonical_evidence": "缓解多模态图RAG中的灾难性幻觉",
+      "llm_tldr_en": "Multimodal Graph RAG for complex documents suffers from token overhead and catastrophic hallucination when VLMs process dense layouts. DeCoRAG proposes cognitive decoupling and semantic-aware cropping to mitigate these issues, improving accuracy and efficiency.",
+      "llm_tldr_cn": "针对多模态图RAG在处理密集布局时面临的高计算开销和灾难性幻觉问题，本文提出了DeCoRAG方法。该方法通过认知解耦和语义感知裁剪机制，有效缓解了视觉语言模型在定位视觉证据时的幻觉现象，显著提升了复杂文档理解的准确性与效率。",
+      "llm_tldr": "针对多模态图RAG在处理密集布局时面临的高计算开销和灾难性幻觉问题，本文提出了DeCoRAG方法。该方法通过认知解耦和语义感知裁剪机制，有效缓解了视觉语言模型在定位视觉证据时的幻觉现象，显著提升了复杂文档理解的准确性与效率。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.25196v1",
+      "source": "arxiv",
+      "title": "Rethinking CD: A Reproducibility Study and Extension on the Ineffectiveness of Contrastive Decoding at Mitigating Object Hallucinations in MLLMs",
+      "abstract": "Contrastive decoding (CD) has been proposed as a training-free strategy for mitigating object hallucinations in multimodal large language models (MLLMs), with reported gains on benchmarks such as POPE. However, recent work has questioned whether these gains reflect genuine improvements in visual grounding. In this study, we reproduce and extend the findings of \"The Mirage of Performance Gains: Why Contrastive Decoding Fails to Mitigate Object Hallucinations in MLLMs.\" Specifically, we test the claim that CD induces a unidirectional output distribution shift in discriminative datasets and examine its generalizability across datasets. We also verify that the adaptive plausibility constraint (APC) reduces sampling to greedy search on both discriminative and generative benchmarks. Beyond reproduction, we rigorously study the effects of CD across generative and discriminative datasets. We conduct several experiments that provide additional insights: we analyze the logit distributions induced by different CD strategies on generative datasets, propose a proxy method and compare its performance against CD techniques, and investigate how hallucination signals propagate through each layer of the expert and amateur models. Experimental results across MME, POPE, and CHAIR using LLaVA and Qwen validate the original claims and show that the apparent improvements from CD are often spurious and do not consistently translate into stronger visual grounding for reducing hallucinations. These findings challenge the effectiveness of current contrastive decoding strategies and motivate the development of more reliable approaches for mitigating hallucinations in MLLMs.",
+      "authors": [
+        "Arnav Bendre",
+        "Guneesh Gupta",
+        "Kavish Grover",
+        "Chayan Aggarwal",
+        "Shreyansh Modi"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-07-28T01:55:58+00:00",
+      "link": "https://arxiv.org/pdf/2607.25196v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Mitigating object hallucinations in MLLMs",
+      "llm_evidence_cn": "缓解多模态大模型中的物体幻觉",
+      "llm_evidence": "缓解多模态大模型中的物体幻觉",
+      "canonical_evidence": "缓解多模态大模型中的物体幻觉",
+      "llm_tldr_en": "This paper reproduces and extends findings on the ineffectiveness of contrastive decoding for mitigating object hallucinations in multimodal LLMs, questioning its genuine improvement on visual grounding.",
+      "llm_tldr_cn": "本文重现并扩展了关于对比解码在缓解多模态大语言模型物体幻觉中无效性的研究。针对对比解码是否能真正改善视觉基础的问题，研究测试了其在判别性数据集中引起单向输出分布偏移的假设，并验证了其在不同数据集上的泛化能力，揭示了该方法的局限性。",
+      "llm_tldr": "本文重现并扩展了关于对比解码在缓解多模态大语言模型物体幻觉中无效性的研究。针对对比解码是否能真正改善视觉基础的问题，研究测试了其在判别性数据集中引起单向输出分布偏移的假设，并验证了其在不同数据集上的泛化能力，揭示了该方法的局限性。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.25789v1",
+      "source": "arxiv",
+      "title": "Towards Faithful Sentimental Image Captioning via Evidence-Aware Multi-Agent Reasoning",
+      "abstract": "Sentimental Image Captioning (SIC) requires balancing emotional expression with visual fidelity. Existing methods often struggle with this trade-off, leading to hallucinations due to insufficient local grounding and the lack of sentimental verification mechanisms. To address these limitations, we propose SEA-Cap, a Sentiment-Evidence-Aware Multi-Agent System for faithful and evidence-grounded sentimental image captioning. SEA-Cap incorporates a Sentiment Evidence Miner that extracts structured, local affective cues to shift sentiment control from global attributes to verifiable object-level evidence. Leveraging this evidence, our framework orchestrates a collaborative workflow where a Generator, Hallucination Checker, and Arbitrator iteratively refine captions via a shared blackboard. By explicitly auditing generated content against mined visual evidence, SEA-Cap ensures both sentiment accuracy and factual consistency. Extensive experiments on two benchmark datasets demonstrate that SEA-Cap effectively mitigates hallucinations and achieves state-of-the-art performance.",
+      "authors": [
+        "Tiecheng Cai",
+        "Zexian Yang",
+        "Chao Chen",
+        "Shanshan Lin",
+        "Xiangwen Liao"
+      ],
+      "primary_category": "cs.CV",
+      "categories": [
+        "cs.CV"
+      ],
+      "published": "2026-07-28T14:42:00+00:00",
+      "link": "https://arxiv.org/pdf/2607.25789v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Mitigating hallucinations in image captioning via multi-agent reasoning",
+      "llm_evidence_cn": "通过多智能体推理缓解图像描述中的幻觉",
+      "llm_evidence": "通过多智能体推理缓解图像描述中的幻觉",
+      "canonical_evidence": "通过多智能体推理缓解图像描述中的幻觉",
+      "llm_tldr_en": "Proposes SEA-Cap, a multi-agent system for sentimental image captioning that mitigates hallucinations by extracting local affective evidence and using a collaborative workflow with a Hallucination Checker.",
+      "llm_tldr_cn": "情感图像描述任务常因局部基础不足和缺乏情感验证机制而产生幻觉。本文提出SEA-Cap，一种情感证据感知的多智能体系统，通过情感证据挖掘器提取局部线索，并协调生成器、幻觉检查器和仲裁器进行迭代优化，从而在保持情感表达的同时显著缓解幻觉，提升描述的忠实度。",
+      "llm_tldr": "情感图像描述任务常因局部基础不足和缺乏情感验证机制而产生幻觉。本文提出SEA-Cap，一种情感证据感知的多智能体系统，通过情感证据挖掘器提取局部线索，并协调生成器、幻觉检查器和仲裁器进行迭代优化，从而在保持情感表达的同时显著缓解幻觉，提升描述的忠实度。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}
