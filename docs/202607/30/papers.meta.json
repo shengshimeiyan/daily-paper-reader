@@ -1,0 +1,39 @@
+{
+  "label": "2026-07-30",
+  "date": "2026-07-30",
+  "generated_at": "2026-07-30T22:00:26",
+  "count": 2,
+  "papers": [
+    {
+      "paper_id": "202607/30/2607.26339v1-raguard-a-layered-defense-framework-for-retrieval-augmented-generation-systems-against-data-poisoning",
+      "section": "quick",
+      "title_en": "RAGuard: A Layered Defense Framework for Retrieval-Augmented Generation Systems Against Data Poisoning",
+      "authors": "Pushkal Kumar, Tucker Nielson, Tanish Kolhe, Shubham Zala, Vincent Li",
+      "date": "2026-07-28",
+      "pdf": "https://arxiv.org/pdf/2607.26339v1",
+      "score": "7.0",
+      "evidence": "缓解RAG生成中的事实错误",
+      "tldr": "RAG系统依赖外部语料库，易受语料库投毒攻击。本文提出RAGuard分层防御框架，第一层通过合成投毒文档对抗微调密集检索器以降低恶意段落排名，第二层引入零知识推理补丁ZKIP，利用留一解码和反事实上下文比较来无标签过滤投毒文档。实验表明，在5-30%投毒比例下，ZKIP将攻击成功率降至0且召回率损失极小。该框架无需标签和模型内部访问，为RAG系统提供了高效且实用的投毒防御方案。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Retrieval-Augmented Generation (RAG) systems ground large language models (LLMs) in external corpora, but this reliance exposes them to corpus poisoning: maliciously injected passages that manipulate retrieved evidence. We introduce RAGuard, a layered defense against \\emph{factual} corpus-poisoning attacks on RAG pipelines. The first layer adversarially fine-tunes a dense retriever on synthetic poisoned documents (fabricated facts, contradictions, and reasoning traps), teaching it to downrank malicious passages before generation. The second layer, the Zero-Knowledge Inference Patch ZKIP, is a label-free, black-box filter: for each retrieved document, it performs a leave-one-out decode and scores the document by the semantic shift and output-entropy change that its removal induces. ZKIP requires no poison labels, no ground-truth answers, and no access to model internals; it compares the model's own answers under counterfactual contexts. On poisoned Natural Questions at 5--30\\% poison ratios, adversarial retriever training alone reduces but does not eliminate attack success, while ZKIP drives the measured attack success rate to 0.000 in every defended configuration, keeping Recall@5 within 0.03 of the clean-corpus baseline. Supervised analyses on both Natural Questions and BEIR (NFCorpus) confirm that the counterfactual signals ZKIP relies on carry learnable poison structure. The defense costs $k{+}1$ generator passes per query ($6\\times$ for $k{=}5$); we analyze batching and early-stopping approximations that reduce this overhead. We also show that keyword-preserving poisons leave lexical retrievers such as BM25 essentially unaffected, an observation that delineates the boundary of the threat model. Code, datasets, and evaluation harnesses are released for reproducibility.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    },
+    {
+      "paper_id": "202607/30/2607.26843v1-when-knowledge-changes-metamorphic-testing-of-rag-systems-with-mutations",
+      "section": "quick",
+      "title_en": "When Knowledge Changes: Metamorphic Testing of RAG Systems with Mutations",
+      "authors": "Jinhan Kim, Samuele Pasini, Paolo Tonella",
+      "date": "2026-07-29",
+      "pdf": "https://arxiv.org/pdf/2607.26843v1",
+      "score": "7.0",
+      "evidence": "评估RAG系统中的事实一致性",
+      "tldr": "RAG系统依赖的外部语料库会随时间演变，现有评估方法仅基于静态快照，无法检测语料更新或噪声导致的一致性故障。本文提出一种蜕变测试框架，通过11种变异算子在分块前后的检索索引与上下文层面系统性扰动RAG系统。在5个数据集和超2.8万个变异体上的实验显示，蜕变违规率为4.9-10.2%，蜕变预言机F1达0.927-1.000，远超RAGAS最佳指标的0.570。本研究揭示了RAG系统在语料演变下的脆弱性，并为缓解故障提供了可行建议。",
+      "tags": "query:llm-halluc",
+      "abstract_en": "Retrieval-Augmented Generation (RAG)-based LLM systems rely on external document corpora that can evolve and change over time. However, current evaluation methodologies (e.g., RAGAS) assess correctness against static snapshots, failing to detect faults when routine updates, factual changes, or noise alter the underlying data. We introduce a metamorphic testing framework that evaluates the consistency of RAG systems under corpus evolution. We formalise a fault taxonomy and 11 mutation operators that systematically perturb the system at both the pre-chunk (retrieval index) and post-chunk (retrieved context) levels. An empirical evaluation across five datasets and over 28k mutants reveals metamorphic violation rates of 4.9-10.2%. In a meta-evaluation against ground truth, our metamorphic oracle achieves F1 scores of 0.927-1.000, while the best RAGAS metric reaches only 0.570. Finally, we provide actionable insights into mitigating these faults through retrieval re-configuration, generator upgrades, and LLM-based reranking.",
+      "source": "arxiv",
+      "selection_source": "fresh_fetch"
+    }
+  ],
+  "errors": []
+}

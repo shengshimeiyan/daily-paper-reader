@@ -1,0 +1,95 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-07-30T21:57:44.682518+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 0,
+    "deep_cap": 6,
+    "deep_selected": 0,
+    "quick_candidates": 2,
+    "quick_skim_target": 11,
+    "quick_selected": 2
+  },
+  "deep_dive": [],
+  "quick_skim": [
+    {
+      "id": "2607.26339v1",
+      "source": "arxiv",
+      "title": "RAGuard: A Layered Defense Framework for Retrieval-Augmented Generation Systems Against Data Poisoning",
+      "abstract": "Retrieval-Augmented Generation (RAG) systems ground large language models (LLMs) in external corpora, but this reliance exposes them to corpus poisoning: maliciously injected passages that manipulate retrieved evidence. We introduce RAGuard, a layered defense against \\emph{factual} corpus-poisoning attacks on RAG pipelines. The first layer adversarially fine-tunes a dense retriever on synthetic poisoned documents (fabricated facts, contradictions, and reasoning traps), teaching it to downrank malicious passages before generation. The second layer, the Zero-Knowledge Inference Patch ZKIP, is a label-free, black-box filter: for each retrieved document, it performs a leave-one-out decode and scores the document by the semantic shift and output-entropy change that its removal induces. ZKIP requires no poison labels, no ground-truth answers, and no access to model internals; it compares the model's own answers under counterfactual contexts. On poisoned Natural Questions at 5--30\\% poison ratios, adversarial retriever training alone reduces but does not eliminate attack success, while ZKIP drives the measured attack success rate to 0.000 in every defended configuration, keeping Recall@5 within 0.03 of the clean-corpus baseline. Supervised analyses on both Natural Questions and BEIR (NFCorpus) confirm that the counterfactual signals ZKIP relies on carry learnable poison structure. The defense costs $k{+}1$ generator passes per query ($6\\times$ for $k{=}5$); we analyze batching and early-stopping approximations that reduce this overhead. We also show that keyword-preserving poisons leave lexical retrievers such as BM25 essentially unaffected, an observation that delineates the boundary of the threat model. Code, datasets, and evaluation harnesses are released for reproducibility.",
+      "authors": [
+        "Pushkal Kumar",
+        "Tucker Nielson",
+        "Tanish Kolhe",
+        "Shubham Zala",
+        "Vincent Li"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.CR",
+        "cs.IR"
+      ],
+      "published": "2026-07-28T23:21:04+00:00",
+      "link": "https://arxiv.org/pdf/2607.26339v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Mitigating factual errors in RAG generation",
+      "llm_evidence_cn": "缓解RAG生成中的事实错误",
+      "llm_evidence": "缓解RAG生成中的事实错误",
+      "canonical_evidence": "缓解RAG生成中的事实错误",
+      "llm_tldr_en": "RAGuard introduces a layered defense framework for RAG systems against factual corpus poisoning, using adversarial retriever fine-tuning and a black-box filter to mitigate hallucinated or manipulated outputs.",
+      "llm_tldr_cn": "检索增强生成（RAG）系统依赖外部语料库来缓解大模型幻觉，但这种依赖使其容易受到语料库投毒攻击，从而生成被操纵的事实错误内容。本文提出RAGuard分层防御框架，第一层通过对抗性微调检索器来降级恶意段落，第二层利用零知识推理补丁（ZKIP）黑盒过滤器过滤操纵证据。该方法在生成前有效拦截恶意信息，显著缓解了RAG系统中的事实幻觉问题。",
+      "llm_tldr": "检索增强生成（RAG）系统依赖外部语料库来缓解大模型幻觉，但这种依赖使其容易受到语料库投毒攻击，从而生成被操纵的事实错误内容。本文提出RAGuard分层防御框架，第一层通过对抗性微调检索器来降级恶意段落，第二层利用零知识推理补丁（ZKIP）黑盒过滤器过滤操纵证据。该方法在生成前有效拦截恶意信息，显著缓解了RAG系统中的事实幻觉问题。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "mitigating hallucinations in text generation",
+      "matched_requirement_id": "req-4",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    },
+    {
+      "id": "2607.26843v1",
+      "source": "arxiv",
+      "title": "When Knowledge Changes: Metamorphic Testing of RAG Systems with Mutations",
+      "abstract": "Retrieval-Augmented Generation (RAG)-based LLM systems rely on external document corpora that can evolve and change over time. However, current evaluation methodologies (e.g., RAGAS) assess correctness against static snapshots, failing to detect faults when routine updates, factual changes, or noise alter the underlying data. We introduce a metamorphic testing framework that evaluates the consistency of RAG systems under corpus evolution. We formalise a fault taxonomy and 11 mutation operators that systematically perturb the system at both the pre-chunk (retrieval index) and post-chunk (retrieved context) levels. An empirical evaluation across five datasets and over 28k mutants reveals metamorphic violation rates of 4.9-10.2%. In a meta-evaluation against ground truth, our metamorphic oracle achieves F1 scores of 0.927-1.000, while the best RAGAS metric reaches only 0.570. Finally, we provide actionable insights into mitigating these faults through retrieval re-configuration, generator upgrades, and LLM-based reranking.",
+      "authors": [
+        "Jinhan Kim",
+        "Samuele Pasini",
+        "Paolo Tonella"
+      ],
+      "primary_category": "cs.SE",
+      "categories": [
+        "cs.SE"
+      ],
+      "published": "2026-07-29T12:32:04+00:00",
+      "link": "https://arxiv.org/pdf/2607.26843v1",
+      "tags": [
+        "keyword:llm-halluc",
+        "query:llm-halluc"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Evaluating factual consistency in RAG systems",
+      "llm_evidence_cn": "评估RAG系统中的事实一致性",
+      "llm_evidence": "评估RAG系统中的事实一致性",
+      "canonical_evidence": "评估RAG系统中的事实一致性",
+      "llm_tldr_en": "Current RAG evaluation methods fail to detect faults when underlying data changes. This paper introduces a metamorphic testing framework with 11 mutation operators to evaluate the factual consistency of RAG systems under corpus evolution.",
+      "llm_tldr_cn": "现有的检索增强生成（RAG）评估方法通常基于静态数据快照，无法检测到底层数据更新或事实变化时系统产生的事实不一致与幻觉问题。本文提出一种蜕变测试框架，定义了故障分类法和11种变异算子，在检索索引和检索上下文层面系统性地扰动RAG系统。实验在五个数据集和超过28k个变异体上揭示了4.9-10.2%的蜕变违规率，为评估RAG系统的事实一致性提供了新方法。",
+      "llm_tldr": "现有的检索增强生成（RAG）评估方法通常基于静态数据快照，无法检测到底层数据更新或事实变化时系统产生的事实不一致与幻觉问题。本文提出一种蜕变测试框架，定义了故障分类法和11种变异算子，在检索索引和检索上下文层面系统性地扰动RAG系统。实验在五个数据集和超过28k个变异体上揭示了4.9-10.2%的蜕变违规率，为评估RAG系统的事实一致性提供了新方法。",
+      "llm_tags": [
+        "query:llm-halluc"
+      ],
+      "matched_query_tag": "query:llm-halluc",
+      "matched_query_text": "factual consistency in text generation",
+      "matched_requirement_id": "req-5",
+      "selection_source": "fresh_fetch",
+      "quick_tier": "7"
+    }
+  ]
+}
